@@ -1,3 +1,13 @@
+<?php
+/**
+ * @var $this AdminController
+ */
+
+// DO NOT REMOVE This is for automated testing to validate we see that page
+echo viewHelper::getViewTestTag('dataEntryView');
+
+?>
+
 <!-- content_view.php -->
 
 <!-- explanation -->
@@ -50,7 +60,7 @@
 
             //DATE
             case "D":
-                //                            $qidattributes = getQuestionAttributeValues($deqrow['qid'], $deqrow['type']);
+                //                            $qidattributes = QuestionAttribute::model()->getQuestionAttributes($deqrow['qid'], $deqrow['type']);
                 $dateformatdetails = getDateFormatDataForQID($qidattributes, $thissurvey);
                 ?>
             <div class="col-sm-10 has-feedback">
@@ -216,6 +226,10 @@
             <?php eT("Comment"); ?>:<br />
             <textarea cols='40' rows='5' name='<?php echo $fieldname; ?>comment'></textarea>
         </div>
+        <?php break;?>
+
+        <?php case "*":?>
+            <input type="text" name="<?php echo $fieldname; ?>" value="">
         <?php break;
 
 
@@ -265,7 +279,9 @@
                 choicetitle: '<?php echo gT("Your Choices",'js') ?>',
                 ranktitle: '<?php echo gT("Your Ranking",'js') ?>'
             };
-            function checkconditions(){};
+            function checkconditions(){
+                // Some space so the EM won't kick in
+            };
             $(function() {
                 doDragDropRank(<?php echo $thisqid ?>,0,true,true);
             });
@@ -491,7 +507,7 @@
             }
             $title = gT('Only numbers may be entered in this field.');
 
-            echo $prefix; ?><input type='text' name='<?php echo $fieldname; ?>' size='<?php echo $tiwidth; ?>' title='<?php echo $title; ?>' <?php echo $maxlength; ?> onkeypress="return goodchars(event,'-0123456789<?php echo $acomma; ?>')" /><?php echo $suffix;
+            echo $prefix; ?><input type='text' name='<?php echo $fieldname; ?>' size='<?php echo $tiwidth; ?>' title='<?php echo $title; ?>' <?php echo $maxlength; ?> onkeypress="return window.LS.goodchars(event,'-0123456789<?php echo $acomma; ?>')" /><?php echo $suffix;
             echo '</div>';
             break;
 
@@ -528,7 +544,7 @@
             {
                 $sSeparator = getRadixPointData($thissurvey['surveyls_numberformat']);
                 $sSeparator = $sSeparator['separator'];
-                $numbersonly = 'onkeypress="return goodchars(event,\'-0123456789'.$sSeparator.'\')"';
+                $numbersonly = 'onkeypress="return window.LS.goodchars(event,\'-0123456789'.$sSeparator.'\')"';
             }
             else
             {

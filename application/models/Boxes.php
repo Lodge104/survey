@@ -4,43 +4,41 @@
  * This is the model class for table "{{boxes}}".
  *
  * The followings are the available columns in table '{{boxes}}':
- * @property integer $id
+ * @property integer $id Primary key
  * @property integer $position
  * @property string $url
  * @property string $title
- * @property string $desc
+ * @property string $ico the icon class
+ * @property string $desc Description
  * @property string $page
+ * @property integer $usergroup UserGroup ID
  */
 class Boxes extends CActiveRecord
 {
-    /**
-     * @return string the associated database table name
-     */
+    /** @inheritdoc */
     public function tableName()
     {
         return '{{boxes}}';
     }
 
-    /**
-     * @return array validation rules for model attributes.
-     */
+    /** @inheritdoc */
     public function rules()
     {
         // NOTE: you should only define rules for those attributes that
         // will receive user inputs.
         return array(
             array('url, title, ico, desc, page', 'required'),
+            array('url', 'match', 'pattern'=>'/(http:\/\/)?[a-zA-Z]([a-zA-Z0-9-_?&"\'=]\/?)*/'),
             array('position', 'numerical', 'integerOnly'=>true),
             array('usergroup', 'numerical', 'integerOnly'=>true, 'min'=>-3),
+            array('ico', 'match', 'pattern'=> '/^[A-Za-z0-9_ \-]+$/u','message'=> gT('Icon name must be a simple class name (alphanumeric, space, minus and underscore).')),
             // The following rule is used by search().
             // @todo Please remove those attributes that should not be searched.
             array('id, position, url, title, ico, desc, page, usergroup', 'safe', 'on'=>'search'),
         );
     }
 
-    /**
-     * @return array relational rules.
-     */
+    /** @inheritdoc */
     public function relations()
     {
         // NOTE: you may need to adjust the relation name and the related
@@ -49,9 +47,7 @@ class Boxes extends CActiveRecord
         );
     }
 
-    /**
-     * @return array customized attribute labels (name=>label)
-     */
+    /** @inheritdoc */
     public function attributeLabels()
     {
         return array(
@@ -82,73 +78,83 @@ class Boxes extends CActiveRecord
     {
         // @todo Please modify the following code to remove attributes that should not be searched.
 
-        $criteria=new CDbCriteria;
+        $criteria = new CDbCriteria;
 
-        $criteria->compare('id',$this->id);
-        $criteria->compare('position',$this->position);
-        $criteria->compare('url',$this->url,true);
-        $criteria->compare('title',$this->title,true);
-        $criteria->compare('ico',$this->ico,true);
-        $criteria->compare('desc',$this->desc,true);
-        $criteria->compare('page',$this->page,true);
+        $criteria->compare('id', $this->id);
+        $criteria->compare('position', $this->position);
+        $criteria->compare('url', $this->url, true);
+        $criteria->compare('title', $this->title, true);
+        $criteria->compare('ico', $this->ico, true);
+        $criteria->compare('desc', $this->desc, true);
+        $criteria->compare('page', $this->page, true);
 
         return new CActiveDataProvider($this, array(
             'criteria'=>$criteria,
         ));
     }
 
+    /**
+     * @return string
+     */
     public function getSpanIcon()
     {
-        $spanicon = '<span class="icon-'.$this->ico.' text-success"></span>';
+        $spanicon = '<span class="'.CHtml::encode($this->ico).' text-success"></span>';
         return $spanicon;
     }
 
+    /**
+     * @return mixed|string
+     */
     public function getUsergroupname()
     {
         $usergroupid = $this->usergroup;
 
         // Can't use switch because of empty case
-        if ( empty($usergroupid) || $usergroupid=='-2'  )
-        {
+        if (empty($usergroupid) || $usergroupid == '-2') {
             return gT('Only Superadmin');
-        }
-        elseif ( $usergroupid=='-1' )
-        {
+        } elseif ($usergroupid == '-1') {
             return gT('Everybody');
-        }
-        elseif ( $usergroupid=='-3' )
-        {
+        } elseif ($usergroupid == '-3') {
             return gT('Nobody');
-        }
-        else
-        {
+        } else {
             $oUsergroup = UserGroup::model()->findByPk($usergroupid);
 
             // The group doesn't exist anymore
-            if(!is_object($oUsergroup))
+            if (!is_object($oUsergroup)) {
                 return gT("Can't find user group!");
+            }
 
             return $oUsergroup->name;
         }
     }
 
+    /**
+     * @return string
+     */
     public function getbuttons()
     {
 
         $url = Yii::app()->createUrl("/admin/homepagesettings/sa/update/id/");
         $url .= '/'.$this->id;
-        $button = '<a class="btn btn-default" href="'.$url.'" role="button"><span class="glyphicon glyphicon-pencil" ></span></a>';
+        $button = '<a class="btn btn-default" href="'.$url.'" role="button"><span class="fa fa-pencil" ></span></a>';
 
-        $url = Yii::app()->createUrl("/admin/homepagesettings/sa/delete/id/");
-        $url .= '/'.$this->id;
-        $button .= '<a class="btn btn-default" href="'.$url.'" role="button" data-confirm="'.gT('Are you sure you want to delete this box ?').'"><span class="text-danger glyphicon glyphicon-trash" ></span></a>';
+        $url = Yii::app()->createUrl("/admin/homepagesettings/sa/delete");
+        //$url .= '/'.$this->id;
+        $button .= '<a class="btn btn-default selector--ConfirmModal"'
+        .' data-button-no="'.gT('No, cancel').'"'
+        .' data-button-yes="'.gT('Yes, delete').'"'
+        .' href="'.$url.'"'
+        .' title="'.gT("Delete box").'"'
+        .' role="button" data-post=\''.json_encode(['id' => $this->id]).'\''
+        .' data-text="'.gT('Are you sure you want to delete this box ?').'"'
+        .'><span class="text-danger fa fa-trash" ></span></a>';
         return $button;
     }
 
     /**
      * List of all icons available for user
      * Command to generate this list: grep -oh "icon-[a-z]*" styles/Sea_Green/css/fonts.css | sort -u > ~/my_icon_list.txt
-     * @return array
+     * @return string[]
      */
     public function getIcons()
     {
@@ -212,19 +218,50 @@ class Boxes extends CActiveRecord
         );
     }
 
+    /**
+     * @return int
+     */
     public function getIcons_length()
     {
         return count($this->icons);
     }
 
     /**
-     * Returns the static model of the specified AR class.
-     * Please note that you should have this exact method in all your CActiveRecord descendants!
-     * @param string $className active record class name.
+     * @inheritdoc
      * @return Boxes the static model class
      */
-    public static function model($className=__CLASS__)
+    public static function model($className = __CLASS__)
     {
-        return parent::model($className);
+        /** @var self $model */
+        $model = parent::model($className);
+        return $model;
+    }
+
+    /**
+     * Method to restore the default surveymenu entries
+     * This method will fail if the surveymenus have been tempered, or wrongly set
+     *
+     * @return boolean
+     */
+    public function restoreDefaults()
+    {
+        $oDB = Yii::app()->db;
+        $sOldLanguage = App()->language;
+        switchMSSQLIdentityInsert('boxes', true);
+        $oTransaction = $oDB->beginTransaction();
+        try {
+            $oDB->createCommand()->truncateTable('{{boxes}}');
+
+            $defaultBoxes = LsDefaultDataSets::getBoxesData();
+            foreach ($defaultBoxes as $Boxes) {
+                $oDB->createCommand()->insert("{{boxes}}", $Boxes);
+            }
+            $oTransaction->commit();
+        } catch (Exception $e) {
+            App()->setLanguage($sOldLanguage);
+            return false;
+        }
+        switchMSSQLIdentityInsert('boxes', false);
+        return true;
     }
 }

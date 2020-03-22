@@ -2,20 +2,22 @@
 /**
  * Login Form
  */
+
+// DO NOT REMOVE This is for automated testing to validate we see that page
+echo viewHelper::getViewTestTag('login');
+
 ?>
 <noscript>If you see this you have probably JavaScript deactivated. LimeSurvey does not work without Javascript being activated in the browser!</noscript>
 <div class="container-fluid welcome">
     <div class="row text-center">
-        <div class="col-lg-3 col-lg-offset-4 col-sm-6 col-sm-offset-3">
-            <div class="panel panel-primary login-pannel" id="pannel-1">
+        <div id="login-panel">
+            <div class="panel panel-primary login-panel" id="panel-1">
 
                 <!-- Header -->
                 <div class="panel-body">
                     <div class="row">
-                        <div class="col-lg-12">
-                          <img alt="logo" id="profile-img" class="profile-img-card img-responsive center-block" src="<?php echo LOGO_URL;?>" />
+                          <img alt="logo" id="profile-img" class="profile-img-card center-block" src="<?php echo LOGO_URL;?>" />
                              <p><?php eT("Administration");?></p>
-                        </div>
                     </div>
                 </div>
 
@@ -81,29 +83,36 @@
                                     echo $blockData->getContent();
                                 }
 
-                                $languageData = array(
-                                    'default' => gT('Default')
-                                );
-                                foreach (getLanguageDataRestricted(true) as $sLangKey => $aLanguage)
+                                $aLangList = getLanguageDataRestricted(true);
+                                $languageData = array();
+
+                                $reqLang = App()->request->getParam('lang');
+                                if ($reqLang === null){
+                                    $languageData['default'] = gT('Default');
+                                }else{
+                                    $languageData[$reqLang] = html_entity_decode($aLangList[$reqLang]['nativedescription'], ENT_NOQUOTES, 'UTF-8') . " - " . $aLangList[$reqLang]['description'];
+                                    $languageData['default'] = gT('Default');
+                                    unset($aLangList[$reqLang]);
+                                }
+
+                                foreach ( $aLangList as $sLangKey => $aLanguage)
                                 {
                                     $languageData[$sLangKey] =  html_entity_decode($aLanguage['nativedescription'], ENT_NOQUOTES, 'UTF-8') . " - " . $aLanguage['description'];
                                 }
+
+
                                 echo CHtml::label(gT('Language'), 'loginlang');
-
-                                //$this->widget('bootstrap.widgets.TbSelect2', array(
-
+                                
                                 $this->widget('yiiwheels.widgets.select2.WhSelect2', array(
                                     'name' => 'loginlang',
                                     'data' => $languageData,
+                                    'value' => $language,
                                     'pluginOptions' => array(
-                                    'options' => array(
-                                        'width' => '230px'
-                                    ),
-                                    'htmlOptions' => array(
-                                        'id' => 'loginlang'
-                                    ),
-                                    'value' => 'default'
-                                )));
+                                        'htmlOptions' => array(
+                                            'id' => 'loginlang'
+                                        ),
+                                    )
+                                ));
                                 ?>
 
                                 <?php   if (Yii::app()->getConfig("demoMode") === true && Yii::app()->getConfig("demoModePrefill") === true)
@@ -118,6 +127,7 @@
                     <div class="row login-submit login-content">
                         <div class="col-lg-12">
                                 <p><input type='hidden' name='action' value='login' />
+                                   <input type='hidden' id='width' name='width' value='' />
                                     <button type="submit" class="btn btn-default" name='login_submit' value='login'><?php eT('Log in');?></button><br />
                                     <br/>
                                     <?php
@@ -140,5 +150,8 @@
 
 <!-- Set focus on user input -->
 <script type='text/javascript'>
-    document.getElementById('user').focus();
+$( document ).ready(function() {
+    $('#user').focus();
+    $("#width").val($(window).width());
+});
 </script>

@@ -4,17 +4,22 @@
  *
  */
 
-$( document ).ready(function() {
+$(document).ready(function () {
     $('div.array-multi-flexi-text table.show-totals input:enabled').keyup(updatetotals);
     $('div.array-multi-flexi-text table.show-totals input:enabled').each(updatetotals);
 });
 
-function updatetotals()
-{
-    var sRadix=LSvar.sLEMradix;
-    var sTableID=$(this).closest('table').attr('id');
-    var sTable=$(this).closest('table');
-    var iGrandTotal=new Decimal(0);
+function updatetotals() {
+    var inputValue = $(this).val();
+    var sRadix = LSvar.sLEMradix;
+    var sTableID = $(this).closest('table').attr('id');
+    var sTable = $(this).closest('table');
+    var iGrandTotal = new Decimal(0);
+
+    if (!normalizeValue(inputValue)) {
+        $(this).val(inputValue.substring(0, (inputValue.length - 1)));
+        return;
+    }
 
     // Sum all rows
     sTable.find('tr').each(function () {
@@ -27,52 +32,56 @@ function updatetotals()
             sum = sum.plus(value);
         });
         //set the value of currents rows sum to the total-combat element in the current row
-        $(this).find('input:disabled').val(formatValue(sum));
+        $(this).find('input:disabled').val(formatValue(sum)).trigger('change').trigger('keyup').trigger('keydown');
         iGrandTotal = iGrandTotal.plus(sum);
     });
     // Sum all columns
     // First get number of columns (only visible and enabled inputs)
-    var iColumnNum=$('#'+sTableID+' tbody tr:first-child input:enabled:visible').length;
+    var iColumnNum = $('#' + sTableID + ' tbody tr:first-child input:enabled:visible').length;
     //Get An array of jQuery Objects
-    var $iRow = sTable.find('tr'); 
+    var $iRow = sTable.find('tr');
     //Iterate through the columns
-    for (var i = 1; i <= iColumnNum; i++) 
-    {
+    for (var i = 1; i <= iColumnNum; i++) {
         var sum = new Decimal(0);
-        $iRow.each(function(){
-            var item = $($(this).find('td').get((i-1))).find('input:enabled:visible'),
-            	val = normalizeValue($(item).val());
+        $iRow.each(function () {
+            var item = $($(this).find('td').get((i - 1))).find('input:enabled:visible'),
+                val = normalizeValue($(item).val());
             //sum the values
-           sum = sum.plus(val);
+            sum = sum.plus(val);
         });
-        $($iRow.last().find('td').get((i-1))).find('input:disabled').val(formatValue(sum));
+        $($iRow.last().find('td').get((i - 1))).find('input:disabled').val(formatValue(sum)).trigger('change').trigger('keyup').trigger('keydown');
     }
 
     //$('#'+sTableID+' tr:last-child td.total:nth-of-type('+iColumns+') input:disabled').val(formatValue(iGrandTotal));
-    $iRow.last().find('td.grand.total').find('input:disabled').val(formatValue(iGrandTotal));
+    $iRow.last().find('td.grand.total').find('input:disabled').val(formatValue(iGrandTotal)).trigger('change').trigger('keyup').trigger('keydown');
     // Grand total
 }
-function formatValue(sValue)
-{
-    
-    sValue=Number(sValue).toString();
-    var sRadix=LSvar.sLEMradix;
-    sValue=sValue.replace('.',sRadix);
+
+function formatValue(sValue) {
+
+    sValue = Number(sValue).toString();
+    var sRadix = LSvar.sLEMradix;
+    sValue = sValue.replace('.', sRadix);
     return sValue;
 }
 
-function normalizeValue(aValue)
-{
+function normalizeValue(aValue) {
+    var regexCheck = new RegExp(/^-?([0-9]*)((,|\.){1}([0-9]*)){0,1}$/);
+    if (!regexCheck.test(aValue) && bFixNumAuto) {
+        return 0;
+    }
     aValue = aValue || 0;
-    var number = new Decimal(aValue);
-    if(number.isNaN())
-    {
-        var numReplaced = aValue.replace(/,/g, ".");
-        var number = new Decimal(numReplaced);
-        return number;
+    var outNumber = false;
+    try {
+        outNumber = new Decimal(aValue);
+    } catch (e) {}
+
+    if (outNumber == false) {
+        var numReplaced = aValue.toString().replace(/,/g, ".");
+        outNumber = new Decimal(numReplaced);
+
+        return outNumber;
     } else {
-        return number;
+        return outNumber;
     }
 }
-
-

@@ -8,13 +8,19 @@
 ?>
 
 <!-- Configuration -->
-<?php if(Permission::model()->hasGlobalPermission('superadmin','read')
-            || Permission::model()->hasGlobalPermission('templates','read')
-            || Permission::model()->hasGlobalPermission('labelsets','read')
-            || Permission::model()->hasGlobalPermission('users','read')
-            || Permission::model()->hasGlobalPermission('usergroups','read')
-            || Permission::model()->hasGlobalPermission('participantpanel','read')
-            || Permission::model()->hasGlobalPermission('settings','read') ): ?>
+<?php if (Permission::model()->hasGlobalPermission('superadmin', 'read')
+    || Permission::model()->hasGlobalPermission('templates', 'read')
+    || Permission::model()->hasGlobalPermission('labelsets', 'read')
+    || Permission::model()->hasGlobalPermission('users', 'read')
+    || Permission::model()->hasGlobalPermission('usergroups', 'read')
+    || Permission::model()->hasGlobalPermission('participantpanel', 'read')
+    || Permission::model()->hasGlobalPermission('participantpanel', 'create')
+    || Permission::model()->hasGlobalPermission('participantpanel', 'update')
+    || Permission::model()->hasGlobalPermission('participantpanel', 'delete')
+    || ParticipantShare::model()->exists('share_uid = :userid', [':userid' => App()->user->id])
+    || Permission::model()->hasGlobalPermission('settings', 'read')
+): ?>
+
 
 <li class="dropdown mega-dropdown">
     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -31,10 +37,10 @@
             <?php if(Permission::model()->hasGlobalPermission('superadmin','read')): ?>
                 <div class="box" id="systemoverview">
                     <div class="box-icon">
-                        <span class="glyphicon glyphicon-info-sign" id="info-header"></span>
+                        <span class="fa fa-info-sign" id="info-header"></span>
                     </div>
                     <div class="info">
-                        <h5 class="text-center"><?php eT("System overview"); ?></h5>
+                        <div class="text-center"><?php eT("System overview"); ?></div>
                         <dl class="dl-horizontal">
                             <dt class="text-info"><?php eT('Users');?></dt>
                             <dd><?php echo $userscount;?></dd>
@@ -42,8 +48,6 @@
                             <dd><?php echo $surveyscount; ?></dd>
                             <dt class="text-info"><?php eT('Active surveys');?></dt>
                             <dd><?php echo $activesurveyscount; ?></dd>
-                            <dt class="text-info"><?php eT('Active tokens tables');?></dt>
-                            <dd><?php echo $activetokens;?></dd>
                             <dt class="text-info"><?php eT('ComfortUpdate key');?></dt>
                             <dd><?php echo $comfortUpdateKey;?></dd>
 
@@ -115,7 +119,7 @@
 
                     <!-- Show Survey logic file -->
                     <li class="dropdown-item">
-                        <a href="<?php echo $this->createUrl('admin/expressions/sa/survey_logic_file'); ?>">
+                        <a href="<?php echo $this->createUrl('admin/expressions/sa/survey_logic_form'); ?>">
                             <?php eT("Show survey logic file");?>
                         </a>
                     </li>
@@ -134,10 +138,10 @@
                     <?php eT('Advanced');?>
                 </li>
                 <?php if(Permission::model()->hasGlobalPermission('templates','read')): ?>
-                    <!-- Template Editor -->
+                    <!-- Theme Editor -->
                     <li class="dropdown-item">
-                        <a href="<?php echo $this->createUrl("admin/templates/sa/view"); ?>">
-                            <?php eT("Template editor");?>
+                        <a href="<?php echo $this->createUrl("admin/themeoptions"); ?>">
+                            <?php eT("Themes");?>
                         </a>
                     </li>
                     <?php endif;?>
@@ -166,8 +170,16 @@
                         </a>
                     </li>
 
-                    <?php endif;?>
-                <!-- Plugin manager -->
+                <?php endif;?>
+
+                <!-- Comfort update -->
+                <?php if(Permission::model()->hasGlobalPermission('superadmin')): ?>
+                    <li class="dropdown-item">
+                        <a href="<?php echo $this->createUrl("admin/update"); ?>">
+                            <?php eT("ComfortUpdate");?>
+                        </a>
+                    </li>
+                <?php endif;?>
             </ul>
 
         </li>
@@ -204,12 +216,16 @@
 
                     <?php endif;?>
 
-                <!-- Central participant database/panel -->
-                <?php if(Permission::model()->hasGlobalPermission('participantpanel','read')): ?>
-
+                <!-- Central participant database -->
+                <?php if (Permission::model()->hasGlobalPermission('participantpanel', 'read')
+                    || Permission::model()->hasGlobalPermission('participantpanel', 'create')
+                    || Permission::model()->hasGlobalPermission('participantpanel', 'update')
+                    || Permission::model()->hasGlobalPermission('participantpanel', 'delete')
+                    || ParticipantShare::model()->exists('share_uid = :userid', [':userid' => App()->user->id])
+                ): ?>
                     <li class="dropdown-item">
                         <a href="<?php echo $this->createUrl("admin/participants/sa/displayParticipants"); ?>">
-                            <?php eT("Central participant database/panel"); ?>
+                            <?php eT("Central participant database"); ?>
                         </a>
                     </li>
                     <?php endif;?>
@@ -243,11 +259,29 @@
                             <?php eT("Global settings");?>
                         </a>
                     </li>
+
                     <li class="dropdown-item">
                         <a href="<?php echo $this->createUrl("/admin/pluginmanager/sa/index"); ?>">
                             <?php eT("Plugin manager");?>
                         </a>
                     </li>
+                <!-- Surveymenu Editor -->
+                <?php if(Permission::model()->hasGlobalPermission('settings','read')): ?>
+                    <li class="dropdown-item">
+                        <a href="<?php echo $this->createUrl("admin/menus/sa/view"); ?>">
+                            <?php eT("Menu configuration");?>
+                        </a>
+                    </li>
+                <?php endif;?>
+                <!-- Surveymenu entry Editor -->
+                <?php if(Permission::model()->hasGlobalPermission('settings','read')): ?>
+                    <li class="dropdown-item">
+                        <a href="<?php echo $this->createUrl("admin/menuentries/sa/view"); ?>">
+                            <?php eT("Menu entries configuration");?>
+                        </a>
+                    </li>
+                <?php endif;?>
+
                 <?php endif;?>
 
             </ul>

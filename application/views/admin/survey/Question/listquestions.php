@@ -6,7 +6,6 @@
 <?php $pageSize=Yii::app()->user->getState('pageSize',Yii::app()->params['defaultPageSize']);?>
 
 <div class='side-body <?php echo getSideBodyClass(true); ?>'>
-    <?php $this->renderPartial('/admin/survey/breadcrumb', array('oSurvey'=>$oSurvey, 'active'=>gT("Questions in this survey"))); ?>
     <?php if(App()->request->getParam('group_name')!=''):?>
         <h3><?php eT('Questions in group: '); ?> <em><?php echo App()->request->getParam('group_name'); ?></em></h3>
     <?php else:?>
@@ -39,11 +38,11 @@
                             <!-- select group -->
                             <div class="form-group">
                                 <?php echo $form->label($model, 'group', array('label'=>gT('Group:'),'class'=>'control-label')); ?>
-                                    <select name="group_name" class="form-control">
+                                    <select name="gid" class="form-control">
                                         <option value=""><?php eT('(Any group)');?></option>
                                         <?php foreach($model->AllGroups as $group): ?>
-                                            <option value="<?php echo $group->group_name;?>" <?php if( $group->group_name == $model->group_name){echo 'selected';} ?>>
-                                                <?php echo $group->group_name;?>
+                                            <option value="<?php echo $group->gid;?>" <?php if( $group->gid == $model->gid){echo 'selected';} ?>>
+                                                <?php echo flattenText($group->group_name);?>
                                             </option>
                                         <?php endforeach?>
                                     </select>
@@ -74,9 +73,9 @@
                                 'value'=>'$data->qid',
                             ),
                             array(
-                                'header' => gT('Question order'),
+                                'header' => gT("Group / Question order"),
                                 'name' => 'question_order',
-                                'value'=>'$data->question_order',
+                                'value'=>'$data->groups->group_order ." / ". $data->question_order',
                             ),
                             array(
                                 'header' => gT('Code'),
@@ -97,16 +96,19 @@
                                 'value'=>'$data->typedesc',
                                 'htmlOptions' => array('class' => 'col-md-1'),
                             ),
+
                             array(
                                 'header' => gT('Group'),
                                 'name' => 'group',
                                 'value'=>'$data->groups->group_name',
                             ),
+
                             array(
                                 'header' => gT('Mandatory'),
                                 'type' => 'raw',
                                 'name' => 'mandatory',
                                 'value'=> '$data->mandatoryIcon',
+                                 'htmlOptions' => array('class' => 'text-center'),
                             ),
 
                             array(
@@ -114,6 +116,7 @@
                                 'type' => 'raw',
                                 'name' => 'other',
                                 'value'=> '$data->otherIcon',
+                                 'htmlOptions' => array('class' => 'text-center'),
                             ),
 
 
@@ -130,14 +133,13 @@
 
                     <?php
                     $massiveAction = App()->getController()->renderPartial('/admin/survey/Question/massive_actions/_selector', array('model'=>$model, 'oSurvey'=>$oSurvey), true, false);
-                    $this->widget('bootstrap.widgets.TbGridView', array(
+                    $this->widget('ext.LimeGridView.LimeGridView', array(
                         'dataProvider' => $model->search(),
-
                         // Number of row per page selection
                         'id' => 'question-grid',
                         'type'=>'striped',
                         'emptyText'=>gT('No questions found.'),
-                        'template'      => "{items}\n<div id='ListPager'><div class=\"col-sm-4\" id=\"massive-action-container\">$massiveAction</div><div class=\"col-sm-4 pager-container \">{pager}</div><div class=\"col-sm-4 summary-container\">{summary}</div></div>",
+                        'template'      => "{items}\n<div id='ListPager'><div class=\"col-sm-4\" id=\"massive-action-container\">$massiveAction</div><div class=\"col-sm-4 pager-container ls-ba \">{pager}</div><div class=\"col-sm-4 summary-container\">{summary}</div></div>",
                         'summaryText'=>gT('Displaying {start}-{end} of {count} result(s).') .' '.sprintf(gT('%s rows per page'),
                             CHtml::dropDownList(
                                 'pageSize',
@@ -145,7 +147,8 @@
                                 Yii::app()->params['pageSizeOptions'],
                                 array('class'=>'changePageSize form-control', 'style'=>'display: inline; width: auto'))),
                                 'columns' => $columns,
-                                'ajaxUpdate' => true,
+                                'ajaxUpdate' => 'question-grid',
+                                'afterAjaxUpdate' => "bindPageSizeChange"
                             ));
                             ?>
                         </div>
@@ -153,16 +156,6 @@
         </div>
     </div>
 </div>
-
-
-<!-- To update rows per page via ajax -->
-<script type="text/javascript">
-jQuery(function($) {
-jQuery(document).on("change", '#pageSize', function(){
-    $.fn.yiiGridView.update('question-grid',{ data:{ pageSize: $(this).val() }});
-    });
-});
-</script>
 
 
 
@@ -183,4 +176,15 @@ jQuery(document).on("change", '#pageSize', function(){
   </div>
 </div>
 
-<?php // $this->renderPartial('/admin/survey/Question/massive_actions/_set_question_group', array('model'=>$model, 'oSurvey'=>$oSurvey)); ?>
+
+<!-- To update rows per page via ajax -->
+<?php App()->getClientScript()->registerScript("ListQuestions-pagination", "
+        function bindPageSizeChange(){
+            $('#pageSize').on('change', function(){
+                $('#question-grid').yiiGridView('update',{ data:{ pageSize: $(this).val() }});
+            });
+            $(document).trigger('actions-updated');            
+        };
+    ", LSYii_ClientScript::POS_BEGIN); ?>
+    
+<?php App()->getClientScript()->registerScript("ListQuestions-run-pagination", "bindPageSizeChange();", LSYii_ClientScript::POS_POSTSCRIPT); ?>

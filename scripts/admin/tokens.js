@@ -1,5 +1,5 @@
 /**
- * jQuery Plugin to manage the date in token modal edition.
+ * jQuery Plugin to manage the date in token modal edit.
  * Some fields, like "Completed", can have string value (eg: 'N') or a date value.
  * They are displayed via a switch hidding or showing a date picker.
  */
@@ -15,7 +15,7 @@ $.fn.YesNoDate = function(options)
         // The view is called without processing output (no javascript)
         // So we must apply js to widget elements
         $elSwitch.bootstrapSwitch();                                            // Generate the switch
-        $elDate.datetimepicker({locale: that.data('locale')})                   // Generate the date time picker
+        $elDate.datetimepicker({locale: that.data('locale')});                  // Generate the date time picker
 
         // When user switch
         $(document).on( 'switchChange.bootstrapSwitch', '#'+$elSwitch.attr('id'), function(event, state)
@@ -35,7 +35,7 @@ $.fn.YesNoDate = function(options)
 
         // When user change date
         $(document).on('dp.change', '#'+$elDate.attr('id')+'_datetimepicker', function(e){
-            $elHiddenInput.attr('value', e.date.format('YYYY-MM-DD HH:MM'));
+            $elHiddenInput.attr('value', e.date.format('YYYY-MM-DD HH:mm'));
         })
     });
 }
@@ -44,7 +44,6 @@ $.fn.YesNo = function(options)
 {
     var that              = $(this);                                            // calling element
     var $elHiddenInput   = that.find('.YesNoDateHidden').first();           // input form, containing the value to submit to the database
-
 
     $(document).ready(function(){
         var $elSwitch        = that.find('.YesNoSwitch').first();               // switch element (generated with YiiWheels widgets)
@@ -107,44 +106,45 @@ $.fn.textWidth = function(text, font) {
     return $.fn.textWidth.fakeEl.width();
 };
 
-
+/**
+ * Used when user clicks "Save" in token edit modal
+ */
 function submitEditToken(){
-    $form       = $('#edittoken');
-    $datas      = $form.serialize();
-    $actionUrl  = $form.attr('action');
-    $gridid     = $('.listActions').data('grid-id');
-    $modal      = $('#editTokenModal');
+    var $form       = $('#edittoken');
+    var $datas      = $form.serialize();
+    var $actionUrl  = $form.attr('action');
+    var $modal      = $('#editTokenModal');
 
-    $ajaxLoader = $('#ajaxContainerLoading2');
-    $('#modal-content').empty();
-    $ajaxLoader.show();                                         // Show the ajax loader
     // Ajax request
-    $.ajax({
+    LS.ajax({
         url  : $actionUrl,
         type : 'POST',
         data : $datas,
 
-        // html contains the buttons
-        success : function(html, statut){
-            $ajaxLoader.hide();
-            //Using Try/Catch here to catch errors if there is no grid
-            
-            try{
+        success : function(result, stat) {
+            if (result.success) {
+                $modal.modal('hide');
+            }
+            else {
+            }
+
+            // Using Try/Catch here to catch errors if there is no grid
+            try {
                 $.fn.yiiGridView.update('token-grid', {
                     complete: function(s){
                         $modal.modal('hide');
                     } // Update the surveys list
-                });                   
-            } catch(e){
-                if(e){console.log(e); $modal.modal('hide');}
-            }finally{
-                $ajaxLoader.hide();
+                });
+            }
+            catch (e){
+                if (e) {
+                    console.log(e);
+                    $modal.modal('hide');
+                }
             }
         },
         error :  function(html, statut){
-            $ajaxLoader.hide();
             $('#modal-content').empty().append(html);
-            console.log(html);
         }
     });
 }
@@ -175,11 +175,24 @@ $(document).ready(function(){
         });
     }
 
-    $('.scrolling-wrapper').scroll(function(){
-        $('#tokenListPager').css({
-            'left': $(this).scrollLeft() ,
+    var initialScrollValue = $('.scrolling-wrapper').scrollLeft();
+    var useRtl = $('input[name="rtl"]').val() === '1';
+
+    if (useRtl) {
+        $('.scrolling-wrapper').scroll(function(){
+            var scrollAmount = Math.abs($('.scrolling-wrapper').scrollLeft() - initialScrollValue);
+            $('#tokenListPager').css({
+                'right': scrollAmount
+            });
         });
-    });
+    }
+    else {
+        $('.scrolling-wrapper').scroll(function(){
+            $('#tokenListPager').css({
+                'left': $(this).scrollLeft() ,
+            });
+        });
+    }
 
     /**
      * Token delete Token
@@ -188,10 +201,10 @@ $(document).ready(function(){
         var $that       = $(this),
             actionUrl  = $that.data('url'),
             $modal      = $('#confirmation-modal');
-        
+
         $modal.data('ajax-url', actionUrl);
         $modal.data('href', "#");
-        $modal.modal('show');   
+        $modal.modal('show');
         $modal.find('.modal-footer-yes-no').find('a.btn-ok').on('click', function(click){
             $.ajax({
                 url: actionUrl,
@@ -202,7 +215,7 @@ $(document).ready(function(){
                             complete: function(s){
                                 $modal.modal('hide');
                             } // Update the surveys list
-                        });                   
+                        });
                     } catch(e){
                         if(e){console.log(e); $modal.modal('hide');}
                     }
@@ -211,7 +224,7 @@ $(document).ready(function(){
         })
     });
     /**
-     * Token edition
+     * Token edit
      */
     $(document).on( 'click', '.edit-token', function(){
         var $that       = $(this),
@@ -290,7 +303,7 @@ $(document).ready(function(){
     });
 
 
-    $(document).on('submit','#edittoken',function(){
+    $(document).on('submit.edittoken','#edittoken',function(event){
         if($('#editTokenModal').length > 0 ){
             event.preventDefault();
             submitEditToken();
@@ -307,13 +320,15 @@ $(document).ready(function(){
 
     $('#startbounceprocessing').click(function(){
 
-        $that               = $(this);
-        $url                = $that.data('url');
-        $modal              = $('#tokenBounceModal');
-        $ajaxLoader         = $('#ajaxContainerLoading');
-        $modalBodyText      = $modal.find('.modal-body-text');
+        var $that               = $(this);
+        var $url                = $that.data('url');
+        var $modal              = $('#tokenBounceModal');
+        var $ajaxLoader         = $('#ajaxContainerLoading');
+        var $modalBodyText      = $modal.find('.modal-body-text');
+        var $limebutton         = $modal.find('.modal-footer .limebutton');
 
         $modalBodyText.empty();
+        $limebutton.empty().append('close');
         $ajaxLoader.show();
         $modal.modal();
 
@@ -363,40 +378,6 @@ function addcondition()
     conditionid++;
     $('#searchtable > tbody > tr').eq(conditionid).after(html2);
     //idexternal++;
-}
-
-
-function addSelectedParticipantsToCPDB()
-{
-    var dialog_buttons={};
-    var token = [];
-
-    var token = jQuery('#displaytokens').jqGrid('getGridParam','selarrrow');
-
-    if(token.length==0)
-    {        /* build an array containing the various button functions */
-        /* Needed because it's the only way to label a button with a variable */
-
-        dialog_buttons[okBtn]=function(){
-            $( this ).dialog( "close" );
-        };
-        /* End of building array for button functions */
-        $('#norowselected').dialog({
-            modal: true,
-            buttons: dialog_buttons
-        });
-    }
-    else
-    {
-        $("#addcpdb").load(postUrl, {
-            participantid:token},function(){
-                $(location).attr('href',attMapUrl+'/'+survey_id);
-        });
-    }
-
-    /*$(":checked").each(function() {
-    token.push($(this).attr('name'));
-    });*/
 }
 
 
@@ -458,47 +439,31 @@ function centerInfoDialog() {
     infoDialog.css({ 'left': Math.round((dialogparent.width() - infoDialog.width()) / 2)+'px' });
 }
 
-function updatePageAfterGrid(){
-    var oGrid=$("#displaytokens");
-    var iLastPage=parseInt(oGrid.jqGrid('getGridParam', 'lastpage'));
-    var iPage=parseInt(oGrid.jqGrid('getGridParam', 'page'));
-    if(iPage>1)
-    {
-        iPrevPage=iPage-1;
-        $(".databegin").click(function(){
-            oGrid.setGridParam({page:1}).trigger("reloadGrid");
-        });
-        $(".gridcontrol.databegin").removeClass("disabled");
-        $(".databack").click(function(){
-            oGrid.setGridParam({page:iPrevPage}).trigger("reloadGrid");
-        });
-        $(".gridcontrol.databack").removeClass("disabled");
-    }
-    else
-    {
-        $(".databegin").click(function(){});
-        $(".gridcontrol.databegin").addClass("disabled");
-        $(".databack").click(function(){});
-        $(".gridcontrol.databack").addClass("disabled");
-    }
-    if(iPage<iLastPage)
-    {
-        iNextPage=iPage+1;
-        $(".dataend").click(function(){
-            oGrid.setGridParam({page:iLastPage}).trigger("reloadGrid");
-        });
-        $(".gridcontrol.dataend").removeClass("disabled");
-        $(".dataforward").click(function(){
-            oGrid.setGridParam({page:iNextPage}).trigger("reloadGrid");
-        });
-        $(".gridcontrol.dataforward").removeClass("disabled");
-    }
-    else
-    {
-        $(".dataend").click(function(){});
-        $(".gridcontrol.dataend").addClass("disabled");
-        $(".dataforward").click(function(){});
-        $(".gridcontrol.dataforward").addClass("disabled");
-    }
+
+/**
+ * When date-picker is used in token gridview
+ * @return
+ */
+function reinstallParticipantsFilterDatePicker() {
+
+    // Since grid view is updated with Ajax, we need to fetch date format each update
+    var dateFormatDetails = JSON.parse($('input[name="dateFormatDetails"]').val());
+
+    $('#TokenDynamic_validfrom').datetimepicker({
+        format: dateFormatDetails.jsdate + ' HH:mm'
+    });
+    $('#TokenDynamic_validuntil').datetimepicker({
+        format: dateFormatDetails.jsdate + ' HH:mm'
+    });
+
+    $('#TokenDynamic_validfrom').on('focusout', function() {
+        var data = $('#token-grid .filters input, #token-grid .filters select').serialize();
+        $.fn.yiiGridView.update('token-grid', {data: data});
+    });
+
+    $('#TokenDynamic_validuntil').on('focusout', function() {
+        var data = $('#token-grid .filters input, #token-grid .filters select').serialize();
+        $.fn.yiiGridView.update('token-grid', {data: data});
+    });
 
 }

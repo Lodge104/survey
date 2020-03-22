@@ -70,8 +70,8 @@ switch ($serverAnswer->error)
 <div>
 
 <?php if( $buttons == 1 ): ?>
-        <a class="btn btn-default" href="https://www.limesurvey.org/en/" role="button" aria-disabled="false" target="_blank">
-            <?php eT("Renew this key"); ?>
+        <a class="btn btn-default" href="https://www.limesurvey.org/editions-and-prices/limesurvey-ce/editions-and-prices-community" role="button" aria-disabled="false" target="_blank">
+            <?php eT("Buy a new key"); ?>
         </a>
 
         <a class="btn btn-default" href="<?php echo $urlNew;?>" role="button" aria-disabled="false">

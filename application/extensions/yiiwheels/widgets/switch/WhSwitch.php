@@ -96,6 +96,7 @@ class WhSwitch extends CInputWidget
         $this->htmlOptions['data-on-color'] = $this->onColor;
         $this->htmlOptions['data-off-color'] = $this->offColor;
         $this->htmlOptions['data-size'] = $this->size;
+        $this->htmlOptions['data-is-bootstrap-switch'] = true;
     }
 
     /**
@@ -130,37 +131,11 @@ class WhSwitch extends CInputWidget
 
     /**
      * Registers required client script for bootstrap typeahead. It is not used through bootstrap->registerPlugin
+     * NOT NEEDED ANYMORE BECAUSE THE BOOTSTRAP SWITCH IS IN OFFICIAL THIRD PARTY
      * in order to attach events if any
      */
     public function registerClientScript()
     {
-        /* publish assets dir */
-        $path = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'assets';
-        $assetsUrl = $this->getAssetsUrl($path);
-        $id = TbArray::getValue('id', $this->htmlOptions);
-
-        /* @var $cs CClientScript */
-        $cs = Yii::app()->getClientScript();
-
-        $min = $this->debugMode
-            ? '.min'
-            : '';
-
-        if (getLanguageRTL($_SESSION['adminlang']))
-        {
-            $cs->registerCssFile($assetsUrl . '/css/bootstrap-switch-rtl.css');
-        }
-        else
-        {
-            $cs->registerCssFile($assetsUrl . '/css/bootstrap-switch.css');
-        }
-
-
-        $cs->registerScriptFile($assetsUrl . '/js/bootstrap-switch' . $min . '.js', CClientScript::POS_END);
-        $selector = '#' . $id;
-
-        $this->getApi()->registerPlugin('bootstrapSwitch', $selector);
-        $this->getApi()->registerEvents($selector, $this->events);
 
     }
 }

@@ -1,0 +1,50 @@
+<!--
+
+	BootstrapForLimeSurvey
+	A Responsive LimeSurvey Template Based On Bootstrap
+	(c) 2013-2016 mofog (http://mofog.github.io/BootstrapForLimeSurvey)
+
+-->
+
+<title>{SURVEYNAME} {GROUPNAME}</title>
+<meta name="generator" content="LimeSurvey http://www.limesurvey.org" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0 user-scalable=no">
+
+
+{TEMPLATECSS}
+<link rel="stylesheet" href="{TEMPLATEURL}bootstrap/css/jquery-ui-bootstrap/jquery-ui.css">
+<link rel="stylesheet" href="{TEMPLATEURL}bootstrap/css/jquery-ui-bootstrap/jquery-ui.ie.css">
+<link rel="stylesheet" href="{TEMPLATEURL}bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="{TEMPLATEURL}bootstrap/css/bootstrap-theme.min.css">
+
+
+{TEMPLATEJS}
+<script src="{TEMPLATEURL}bootstrap/js/jquery.min.js"></script>
+<script>
+	var bfls = jQuery.noConflict(true);
+    BFLS_TEMPLATEURL = "{TEMPLATEURL}";
+</script>
+<script src="{TEMPLATEURL}bootstrap/js/bootstrap.min.js"></script>
+
+<link rel="shortcut icon" href="{TEMPLATEURL}images/favicon.ico" />
+{GOOGLE_ANALYTICS_JAVASCRIPT}
+</head>
+
+<body class="lang-{SURVEYLANGUAGE} {SURVEYFORMAT}">
+	<div class="container bflsJavaScriptInfo">
+		<div class="panel panel-default">
+		  <div class="panel-heading">
+		    <h3 class="panel-title">JavaScript</h3>
+		  </div>
+		  <div class="panel-body">
+				{CHECKJAVASCRIPT}
+		  </div>
+		</div>
+	</div>
+	<script>
+		bfls('.bflsJavaScriptInfo').hide();
+	</script>
+	
+	<div class="container bflsMainContent" style="display: none;">
+		<div class="row">
+			<div class="col-md-12 content-col">

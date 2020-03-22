@@ -1,0 +1,70 @@
+body {
+	padding-top: 70px;
+	padding-bottom: 20px;
+}
+
+.table>tbody>tr>th {
+	vertical-align: middle !important;
+}
+
+.logo {
+	padding: 30px;
+}
+
+li.withslider span.input {
+	display: none;
+}
+
+.slider_callout {
+	font-weight: bold;
+	position: absolute;
+	top: -20px;
+}
+
+.slider_showmin {
+	float: left;
+	padding-top: 10px;
+}
+
+.slider_showmax {
+	float: right;
+	padding-top: 10px;
+}
+
+.multinum-slider {
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+div.slider-labels {
+	margin-bottom: 15px;
+}
+
+.em_value_range.good {
+	color: rgb(53, 102, 53);
+}
+
+.em_value_range.error, .warningjs {
+	color: rgb(185, 74, 72);
+}
+
+.dragDropTable ul.dragDropChoiceList li, .dragDropTable ol.dragDropRankList li {
+	padding-top: 10px;
+	padding-bottom: 22px;
+}
+
+button.ui-datepicker-trigger {
+	display: none;
+}
+
+.btn-default {
+	text-shadow: none !important;
+}
+
+div#index li {
+	cursor: pointer;
+}
+
+label input {
+	margin-top: 0px !important;
+}

@@ -28,7 +28,7 @@
                     </tr>
                 <?php endif; ?>
 
-            <?php if (tableExists('{{tokens_'.$thissurvey['sid'].'}}')) //Give entry field for token id
+            <?php if ($oSurvey->hasTokensTable) //Give entry field for token id
             { ?>
                 <tr>
                 <td valign='top' width='1%'></td>
@@ -44,15 +44,17 @@
                 <script type="text/javascript"><!--
                 function activateSubmit(me)
                 {
-                    if (me.value != '')
+                    if (me && me.value != '')
                     {
-                        $('#submitdata').button("option", "disabled", false);
-                        $('#save-button').prop('disabled', false);
+                        $('#submitdata').removeAttr('disabled');
+                        $('#save-button').removeAttr('disabled');
+                        $('#save-and-close-button').removeAttr('disabled');
                     }
                     else
                     {
-                        $('#submitdata').button("option", "disabled", true);
-                        $('#save-button').prop('disabled', true);
+                        $('#submitdata').attr('disabled', 'disabled');
+                        $('#save-button').attr('disabled', 'disabled');
+                        $('#save-and-close-button').attr('disabled', 'disabled');
                     }
                 }
                 //--></script>

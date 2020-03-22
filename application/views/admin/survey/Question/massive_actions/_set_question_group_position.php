@@ -7,8 +7,7 @@
 ?>
 
 <?php eT("Set question group for those question"); ?>
-<form class="custom-modal-datas">
-
+<form class="custom-modal-datas  form-horizontal">
     <!-- select group -->
     <div class="form-group">
         <label class="control-label col-sm-4" for="group_gid"><?php et('Group:'); ?></label>
@@ -16,16 +15,13 @@
             <select name="group_gid" class="form-control custom-data" id="gid">
                 <?php foreach($model->AllGroups as $group): ?>
                     <option value="<?php echo $group->gid;?>">
-                        <?php echo $group->group_name;?>
+                        <?php echo flattenText($group->group_name);?>
                     </option>
                 <?php endforeach?>
             </select>
         </div>
 
     </div>
-
-    <br/><br/>
-
     <!-- Position widget -->
     <?php $this->widget('ext.admin.survey.question.PositionWidget.PositionWidget', array(
                 'display' => 'ajax_form_group',

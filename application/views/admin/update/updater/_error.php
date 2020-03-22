@@ -42,13 +42,13 @@ switch ($errorObject->error)
 
     case 'out_of_updates':
         $title = gT("Your update key has exceeded the maximum number updates!");
-        $message = gT("You should first renew this key before using it or try to enter a new one!");
+        $message = gT("Please buy a new one!");
         $buttons = 1;
         break;
 
     case 'expired':
         $title = gT("Your update key has expired!");
-        $message = gT("You should first renew this key before using it or try to enter a new one!");
+        $message = gT("Please buy a new one!");
         $buttons = 1;
         break;
 
@@ -120,6 +120,7 @@ switch ($errorObject->error)
     case 'cant_remove_deleted_files':
         $title = gT("Could not remove deleted files");
         $message =  gT("ComfortUpdate couldn't remove one or more files that were deleted with the update.");
+        $message .=  $errorObject->message;
         break;
 
     case 'cant_remove_deleted_directory':
@@ -145,20 +146,20 @@ switch ($errorObject->error)
 <div>
 
 <?php if( $buttons == 1 ): ?>
-        <a class="btn btn-default" href="https://www.limesurvey.org/en/" role="button" aria-disabled="false" target="_blank">
-            <?php eT("Renew this key"); ?>
+        <a class="btn btn-default" href="https://www.limesurvey.org/editions-and-prices/limesurvey-ce/editions-and-prices-community" role="button" aria-disabled="false" target="_blank">
+            <?php eT("Buy a new key"); ?>
         </a>
 
         <a class="btn btn-default" href="<?php echo $urlNew;?>" role="button" aria-disabled="false">
-			<?php eT("Enter a new key"); ?>
+            <?php eT("Enter a new key"); ?>
         </a>
 <?php endif; ?>
 <?php if( $buttons == 3 ): ?>
         <a class="btn btn-default" href="<?php echo $urlNew;?>" role="button" aria-disabled="false">
-			<?php eT("Enter a new key"); ?>
+            <?php eT("Enter a new key"); ?>
         </a>
 <?php endif;?>
 <a class="btn btn-default" href="<?php echo Yii::app()->createUrl("admin/update"); ?>" role="button" aria-disabled="false">
-	<?php eT("Cancel"); ?>
+    <?php eT("Cancel"); ?>
 </a>
 </div>

@@ -147,7 +147,7 @@ CREATE TABLE `prefix_participant_attribute` (
 --
 CREATE TABLE `prefix_participant_attribute_names_lang` (
   `attribute_id` int(11) NOT NULL,
-  `attribute_name` varchar(30) NOT NULL,
+  `attribute_name` varchar(255) NOT NULL,
   `lang` varchar(20) NOT NULL,
   PRIMARY KEY (`attribute_id`,`lang`)
  ) ENGINE=MYISAM CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -159,7 +159,7 @@ CREATE TABLE `prefix_participant_attribute_names_lang` (
 CREATE TABLE `prefix_participant_attribute_names` (
   `attribute_id` int(11) NOT NULL AUTO_INCREMENT,
   `attribute_type` varchar(4) NOT NULL,
-  `defaultname` varchar(50) NOT NULL,
+  `defaultname` varchar(255) NOT NULL,
   `visible` varchar(5) NOT NULL,
   PRIMARY KEY (`attribute_id`,`attribute_type`)
 ) ENGINE=MYISAM CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -368,7 +368,7 @@ CREATE TABLE `prefix_sessions`(
 --
 CREATE TABLE `prefix_settings_global` (
   `stg_name` varchar(50) NOT NULL default '',
-  `stg_value` varchar(255) NOT NULL default '',
+  `stg_value` text NOT NULL,
   PRIMARY KEY (`stg_name`)
 ) ENGINE=MYISAM CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -609,11 +609,13 @@ CREATE TABLE IF NOT EXISTS `prefix_notifications` (
     `display_class` VARCHAR(31) DEFAULT 'default' COMMENT 'Bootstrap class, like warning, info, success',
     `created` DATETIME NOT NULL,
     `first_read` DATETIME DEFAULT NULL,
+    `hash` VARCHAR(64) DEFAULT '',
     PRIMARY KEY (`id`),
-    INDEX(`entity`, `entity_id`, `status`)
+    INDEX(`entity`, `entity_id`, `status`),
+    INDEX(`hash`)
 ) ENGINE=MYISAM CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 --
 -- Version Info
 --
-INSERT INTO `prefix_settings_global` VALUES ('DBVersion', '259');
+INSERT INTO `prefix_settings_global` VALUES ('DBVersion', '263');

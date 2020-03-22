@@ -28,17 +28,15 @@ class NotificationController extends Survey_Common_Action
     public function getNotificationAsJSON($notId)
     {
         $this->checkPermission();
-
+        if ((string) (int) $notId !== (string) $notId) {
+            
+        }
         $not = Notification::model()->findByPk($notId);
-
-        if ($not)
-        {
-            echo json_encode(array('result' => $not->getAttributes()));
+        if (!$not) {
+            throw new CHttpException(404, sprintf(gT("Notification %s not found"), $notId));
         }
-        else
-        {
-            echo json_encode(array('error' => 'Found no notification with id ' . $notId));
-        }
+        header('Content-type: application/json');
+        echo json_encode(array('result' => $not->getAttributes()));
     }
 
     /**
@@ -51,17 +49,21 @@ class NotificationController extends Survey_Common_Action
     {
         $this->checkPermission();
 
-        try
-        {
-            $not = Notification::model()->findByPk($notId);
-            $result = $not->markAsRead();
-            echo json_encode(array('result' => $result));
+        if ((string) (int) $notId !== (string) $notId) {
+            throw new CHttpException(403, gT("Invalid notification id"));
         }
-        catch (Exception $ex)
-        {
-            echo json_encode(array('error' => $ex->getMessage()));
+        $not = Notification::model()->findByPk($notId);
+        if (!$not) {
+            throw new CHttpException(404, sprintf(gT("Notification %s not found"), $notId));
         }
-
+        // Check if user is allowed to mark this notification as read
+        if ($not->entity=='user' && $not->entity_id<>Yii::app()->user->id) {
+            throw new CHttpException(404, sprintf(gT("Invalid notification id"), $notId));
+        }
+        
+        $result = $not->markAsRead();
+        header('Content-type: application/json');
+        echo json_encode(array('result' => $result));
     }
 
     /**
@@ -73,7 +75,6 @@ class NotificationController extends Survey_Common_Action
     public function actionGetMenuWidget($surveyId = null, $showLoader = false)
     {
         $this->checkPermission();
-
         echo self::getMenuWidget($surveyId, $showLoader);
     }
 
@@ -85,13 +86,14 @@ class NotificationController extends Survey_Common_Action
     public function clearAllNotifications($surveyId = null)
     {
         Notification::model()->deleteAll(
-            'entity = \'user\' AND entity_id = ' . Yii::app()->user->id
+            'entity = :entity AND entity_id = :entity_id',
+            array(":entity"=>'user', ":entity_id"=>Yii::app()->user->id)
         );
 
-        if (is_int($surveyId))
-        {
+        if (is_int($surveyId)) {
             Notification::model()->deleteAll(
-                'entity = \'survey\' AND entity_id = ' . $surveyId
+                'entity = :entity AND entity_id = :entity_id',
+                array(":entity"=>'survey', ":entity_id"=>$surveyId)
             );
         }
     }
@@ -103,9 +105,8 @@ class NotificationController extends Survey_Common_Action
     protected function checkPermission()
     {
         // Abort if user is not logged in
-        if(Yii::app()->user->isGuest)
-        {
-            die('No permission');
+        if (Yii::app()->user->isGuest) {
+            throw new CHttpException(401);
         }
     }
 
@@ -115,15 +116,27 @@ class NotificationController extends Survey_Common_Action
      * @param int|null $surveyId
      * @param bool $showLoader If true, show spinning loader instead of messages (fetch them using ajax)
      * @return string HTML
+     * @throws CException
      */
-    public static function getMenuWidget($surveyId = null, $showLoader = false) {
+    public static function getMenuWidget($surveyId = null, $showLoader = false)
+    {
+        // Make sure database version is high enough.
+        // This is needed since admin bar is loaded during
+        // database update procedure.
+        if (Yii::app()->getConfig('DBVersion') < 259) {
+            return '';
+        }
+
         $data = array();
         $data['surveyId'] = $surveyId;
         $data['showLoader'] = $showLoader;
-        $data['clearAllNotificationsUrl'] = Yii::app()->createUrl('admin/notification', array(
+        $params = array(
             'sa' => 'clearAllNotifications',
-            'surveyId' => $surveyId
-        ));
+        );
+        if ($surveyId !== null) {
+            $params['surveyId'] = $surveyId;
+        }
+        $data['clearAllNotificationsUrl'] = Yii::app()->createUrl('admin/notification', $params);
         $data['updateUrl'] = Notification::getUpdateUrl($surveyId);
         $data['nrOfNewNotifications'] = Notification::countNewNotifications($surveyId);
         $data['nrOfNotifications'] = Notification::countNotifications($surveyId);
@@ -131,14 +144,12 @@ class NotificationController extends Survey_Common_Action
         $data['bellColor'] = $data['nrOfNewNotifications'] == 0 ? 'text-success' : 'text-warning';
 
         // If we have any important notification we might as well load everything
-        if ($data['nrOfImportantNotifications'] > 0)
-        {
+        if ($data['nrOfImportantNotifications'] > 0) {
             $data['showLoader'] = false;
         }
 
         // Only load all messages when we're not showing spinning loader
-        if (!$data['showLoader'])
-        {
+        if (!$data['showLoader']) {
             $data['notifications'] = Notification::getNotifications($surveyId);
         }
 

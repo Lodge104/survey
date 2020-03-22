@@ -321,8 +321,7 @@ class browser extends uploader {
 
         header("Pragma: public");
         header("Expires: 0");
-        header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-        header("Cache-Control: private", false);
+        header("Cache-Control: must-revalidate,private");
         header("Content-Type: application/octet-stream");
         header('Content-Disposition: attachment; filename="' . str_replace('"', "_", $_POST['file']) . '"');
         header("Content-Transfer-Encoding: binary");
@@ -710,7 +709,7 @@ class browser extends uploader {
         if ($message !== true) {
             if (isset($file['tmp_name']))
                 @unlink($file['tmp_name']);
-            return "{$file['name']}: $message";
+            return $this->htmlData($file['name']) . ": " . $message;
         }
 
         $filename = $this->normalizeFilename($file['name']);
@@ -901,13 +900,7 @@ class browser extends uploader {
 
         if (file_exists("tpl/tpl_$template.php")) {
             ob_start();
-            $eval = "unset(\$data);unset(\$template);unset(\$eval);";
-            $_ = $data;
-            foreach (array_keys($data) as $key)
-                if (preg_match('/^[a-z\d_]+$/i', $key))
-                    $eval .= "\$$key=\$_['$key'];";
-            $eval .= "unset(\$_);require \"tpl/tpl_$template.php\";";
-            eval($eval);
+            require "tpl/tpl_$template.php";
             return ob_get_clean();
         }
 

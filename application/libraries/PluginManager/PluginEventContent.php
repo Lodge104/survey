@@ -1,6 +1,7 @@
 <?php
-namespace ls\pluginmanager;
-class PluginEventContent {
+namespace LimeSurvey\PluginManager;
+class PluginEventContent
+{
     
     const APPEND = 'append';
     const PREPEND = 'prepend';
@@ -9,7 +10,13 @@ class PluginEventContent {
     protected $_cssClass = array('pluginblock'=>'pluginblock');
     protected $_cssId = '';
     
-    public function __construct($content = null, $cssClass = null, $id = null) {
+    /**
+     * @param string $content
+     * @param string $cssClass
+     * @param string $id
+     */
+    public function __construct($content = null, $cssClass = null, $id = null)
+    {
         $this->setContent($content);
         $this->setCssClass($cssClass);
         $this->setCssId($id);
@@ -41,7 +48,7 @@ class PluginEventContent {
         if (strtolower($placement) === self::APPEND) {
             $this->_content .= $content;
         } else {
-            $this->_content = $content . $this->_content;
+            $this->_content = $content.$this->_content;
         }
         
         return $this;
@@ -103,7 +110,7 @@ class PluginEventContent {
         if (!empty($cssClass)) {
             $this->_cssClass = array($cssClass => $cssClass);
         } else {
-            $cssClass = array();
+            $this->_cssClass = array();
         }
         
         return $this;        

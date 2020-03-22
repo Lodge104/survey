@@ -1,5 +1,7 @@
 <?php
-if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+if (!defined('BASEPATH')) {
+    exit('No direct script access allowed');
+}
 /*
 * LimeSurvey
 * Copyright (C) 2007-2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -17,37 +19,37 @@ if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
 /**
 * Update Database Controller
-*
-* @package        LimeSurvey
+* This controller must be accessible by unlogged user (in case of modifications of {{permissions}} blocking the login )
+* 
+* @package       LimeSurvey
 * @subpackage    Backend
 *
-* This controller must be accessible by unlogged user (in case of modifications of {{permissions}} blocking the login )
-*
 */
+
+
 class databaseupdate extends Survey_Common_Action
 {
     /**
-    * Update database
-    */
+     * Update database
+     */
     public function db($continue = null)
     {
         Yii::app()->loadHelper("update/update");
-        if(isset($continue) && $continue=="yes")
-        {
+        $aData = $aViewUrls = [];
+        if (isset($continue) && $continue == "yes") {
             $aViewUrls['output'] = CheckForDBUpgrades($continue);
             $aData['display']['header'] = false;
-        }
-        else
-        {
+        } else {
             $aData['display']['header'] = true;
             $aViewUrls['output'] = CheckForDBUpgrades();
         }
 
+        
         $aData['updatedbaction'] = true;
 
-        // TODO: Add admin theme, WITHOUT call _renderWrappedTemplate. We don't want to
-        // do any database queries when updating the database.
-        $aData = array_merge($aData, $aViewUrls);
-        Yii::app()->getController()->renderPartial('databaseupdate/db', $aData);
+        $this->_renderWrappedTemplate('update', $aViewUrls, $aData, 'layout_minimal.php');
+
+        //$aData = array_merge($aData, $aViewUrls);
+        //Yii::app()->getController()->renderPartial('databaseupdate/db', $aData);
     }
 }

@@ -1,4 +1,6 @@
-<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+<?php if (!defined('BASEPATH')) {
+    exit('No direct script access allowed');
+}
 /*
  * LimeSurvey
  * Copyright (C) 2007-2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -23,7 +25,7 @@
 class quotas extends Survey_Common_Action
 {
 
-    function __construct($controller, $id)
+    public function __construct($controller, $id)
     {
         parent::__construct($controller, $id);
 
@@ -32,13 +34,11 @@ class quotas extends Survey_Common_Action
         // Sanitize/get globals/variables
         $_POST['quotamax'] = sanitize_int(Yii::app()->request->getPost('quotamax'));
 
-        if (empty($_POST['autoload_url']))
-        {
+        if (empty($_POST['autoload_url'])) {
             $_POST['autoload_url'] = 0;
         }
 
-        if (empty($_POST['quota_limit']) || !is_numeric(Yii::app()->request->getPost('quota_limit')) || Yii::app()->request->getPost('quota_limit') < 0)
-        {
+        if (empty($_POST['quota_limit']) || !is_numeric(Yii::app()->request->getPost('quota_limit')) || Yii::app()->request->getPost('quota_limit') < 0) {
             $_POST['quota_limit'] = 0;
         }
     }
@@ -52,133 +52,188 @@ class quotas extends Survey_Common_Action
         array_unshift($aData['aLangs'], $aData['sBaseLang']);
 
         $aData['action'] = $action = Yii::app()->request->getParam('action');
-        if (!isset($action))
-            $aData['action'] = 'quotas';
+        if (!isset($action)) {
+                    $aData['action'] = 'quotas';
+        }
 
         return $aData;
     }
 
+    /**
+     * @param string $sPermission
+     */
     private function _checkPermissions($iSurveyId, $sPermission)
     {
         if (!empty($sPermission) && !(Permission::model()->hasSurveyPermission($iSurveyId, 'quotas', $sPermission))) {
-            Yii::app()->session['flashmessage'] =gT('Access denied!');
+            Yii::app()->session['flashmessage'] = gT('Access denied!');
             $this->_redirectToIndex($iSurveyId);
         }
     }
 
-    function _redirectToIndex($iSurveyId)
+    private function _redirectToIndex($iSurveyId)
     {
-        if(Permission::model()->hasSurveyPermission($iSurveyId, 'quotas','read'))
-        {
+        if (Permission::model()->hasSurveyPermission($iSurveyId, 'quotas', 'read')) {
             $this->getController()->redirect($this->getController()->createUrl("/admin/quotas/sa/index/surveyid/$iSurveyId"));
-        }
-        else
-        {
-            Yii::app()->session['flashmessage'] =gT('Access denied!');
+        } else {
+            Yii::app()->session['flashmessage'] = gT('Access denied!');
             $this->getController()->redirect($this->getController()->createUrl("admin/survey/sa/view/surveyid/$iSurveyId"));
         }
     }
 
-    function index($iSurveyId, $quickreport = false)
+    public function massiveAction()
     {
+
+        $action = Yii::app()->request->getQuery('action');
+        $allowedActions = array('activate', 'deactivate', 'delete', 'changeLanguageSettings');
+        if (isset($_POST) && in_array($action, $allowedActions)) {
+            $sItems = Yii::app()->request->getPost('sItems');
+            $aQuotaIds = json_decode($sItems);
+            $errors = array();
+            foreach ($aQuotaIds as $iQuotaId) {
+                /** @var Quota $oQuota */
+                $oQuota = Quota::model()->findByPk($iQuotaId);
+                if (in_array($action, array('activate', 'deactivate'))) {
+                    $oQuota->active = ($action == 'activate' ? 1 : 0);
+                    $oQuota->save();
+                } elseif ($action == 'delete') {
+                    $oQuota->delete();
+                } elseif ($action == 'changeLanguageSettings' && !empty($_POST['QuotaLanguageSetting'])) {
+                    $oQuotaLanguageSettings = $oQuota->languagesettings;
+                    foreach ($_POST['QuotaLanguageSetting'] as $language => $aQuotaLanguageSettingAttributes) {
+                        $oQuotaLanguageSetting = $oQuota->languagesettings[$language];
+                        $oQuotaLanguageSetting->attributes = $aQuotaLanguageSettingAttributes;
+                        if (!$oQuotaLanguageSetting->save()) {
+                            // save errors
+                            $oQuotaLanguageSettings[$language] = $oQuotaLanguageSetting;
+                            $errors[] = $oQuotaLanguageSetting->errors;
+                        }
+                    }
+                    // render form again to display errorSummary
+                    if (!empty($errors)) {
+                        $this->getController()->renderPartial('/admin/quotas/viewquotas_massive_langsettings_form',
+                            array(
+                                'oQuota'=>$oQuota,
+                                'aQuotaLanguageSettings'=>$oQuotaLanguageSettings,
+                            ));
+                        return;
+                    }
+                }
+            }
+            if (empty($errors)) {
+                eT("OK!");
+            }
+        }
+    }
+
+    public function index($iSurveyId, $quickreport = false)
+    {
+
         $iSurveyId = sanitize_int($iSurveyId);
         $this->_checkPermissions($iSurveyId, 'read');
         $aData = $this->_getData($iSurveyId);
         $aViewUrls = array();
 
-        if ($quickreport == false)
-        {
+        if ($quickreport == false) {
             $aViewUrls[] = 'viewquotas_view';
         }
 
-        $aData['surveyid'] = $iSurveyID = $surveyid =  sanitize_int($iSurveyId);
+        $aData['surveyid'] = $iSurveyID = $surveyid = sanitize_int($iSurveyId);
 
         $aData['sidemenu']['state'] = false;
-        $surveyinfo = Survey::model()->findByPk($iSurveyID)->surveyinfo;
-        $aData['title_bar']['title'] = $surveyinfo['surveyls_title']."(".gT("ID").":".$iSurveyID.")";
+
+        /** @var Survey $oSurvey */
+        $oSurvey = Survey::model()->findByPk($iSurveyID);
+        $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title." (".gT("ID").":".$iSurveyID.")";
+        $aData['subaction'] = gT("Survey quotas");
 
         //$aData['surveybar']['active_survey_properties'] = 'quotas';
-        $aData['surveybar']['buttons']['view']= TRUE;
+        $aData['surveybar']['buttons']['view'] = true;
         $aData['surveybar']['active_survey_properties']['img'] = 'quota';
         $aData['surveybar']['active_survey_properties']['txt'] = gT("Quotas");
-        $aData['surveybar']['closebutton']['url'] = 'admin/survey/sa/view/surveyid/'.$iSurveyID;  // Close button
+        $aData['surveybar']['closebutton']['url'] = 'admin/survey/sa/view/surveyid/'.$iSurveyID; // Close button
         $aData['surveybar']['closebutton']['forbidden'][] = 'quotas';
 
         $totalquotas = 0;
         $totalcompleted = 0;
         $csvoutput = array();
 
-        $criteria = new CDbCriteria;
-        $criteria->select = '*';
-        $criteria->join = 'LEFT JOIN {{quota_languagesettings}} as qls ON (t.id = qls.quotals_quota_id)';
-        $criteria->condition = 'sid=:survey AND quotals_language=:lang';
-        $criteria->params = array(':survey' => $iSurveyId, ':lang' => $aData['sBaseLang']);
-        $criteria->order = 'name';
-        $aResult = Quota::model()->findAll($criteria);
+        // Set number of page
+        if (Yii::app()->getRequest()->getQuery('pageSize')) {
+            Yii::app()->user->setState('pageSize', (int) Yii::app()->getRequest()->getQuery('pageSize'));
+        }
+        $aData['iGridPageSize'] = Yii::app()->user->getState('pageSize', Yii::app()->params['defaultPageSize']);
+        $aData['oDataProvider'] = new CArrayDataProvider($oSurvey->quotas, array(
+            'pagination' => array(
+                'pageSize' => $aData['iGridPageSize'],
+                'pageVar' => 'page'
+            ),
+        ));
+
 
         //if there are quotas let's proceed
         $aViewUrls['output'] = '';
-        if (count($aResult) > 0)
-        {
+        if (!empty($oSurvey->quotas)) {
             $aData['output'] = '';
+            $aQuotaItems = array();
 
             //loop through all quotas
-            foreach ($aResult as $aQuotaListing)
-            {
-                $totalquotas += $aQuotaListing['qlimit'];
-                $completed = getQuotaCompletedCount($iSurveyId, $aQuotaListing['id']);
-                $highlight = ($completed >= $aQuotaListing['qlimit']) ? '' : "style='color: orange'"; //Incomplete quotas displayed in red
+            foreach ($oSurvey->quotas as $oQuota) {
+                $totalquotas += $oQuota->qlimit;
+                $completed = 0;
+                $completed = $oQuota->completeCount;
                 $totalcompleted = $totalcompleted + $completed;
-                $csvoutput[] = $aQuotaListing['name'] . "," . $aQuotaListing['qlimit'] . "," . $completed . "," . ($aQuotaListing['qlimit'] - $completed) . "\r\n";
+                $csvoutput[] = $oQuota->name.",".$oQuota->qlimit.",".$completed.",".($oQuota->qlimit - $completed)."\r\n";
 
-                if ($quickreport != false)
-                {
+                if ($quickreport != false) {
                     continue;
                 }
 
-                $aData['quotalisting'] = $aQuotaListing;
-                $aData['highlight'] = $highlight;
-                $aData['completed'] = $completed;
-                $aData['totalquotas'] = $totalquotas;
-                $aData['totalcompleted'] = $totalcompleted;
-
                 // Edit URL
-                $aData['editUrl'] = App()->createUrl("admin/quotas/sa/editquota/surveyid/" . $iSurveyId, array(
+                $aData['aEditUrls'][$oQuota->primaryKey] = App()->createUrl("admin/quotas/sa/editquota/surveyid/".$iSurveyId, array(
                     'sid' => $iSurveyId,
                     'action' => 'quotas',
-                    'quota_id' => $aQuotaListing['id'],
+                    'quota_id' => $oQuota->primaryKey,
                     'subaction' => 'quota_editquota'
 
                 ));
 
                 // Delete URL
-                $aData['deleteUrl'] = App()->createUrl("admin/quotas/sa/delquota/surveyid/" . $iSurveyId, array(
+                $aData['aDeleteUrls'][$oQuota->primaryKey] = App()->createUrl("admin/quotas/sa/delquota/surveyid/".$iSurveyId, array(
                     'sid' => $iSurveyId,
                     'action' => 'quotas',
-                    'quota_id' => $aQuotaListing['id'],
+                    'quota_id' => $oQuota->primaryKey,
                     'subaction' => 'quota_delquota'
                 ));
 
-                $aViewUrls['output'] .= $this->getController()->renderPartial("/admin/quotas/viewquotasrow_view", $aData, true);
-                $aData['output'] .= $this->getController()->renderPartial("/admin/quotas/viewquotasrow_view", $aData, true);
-
-                //check how many sub-elements exist for a certain quota
-                $aResults2 = QuotaMember::model()->findAllByAttributes(array('quota_id' => $aQuotaListing['id']));
-
                 //loop through all sub-parts
-                foreach ($aResults2 as $aQuotaQuestions)
-                {
-                    $aQuestionAnswers = self::getQuotaAnswers($aQuotaQuestions['qid'], $iSurveyId, $aQuotaListing['id']);
-                    $aData['question_answers'] = $aQuestionAnswers;
-                    $aData['quota_questions'] = $aQuotaQuestions;
-                    $aViewUrls['output'] .= $this->getController()->renderPartial('/admin/quotas/viewquotasrowsub_view', $aData, true);
-                    //$aData['output'] .= $this->getController()->renderPartial('/admin/quotas/viewquotasrowsub_view', $aData, true);
+                foreach ($oQuota->quotaMembers as $oQuotaMember) {
+                    $aQuestionAnswers = self::getQuotaAnswers($oQuotaMember['qid'], $iSurveyId, $oQuota['id']);
+                    if ($oQuotaMember->question->type == '*') {
+                        $answerText = $oQuotaMember->code;
+                    } else {
+                        $answerText = isset($aQuestionAnswers[$oQuotaMember['code']]) ? flattenText($aQuestionAnswers[$oQuotaMember['code']]['Display']) : null;
+                    }
+
+                    $aQuotaItems[$oQuota['id']][] = array(
+                        'oQuestion' => Question::model()->findByPk(array('qid' => $oQuotaMember['qid'], 'language' => $oSurvey->language)),
+                        'answer_title' => $answerText,
+                        'oQuotaMember'=>$oQuotaMember,
+                        'valid'=>isset($answerText),
+                    );
                 }
 
             }
-        }
-        else
-        {
+            $aData['totalquotas'] = $totalquotas;
+            $aData['totalcompleted'] = $totalcompleted;
+            $aData['aQuotaItems'] = $aQuotaItems;
+
+            // take the last quota as base for bulk edits
+            $aData['oQuota'] = $oQuota;
+            $aData['aQuotaLanguageSettings'] = array();
+            foreach ($oQuota->languagesettings as $languagesetting) {
+                $aData['aQuotaLanguageSettings'][$languagesetting->quotals_language] = $languagesetting;
+            }
+        } else {
             // No quotas have been set for this survey
             //$aViewUrls[] = 'viewquotasempty_view';
             $aData['output'] = $this->getController()->renderPartial('/admin/quotas/viewquotasempty_view', $aData, true);
@@ -187,158 +242,38 @@ class quotas extends Survey_Common_Action
         $aData['totalquotas'] = $totalquotas;
         $aData['totalcompleted'] = $totalcompleted;
 
-        if ($quickreport == false)
-        {
-            //$aViewUrls[] = 'viewquotasfooter_view';
-            $aViewUrls['output'] .= $this->getController()->renderPartial('/admin/quotas/viewquotasfooter_view', $aData, true);
+        if ($quickreport == false) {
             $this->_renderWrappedTemplate('quotas', $aViewUrls, $aData);
-        }
-        else
-        {
-
-            //// WHY ???????
-
-            header("Content-Disposition: attachment; filename=results-survey" . $iSurveyId . ".csv");
+        } else {
+            /* Export a quickly done csv file */
+            header("Content-Disposition: attachment; filename=quotas-survey".$iSurveyId.".csv");
             header("Content-type: text/comma-separated-values; charset=UTF-8");
-            header("Pragma: public");
-            echo gT("Quota name") . "," . gT("Limit") . "," . gT("Completed") . "," . gT("Remaining") . "\r\n";
-            foreach ($csvoutput as $line)
-            {
+            echo gT("Quota name").",".gT("Limit").",".gT("Completed").",".gT("Remaining")."\r\n";
+            foreach ($csvoutput as $line) {
                 echo $line;
             }
-            die;
+            App()->end();
         }
     }
 
-    function insertquota($iSurveyId)
-    {
-        $iSurveyId = sanitize_int($iSurveyId);
-        $this->_checkPermissions($iSurveyId, 'create');
-        $aData = $this->_getData($iSurveyId);
-        $aLangs = $aData['aLangs'];
 
-        $oQuota = new Quota;
-        $oQuota->sid = $iSurveyId;
-        $oQuota->name = Yii::app()->request->getPost('quota_name');
-        $oQuota->qlimit = Yii::app()->request->getPost('quota_limit');
-        $oQuota->action = Yii::app()->request->getPost('quota_action');
-        $oQuota->autoload_url = Yii::app()->request->getPost('autoload_url');
-        $oQuota->active = Yii::app()->request->getPost('active');
-        $oQuota->save();
-        $iQuotaId = $oQuota->id;
-
-        //Iterate through each language, and make sure there is a quota message for it
-        $sError = '';
-        foreach ($aLangs as $sLang)
-        {
-            if (!$_POST['quotals_message_' . $sLang])
-            {
-                $sError .= getLanguageNameFromCode($sLang, false) . "\\n";
-            }
-        }
-        if ($sError != '')
-        {
-            $aData['sShowError'] = $sError;
-        }
-        else
-        //All the required quota messages exist, now we can insert this info into the database
-        {
-
-            foreach ($aLangs as $sLang) //Iterate through each language
-            {
-                //Clean XSS - Automatically provided by CI input class
-                $_POST['quotals_message_' . $sLang] = html_entity_decode($_POST['quotals_message_' . $sLang], ENT_QUOTES, "UTF-8");
-
-                // Fix bug with FCKEditor saving strange BR types
-                $_POST['quotals_message_' . $sLang] = fixCKeditorText($_POST['quotals_message_' . $sLang]);
-
-                $oQuotaLanguageSettings = new QuotaLanguageSetting;
-                $oQuotaLanguageSettings->quotals_quota_id = $iQuotaId;
-                $oQuotaLanguageSettings->quotals_language = $sLang;
-                $oQuotaLanguageSettings->quotals_name = Yii::app()->request->getPost('quota_name');
-                $oQuotaLanguageSettings->quotals_message = $_POST['quotals_message_' . $sLang];
-                $oQuotaLanguageSettings->quotals_url = $_POST['quotals_url_' . $sLang];
-                $oQuotaLanguageSettings->quotals_urldescrip = $_POST['quotals_urldescrip_' . $sLang];
-                $oQuotaLanguageSettings->save();
-            }
-            Yii::app()->user->setFlash('success', gT("New quota saved"));
-        }
-
-        self::_redirectToIndex($iSurveyId);
-    }
-
-    function modifyquota($iSurveyId)
-    {
-        $iSurveyId = sanitize_int($iSurveyId);
-        $this->_checkPermissions($iSurveyId, 'update');
-        $aData = $this->_getData($iSurveyId);
-        $aLangs = $aData['aLangs'];
-
-        $oQuota = Quota::model()->findByPk(Yii::app()->request->getPost('quota_id'));
-        $oQuota->name = Yii::app()->request->getPost('quota_name');
-        $oQuota->qlimit = Yii::app()->request->getPost('quota_limit');
-        $oQuota->action = Yii::app()->request->getPost('quota_action');
-        $oQuota->autoload_url = Yii::app()->request->getPost('autoload_url');
-        $oQuota->active = Yii::app()->request->getPost('active');
-        $oQuota->save();
-
-        //Iterate through each language posted, and make sure there is a quota message for it
-        $sError = '';
-        foreach ($aLangs as $sLang)
-        {
-            if (!$_POST['quotals_message_' . $sLang])
-            {
-                $sError.= getLanguageNameFromCode($sLang, false) . "\\n";
-            }
-        }
-        if ($sError != '')
-        {
-            $aData['sShowError'] = $sError;
-        }
-        else
-        //All the required quota messages exist, now we can insert this info into the database
-        {
-
-            foreach ($aLangs as $sLang) //Iterate through each language
-            {
-                //Clean XSS - Automatically provided by CI
-                $_POST['quotals_message_' . $sLang] = html_entity_decode($_POST['quotals_message_' . $sLang], ENT_QUOTES, "UTF-8");
-
-                // Fix bug with FCKEditor saving strange BR types
-                $_POST['quotals_message_' . $sLang] = fixCKeditorText($_POST['quotals_message_' . $sLang]);
-
-                $oQuotaLanguageSettings = QuotaLanguageSetting::model()->findByAttributes(array('quotals_quota_id' => Yii::app()->request->getPost('quota_id'), 'quotals_language' => $sLang));
-                $oQuotaLanguageSettings->quotals_name = Yii::app()->request->getPost('quota_name');
-                $oQuotaLanguageSettings->quotals_message = $_POST['quotals_message_' . $sLang];
-                $oQuotaLanguageSettings->quotals_url = $_POST['quotals_url_' . $sLang];
-                $oQuotaLanguageSettings->quotals_urldescrip = $_POST['quotals_urldescrip_' . $sLang];
-                $oQuotaLanguageSettings->save();
-            }
-        } //End insert language based components
-
-        self::_redirectToIndex($iSurveyId);
-    }
-
-    function insertquotaanswer($iSurveyId)
+    public function insertquotaanswer($iSurveyId)
     {
         $iSurveyId = sanitize_int($iSurveyId);
         $this->_checkPermissions($iSurveyId, 'update');
 
-        $oQuotaMembers = new QuotaMember('create');  // Trigger the 'create' rules
+        $oQuotaMembers = new QuotaMember('create'); // Trigger the 'create' rules
         $oQuotaMembers->sid = $iSurveyId;
         $oQuotaMembers->qid = Yii::app()->request->getPost('quota_qid');
         $oQuotaMembers->quota_id = Yii::app()->request->getPost('quota_id');
         $oQuotaMembers->code = Yii::app()->request->getPost('quota_anscode');
         if ($oQuotaMembers->save()) {
-            if (!empty($_POST['createanother']))
-            {
+            if (!empty($_POST['createanother'])) {
                 $_POST['action'] = "quotas";
                 $_POST['subaction'] = "new_answer";
                 $sSubAction = "new_answer";
                 self::new_answer($iSurveyId, $sSubAction);
-            }
-            else
-            {
+            } else {
                 self::_redirectToIndex($iSurveyId);
             }
         } else {
@@ -350,7 +285,7 @@ class quotas extends Survey_Common_Action
         }
     }
 
-    function delans($iSurveyId)
+    public function delans($iSurveyId)
     {
         $iSurveyId = sanitize_int($iSurveyId);
         $this->_checkPermissions($iSurveyId, 'update');
@@ -364,7 +299,7 @@ class quotas extends Survey_Common_Action
         self::_redirectToIndex($iSurveyId);
     }
 
-    function delquota($iSurveyId)
+    public function delquota($iSurveyId)
     {
         $iSurveyId = sanitize_int($iSurveyId);
         $this->_checkPermissions($iSurveyId, 'delete');
@@ -383,43 +318,54 @@ class quotas extends Survey_Common_Action
     function editquota($iSurveyId)
     {
         $iSurveyId = sanitize_int($iSurveyId);
+        $oSurvey = Survey::model()->findByPk($iSurveyId);
         $this->_checkPermissions($iSurveyId, 'update');
         $aData = $this->_getData($iSurveyId);
-        $aLangs = $aData['aLangs'];
         $aViewUrls = array();
         $quotaId = Yii::app()->request->getQuery('quota_id');
 
-        $aQuotaInfo = Quota::model()->findByPk($quotaId);
-        $aData['quotainfo'] = $aQuotaInfo;
+        /* @var Quota $oQuota */
+        $oQuota = Quota::model()->findByPk($quotaId);
 
-        $first=true;
-        foreach ($aLangs as $sLanguage)
-        {
-            $aTabTitles[$sLanguage] = getLanguageNameFromCode($sLanguage, false);
-            if ($first)
-            {
-                $aTabTitles[$sLanguage].= ' (' . gT("Base language") . ')';
-                $first = false;
+        if (isset($_POST['Quota'])) {
+            $oQuota->attributes = $_POST['Quota'];
+            if ($oQuota->save()) {
+                foreach ($_POST['QuotaLanguageSetting'] as $language => $settingAttributes) {
+                    $oQuotaLanguageSetting = $oQuota->languagesettings[$language];
+                    $oQuotaLanguageSetting->attributes = $settingAttributes;
+
+                    //Clean XSS - Automatically provided by CI
+                    $oQuotaLanguageSetting->quotals_message = html_entity_decode($oQuotaLanguageSetting->quotals_message, ENT_QUOTES, "UTF-8");
+                    // Fix bug with FCKEditor saving strange BR types
+                    $oQuotaLanguageSetting->quotals_message = fixCKeditorText($oQuotaLanguageSetting->quotals_message);
+
+                    if (!$oQuotaLanguageSetting->save()) {
+                        $oQuota->addErrors($oQuotaLanguageSetting->getErrors());
+                    }
+                }
+                if (!$oQuota->getErrors()) {
+                    Yii::app()->user->setFlash('success', gT("Quota saved"));
+                    self::_redirectToIndex($iSurveyId);
+                }
             }
-            $aData['langquotainfo'] = QuotaLanguageSetting::model()->findByAttributes(array('quotals_quota_id' => $quotaId, 'quotals_language' => $sLanguage));
-            $aData['lang'] = $sLanguage;
-            $aTabContents[$sLanguage] = $this->getController()->renderPartial('/admin/quotas/editquotalang_view', $aData, true);
         }
-        $aData['aTabTitles']=$aTabTitles;
-        $aData['aTabContents']=$aTabContents;
+
+
+        $aData['oQuota'] = $oQuota;
+        $aData['aQuotaLanguageSettings'] = array();
+        foreach ($oQuota->languagesettings as $languagesetting) {
+            $aData['aQuotaLanguageSettings'][$languagesetting->quotals_language] = $languagesetting;
+        }
 
         $aViewUrls[] = 'editquota_view';
 
         $aData['sidemenu']['state'] = false;
-        $surveyinfo = Survey::model()->findByPk($iSurveyId)->surveyinfo;
-        $aData['title_bar']['title'] = $surveyinfo['surveyls_title']."(".gT("ID").":".$iSurveyId.")";
+        $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title." (".gT("ID").":".$iSurveyId.")";
 
         //$aData['surveybar']['active_survey_properties'] = 'quotas';
-        $aData['surveybar']['closebutton']['url'] = 'admin/quotas/sa/index/surveyid/'.$iSurveyId;  // Close button
+        $aData['surveybar']['closebutton']['url'] = 'admin/quotas/sa/index/surveyid/'.$iSurveyId; // Close button
         $aData['surveybar']['savebutton']['form'] = 'frmeditgroup';
 
-        $aData['langs'] = $aData['aLangs'];
-        $aData['baselang'] = $aData['sBaseLang'];
 
         $this->_renderWrappedTemplate('quotas', $aViewUrls, $aData);
     }
@@ -427,68 +373,58 @@ class quotas extends Survey_Common_Action
     /**
      * Add new answer to quota
      */
-    function new_answer($iSurveyId, $sSubAction = 'new_answer')
+    public function new_answer($iSurveyId, $sSubAction = 'new_answer')
     {
         $iSurveyId = sanitize_int($iSurveyId);
+        $oSurvey = Survey::model()->findByPk($iSurveyId);
+
         $this->_checkPermissions($iSurveyId, 'update');
         $aData = $this->_getData($iSurveyId);
-        $sBaseLang = $aData['sBaseLang'];
         $aViewUrls = array();
+        $quota = Quota::model()->findByPk(Yii::app()->request->getPost('quota_id'));
+        $aData['oQuota'] = $quota;
 
-        if (($sSubAction == "new_answer" || ($sSubAction == "new_answer_two" && !isset($_POST['quota_qid']))) && Permission::model()->hasSurveyPermission($iSurveyId, 'quotas', 'create'))
-        {
-            $result = Quota::model()->findAllByPk(Yii::app()->request->getPost('quota_id'));
-            foreach ($result as $aQuotaDetails)
-            {
-                $quota_name = $aQuotaDetails['name'];
-            }
+        if (($sSubAction == "new_answer" || ($sSubAction == "new_answer_two" && !isset($_POST['quota_qid']))) && Permission::model()->hasSurveyPermission($iSurveyId, 'quotas', 'create')) {
 
-            $result = Question::model()->findAllByAttributes(array('type' => array('G', 'M', 'Y', 'A', 'B', 'I', 'L', 'O', '!'), 'sid' => $iSurveyId, 'language' => $sBaseLang, 'parent_qid' => 0));
-            if (empty($result))
-            {
+            $result = $oSurvey->quotableQuestions;
+            if (empty($result)) {
                 $aViewUrls[] = 'newanswererror_view';
-            }
-            else
-            {
-                $aData['newanswer_result'] = $result;
-                $aData['quota_name'] = $quota_name;
+            } else {
                 $aViewUrls[] = 'newanswer_view';
             }
         }
 
-        if ($sSubAction == "new_answer_two" && isset($_POST['quota_qid']) && Permission::model()->hasSurveyPermission($iSurveyId, 'quotas', 'create'))
-        {
-            $aResults = Quota::model()->findByPk(Yii::app()->request->getPost('quota_qid'));
-            $sQuotaName = $aResults['name'];
+        if ($sSubAction == "new_answer_two" && isset($_POST['quota_qid']) && Permission::model()->hasSurveyPermission($iSurveyId, 'quotas', 'create')) {
+            $oQuestion = Question::model()->findByPk(array('qid' => Yii::app()->request->getPost('quota_qid'), 'language' => $oSurvey->language));
 
             $aQuestionAnswers = self::getQuotaAnswers(Yii::app()->request->getPost('quota_qid'), $iSurveyId, Yii::app()->request->getPost('quota_id'));
             $x = 0;
 
-            foreach ($aQuestionAnswers as $aQACheck)
-            {
-                if (isset($aQACheck['rowexists']))
-                    $x++;
+            foreach ($aQuestionAnswers as $aQACheck) {
+                if (isset($aQACheck['rowexists'])) {
+                                    $x++;
+                }
             }
 
             reset($aQuestionAnswers);
+            $aData['oQuestion'] = $oQuestion;
             $aData['question_answers'] = $aQuestionAnswers;
             $aData['x'] = $x;
-            $aData['quota_name'] = $sQuotaName;
             $aViewUrls[] = 'newanswertwo_view';
         }
 
         $aData['sidemenu']['state'] = false;
-        $surveyinfo = Survey::model()->findByPk($iSurveyId)->surveyinfo;
-        $aData['title_bar']['title'] = $surveyinfo['surveyls_title']."(".gT("ID").":".$iSurveyId.")";
-        $aData['surveybar']['closebutton']['url'] = 'admin/quotas/sa/index/surveyid/'.$iSurveyId;  // Close button
+        $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title." (".gT("ID").":".$iSurveyId.")";
+        $aData['surveybar']['closebutton']['url'] = 'admin/quotas/sa/index/surveyid/'.$iSurveyId; // Close button
         $aData['surveybar']['closebutton']['forbidden'][] = 'new_answer';
 
         $this->_renderWrappedTemplate('quotas', $aViewUrls, $aData);
     }
 
-    function newquota($iSurveyId)
+    public function newquota($iSurveyId)
     {
         $iSurveyId = sanitize_int($iSurveyId);
+        $oSurvey = Survey::model()->findByPk($iSurveyId);
         $this->_checkPermissions($iSurveyId, 'create');
         $aData = $this->_getData($iSurveyId);
 
@@ -497,22 +433,73 @@ class quotas extends Survey_Common_Action
         $aData['baselang'] = $aData['sBaseLang'];
 
         $aData['sidemenu']['state'] = false;
-        $surveyinfo = Survey::model()->findByPk($iSurveyId)->surveyinfo;
-        $aData['title_bar']['title'] = $surveyinfo['surveyls_title']."(".gT("ID").":".$iSurveyId.")";
+
+        $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title." (".gT("ID").":".$iSurveyId.")";
         $aData['surveybar']['savebutton']['form'] = 'frmeditgroup';
-        $aData['surveybar']['closebutton']['url'] = 'admin/quotas/sa/index/surveyid/'.$iSurveyId;  // Close button
+        $aData['surveybar']['closebutton']['url'] = 'admin/quotas/sa/index/surveyid/'.$iSurveyId; // Close button
+
+        $oQuota = new Quota();
+        $oQuota->sid = $oSurvey->primaryKey;
+
+
+        if (isset($_POST['Quota'])) {
+            $oQuota->attributes = $_POST['Quota'];
+            if ($oQuota->save()) {
+                foreach ($_POST['QuotaLanguageSetting'] as $language => $settingAttributes) {
+                    $oQuotaLanguageSetting = new QuotaLanguageSetting();
+                    $oQuotaLanguageSetting->attributes = $settingAttributes;
+                    $oQuotaLanguageSetting->quotals_quota_id = $oQuota->primaryKey;
+                    $oQuotaLanguageSetting->quotals_language = $language;
+
+
+                    //Clean XSS - Automatically provided by CI
+                    $oQuotaLanguageSetting->quotals_message = html_entity_decode($oQuotaLanguageSetting->quotals_message, ENT_QUOTES, "UTF-8");
+                    // Fix bug with FCKEditor saving strange BR types
+                    $oQuotaLanguageSetting->quotals_message = fixCKeditorText($oQuotaLanguageSetting->quotals_message);
+                    $oQuotaLanguageSetting->save(false);
+
+                    if (!$oQuotaLanguageSetting->validate()) {
+                        $oQuota->addErrors($oQuotaLanguageSetting->getErrors());
+                    }
+                }
+                if (!$oQuota->getErrors()) {
+                    Yii::app()->user->setFlash('success', gT("New quota saved"));
+                    self::_redirectToIndex($iSurveyId);
+                } else {
+                    // if any of the parts fail to save we delete the quota and and try again
+                    $oQuota->delete();
+                }
+            }
+        }
+
+        $aData['oQuota'] = $oQuota;
+        $aData['oSurvey'] = $oSurvey;
+        // create QuotaLanguageSettings
+        foreach ($oSurvey->getAllLanguages() as $language) {
+            $oQuotaLanguageSetting = new QuotaLanguageSetting();
+            $oQuotaLanguageSetting->quotals_name = $oQuota->name;
+            $oQuotaLanguageSetting->quotals_quota_id = $oQuota->primaryKey;
+            $oQuotaLanguageSetting->quotals_language = $language;
+            $oQuotaLanguageSetting->quotals_url = $oSurvey->languagesettings[$language]->surveyls_url;
+            $siteLanguage = Yii::app()->language;
+            // Switch language temporarily to get the default text in right language
+            Yii::app()->language = $language;
+            $oQuotaLanguageSetting->quotals_message = gT("Sorry your responses have exceeded a quota on this survey.");
+            Yii::app()->language = $siteLanguage;
+            $aData['aQuotaLanguageSettings'][$language] = $oQuotaLanguageSetting;
+        }
 
         $this->_renderWrappedTemplate('quotas', 'newquota_view', $aData);
     }
 
     /**
      *
-     * @param type $iQuestionId
-     * @param type $iSurveyId
-     * @param type $iQuotaId
+     * @param integer $iQuestionId
+     * @param integer $iSurveyId
+     * @param integer $iQuotaId
      * @return array
      */
-    function getQuotaAnswers($iQuestionId, $iSurveyId, $iQuotaId)
+    public function getQuotaAnswers($iQuestionId, $iSurveyId, $iQuotaId)
     {
         $iQuestionId = sanitize_int($iQuestionId);
         $iSurveyId   = sanitize_int($iSurveyId);
@@ -525,90 +512,71 @@ class quotas extends Survey_Common_Action
         $aQuestion = Question::model()->findByPk(array('qid' => $iQuestionId, 'language' => $sBaseLang));
         $aQuestionType = $aQuestion['type'];
 
-        if ($aQuestionType == 'M')
-        {
+        if ($aQuestionType == 'M') {
             $aResults = Question::model()->findAllByAttributes(array('parent_qid' => $iQuestionId));
             $aAnswerList = array();
 
-            foreach($aResults as $aDbAnsList)
-            {
+            foreach ($aResults as $aDbAnsList) {
                 $tmparrayans = array('Title' => $aQuestion['title'], 'Display' => substr($aDbAnsList['question'], 0, 40), 'code' => $aDbAnsList['title']);
                 $aAnswerList[$aDbAnsList['title']] = $tmparrayans;
             }
-        } elseif ($aQuestionType == 'G')
-        {
+        } elseif ($aQuestionType == 'G') {
             $aAnswerList = array(
                 'M' => array('Title' => $aQuestion['title'], 'Display' => gT("Male"), 'code' => 'M'),
                 'F' => array('Title' => $aQuestion['title'], 'Display' => gT("Female"), 'code' => 'F'));
-        } elseif ($aQuestionType == 'L' || $aQuestionType == 'O' || $aQuestionType == '!')
-        {
+        } elseif ($aQuestionType == 'L' || $aQuestionType == 'O' || $aQuestionType == '!') {
 
             $aAnsResults = Answer::model()->findAllByAttributes(array('qid' => $iQuestionId, 'language' => $sBaseLang));
 
             $aAnswerList = array();
 
-            foreach ($aAnsResults as $aDbAnsList)
-            {
-                $aAnswerList[$aDbAnsList['code']] = array('Title' => $aQuestion['title'], 'Display' => substr($aDbAnsList['answer'], 0, 40), 'code' => $aDbAnsList['code']);
+            foreach ($aAnsResults as $aDbAnsList) {
+                $aAnswerList[$aDbAnsList['code']] = array('Title' => $aQuestion['title'], 'Display' => $aDbAnsList['answer'], 'code' => $aDbAnsList['code']);
             }
 
-        } elseif ($aQuestionType == 'A')
-        {
+        } elseif ($aQuestionType == 'A') {
             $aAnsResults = Question::model()->findAllByAttributes(array('parent_qid' => $iQuestionId));
 
             $aAnswerList = array();
 
-            foreach ($aAnsResults as $aDbAnsList)
-            {
-                for ($x = 1; $x < 6; $x++)
-                {
-                    $tmparrayans = array('Title' => $aQuestion['title'], 'Display' => substr($aDbAnsList['question'], 0, 40) . ' [' . $x . ']', 'code' => $aDbAnsList['title']);
-                    $aAnswerList[$aDbAnsList['title'] . "-" . $x] = $tmparrayans;
+            foreach ($aAnsResults as $aDbAnsList) {
+                for ($x = 1; $x < 6; $x++) {
+                    $tmparrayans = array('Title' => $aQuestion['title'], 'Display' => substr($aDbAnsList['question'], 0, 40).' ['.$x.']', 'code' => $aDbAnsList['title']);
+                    $aAnswerList[$aDbAnsList['title']."-".$x] = $tmparrayans;
                 }
             }
-        } elseif ($aQuestionType == 'B')
-        {
+        } elseif ($aQuestionType == 'B') {
             $aAnsResults = Answer::model()->findAllByAttributes(array('qid' => $iQuestionId, 'language' => $sBaseLang));
 
             $aAnswerList = array();
 
-            foreach ($aAnsResults as $aDbAnsList)
-            {
-                for ($x = 1; $x < 11; $x++)
-                {
-                    $tmparrayans = array('Title' => $aQuestion['title'], 'Display' => substr($aDbAnsList['answer'], 0, 40) . ' [' . $x . ']', 'code' => $aDbAnsList['code']);
-                    $aAnswerList[$aDbAnsList['code'] . "-" . $x] = $tmparrayans;
+            foreach ($aAnsResults as $aDbAnsList) {
+                for ($x = 1; $x < 11; $x++) {
+                    $tmparrayans = array('Title' => $aQuestion['title'], 'Display' => substr($aDbAnsList['answer'], 0, 40).' ['.$x.']', 'code' => $aDbAnsList['code']);
+                    $aAnswerList[$aDbAnsList['code']."-".$x] = $tmparrayans;
                 }
             }
-        } elseif ($aQuestionType == 'Y')
-        {
+        } elseif ($aQuestionType == 'Y') {
             $aAnswerList = array(
                 'Y' => array('Title' => $aQuestion['title'], 'Display' => gT("Yes"), 'code' => 'Y'),
                 'N' => array('Title' => $aQuestion['title'], 'Display' => gT("No"), 'code' => 'N'));
-        } elseif ($aQuestionType == 'I')
-        {
+        } elseif ($aQuestionType == 'I') {
             $slangs = Survey::model()->findByPk($iSurveyId)->additionalLanguages;
             array_unshift($slangs, $sBaseLang);
 
-            while (list($key, $value) = each($slangs))
-            {
+            foreach($slangs as $key => $value) {
                 $tmparrayans = array('Title' => $aQuestion['title'], 'Display' => getLanguageNameFromCode($value, false), $value);
                 $aAnswerList[$value] = $tmparrayans;
             }
         }
 
-        if (empty($aAnswerList))
-        {
+        if (empty($aAnswerList)) {
             return array();
-        }
-        else
-        {
+        } else {
             // Now we mark answers already used in this quota as such
             $aExistsingAnswers = QuotaMember::model()->findAllByAttributes(array('sid' => $iSurveyId, 'qid' => $iQuestionId, 'quota_id' => $iQuotaId));
-            foreach ($aExistsingAnswers as $aAnswerRow)
-            {
-                if (array_key_exists($aAnswerRow['code'], $aAnswerList))
-                {
+            foreach ($aExistsingAnswers as $aAnswerRow) {
+                if (array_key_exists($aAnswerRow['code'], $aAnswerList)) {
                     $aAnswerList[$aAnswerRow['code']]['rowexists'] = '1';
                 }
             }
@@ -623,10 +591,10 @@ class quotas extends Survey_Common_Action
      * @param string|array $aViewUrls View url(s)
      * @param array $aData Data to be passed on. Optional.
      */
-    protected function _renderWrappedTemplate($sAction = 'quotas', $aViewUrls = array(), $aData = array())
+    protected function _renderWrappedTemplate($sAction = 'quotas', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
-        $this->registerScriptFile( 'ADMIN_SCRIPT_PATH', 'quotas.js');
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData);
+        App()->getClientScript()->registerScriptFile(App()->getConfig('adminscripts').'quotas.js');
+        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 
 }
