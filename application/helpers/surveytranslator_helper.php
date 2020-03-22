@@ -416,6 +416,14 @@ function getLanguageData($bOrderByNative = false, $sLanguageCode = 'en')
     $supportedLanguages['ckb']['dateformat'] = 1;
     $supportedLanguages['ckb']['radixpoint'] = 1;
     $supportedLanguages['ckb']['cldr'] = 'ku';
+    
+    // Kurdish (Kurmanji)
+    $supportedLanguages['kmr']['description'] = gT('Kurdish (Kurmanji)');
+    $supportedLanguages['kmr']['nativedescription'] = 'Kurmanc&#xEE;';
+    $supportedLanguages['kmr']['rtl'] = true;
+    $supportedLanguages['kmr']['dateformat'] = 1;
+    $supportedLanguages['kmr']['radixpoint'] = 1;
+    $supportedLanguages['kmr']['cldr'] = 'ku';    
 
     // Kyrgyz
     $supportedLanguages['ky']['description'] = gT('Kyrgyz');
@@ -647,6 +655,13 @@ function getLanguageData($bOrderByNative = false, $sLanguageCode = 'en')
     $supportedLanguages['sr-Latn']['rtl'] = false;
     $supportedLanguages['sr-Latn']['dateformat'] = 4;
     $supportedLanguages['sr-Latn']['radixpoint'] = 1;
+
+    // Somali
+    $supportedLanguages['so']['description'] = gT('Somali');
+    $supportedLanguages['so']['nativedescription'] = 'Af-Soomaali';
+    $supportedLanguages['so']['rtl'] = false;
+    $supportedLanguages['so']['dateformat'] = 9;
+    $supportedLanguages['so']['radixpoint'] = 1;
 
     // Spanish
     $supportedLanguages['es']['description'] = gT('Spanish');

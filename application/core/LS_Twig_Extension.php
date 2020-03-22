@@ -224,7 +224,7 @@ class LS_Twig_Extension extends Twig_Extension
             }
         }
 
-        if ($lemQuestionInfo['info']['mandatory'] == 'Y') {
+        if ($lemQuestionInfo['info']['mandatory'] == 'Y' || $lemQuestionInfo['info']['mandatory'] == 'S') {
             $aQuestionClass .= ' mandatory';
         }
 
@@ -249,6 +249,11 @@ class LS_Twig_Extension extends Twig_Extension
     public static function createUrl($url, $params = array())
     {
         return App()->getController()->createUrl($url, $params);
+    }
+
+    public static function createAbsoluteUrl($url, $params = array())
+    {
+        return App()->getController()->createAbsoluteUrl($url, $params);
     }
 
     /**
@@ -309,6 +314,83 @@ class LS_Twig_Extension extends Twig_Extension
     }
 
     /**
+     * @var $resourcePath string : the needed resource
+     * @var $default string : the default resource if needed resssource didn't exist
+     * @return string|false
+     */
+    public static function templateResourceUrl($resourcePath, $default = false)
+    {
+        /* get extension of file in allowedthemeuploads */
+        $aAllowExtensions = explode(',', Yii::app()->getConfig('allowedthemeuploads'));
+        $info = pathinfo($resourcePath);
+        if(!isset($info['extension']) || !in_array(strtolower($info['extension']),$aAllowExtensions) ) {
+            if($default) {
+                return self::templateResourceUrl($default);
+            }
+            return false;
+        }
+        // Reccurence on templates to find the file
+        $oTemplate = self::getTemplateForRessource($resourcePath);
+        if(empty($oTemplate)) {
+            /* Didn't allow file out of template (diff with image) */
+            return false;
+        }
+        $sFullPath = $oTemplate->path.$resourcePath;
+        $resourceAsset = self::assetPublish($sFullPath);
+        return $resourceAsset;
+    }
+
+
+    /**
+     * Get the parsed output of the expression manger for a specific string
+     *
+     * @param String $sInString
+     * @return String
+     */
+    public static function getExpressionManagerOutput($sInString) {
+        templatereplace(flattenText($sInString));
+        return LimeExpressionManager::GetLastPrettyPrintExpression();
+    }
+
+    /**
+     * Get the textcontrol widget output for a specific string
+     *
+     * @param String $sInString
+     * @return String
+     */
+    public static function getTextDisplayWidget($sInString, $name) {
+        templatereplace(flattenText($sInString));
+        $fullInString = LimeExpressionManager::GetLastPrettyPrintExpression();
+
+        $widget = App()->getController()->widget('ext.admin.TextDisplaySwitch.TextDisplaySwitch', array(
+            'widgetsJsName' =>  $name,
+            'textToDisplay' => $fullInString,
+            'returnHtml' => true
+        ));
+        return $widget->run();
+    }
+
+
+
+    /**
+     * Checks for a permission on render
+     *
+     * @param String $permission
+     * @param String $permissionGrade
+     * @param Integer|NULL $iSurveyId (default null)
+     *
+     * @return Boolean
+     */
+    public static function checkPermission($permission, $permissionGrade, $iSurveyId = null) {
+
+        if ($iSurveyId === null) {
+            return Permission::model()->hasGlobalPermission($permission, $permissionGrade);
+        }
+        return Permission::model()->hasSurveyPermission($iSurveyId, $permission, $permissionGrade);
+
+    }
+
+    /**
      * @param string $sRessource
      */
     public static function getTemplateForRessource($sRessource)
@@ -316,7 +398,6 @@ class LS_Twig_Extension extends Twig_Extension
         $oRTemplate =  Template::getLastInstance();
 
         while (!file_exists($oRTemplate->path.$sRessource)) {
-
             $oMotherTemplate = $oRTemplate->oMotherTemplate;
             if (!($oMotherTemplate instanceof TemplateConfiguration)) {
                 return false;
@@ -324,7 +405,11 @@ class LS_Twig_Extension extends Twig_Extension
             }
             $oRTemplate = $oMotherTemplate;
         }
-
+        $sRessourcePath = realpath($oRTemplate->path.$sRessource);
+        $sTemplatePath = realpath($oRTemplate->path);
+        if(substr($sTemplatePath, 0, strlen($sTemplatePath)) !== $sTemplatePath) {
+            return false;
+        }
         return $oRTemplate;
     }
 
@@ -390,10 +475,10 @@ class LS_Twig_Extension extends Twig_Extension
         self::unregisterPackage('fontawesome');
         self::unregisterPackage('template-default-ltr');
         self::unregisterPackage('decimal');
+        self::unregisterPackage('expressions');
         self::unregisterScriptFile('/assets/scripts/survey_runtime.js');
         self::unregisterScriptFile('/assets/scripts/admin/expression.js');
         self::unregisterScriptFile('/assets/scripts/nojs.js');
-        self::unregisterScriptFile('/assets/scripts/expressions/em_javascript.js');
     }
 
     public static function listCoreScripts()
@@ -568,40 +653,16 @@ class LS_Twig_Extension extends Twig_Extension
      */
     public static function getAllTokenAnswers( $iSurveyID )
     {
+
+        $oResponses = SurveyDynamic::model($iSurveyID)->findAll(
+                            array(
+                                'condition' => 'token = :token',
+                                'params'    => array( ':token'=>$_SESSION['survey_'.$iSurveyID]['token']),
+                            )
+
+                        );
+
         $aResponses = array();
-        $sToken     = (empty($_SESSION['survey_'.$iSurveyID]['token']))?'':$_SESSION['survey_'.$iSurveyID]['token'] ;
-
-        if (!empty($sToken)) {
-            $oResponses = SurveyDynamic::model($iSurveyID)->findAll(
-                                array(
-                                    'condition' => 'token = :token',
-                                    'params'    => array( ':token'=> $sToken ),
-                                )
-
-                            );
-
-            if( count($oResponses) > 0 ){
-                foreach($oResponses as $oResponse)
-                    array_push($aResponses,$oResponse->attributes);
-            }
-        }
-
-        return $aResponses;
-    }
-
-
-    /**
-     * Retreive all the previous answers from a given survey (can be a different survey)
-     * To use it:
-     *  {% set aResponses = getAllAnswers(aSurveyInfo.sid) %}
-     *  {{ dump(aResponses) }}
-     *
-     *  If you want to show it after completion, the you must turn on public statistics
-     */
-    public static function getAllAnswers( $iSurveyID )
-    {
-        $aResponses = array();
-        $oResponses = SurveyDynamic::model($iSurveyID)->findAll();
 
         if( count($oResponses) > 0 ){
             foreach($oResponses as $oResponse)
@@ -609,7 +670,5 @@ class LS_Twig_Extension extends Twig_Extension
         }
 
         return $aResponses;
-
     }
-
 }

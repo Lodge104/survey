@@ -42,14 +42,21 @@ class saved extends Survey_Common_Action
         $aThisSurvey = getSurveyInfo($iSurveyId);
         $oSavedControlModel = SavedControl::model();
         $oSavedControlModel->sid = $iSurveyId;
+
+        // Filter state
+        $aFilters = App()->request->getParam('SavedControl');
+        if (!empty($aFilters)) {
+            $oSavedControlModel->setAttributes($aFilters, false);
+        }
+
         $aData['model'] = $oSavedControlModel;
         $aData['sSurveyName'] = $aThisSurvey['name'];
         $aData['iSurveyId'] = $iSurveyId;
         // Set page size
-        if (Yii::app()->request->getPost('savedResponsesPageSize')) {
-            Yii::app()->user->setState('savedResponsesPageSize', Yii::app()->request->getPost('savedResponsesPageSize'));
+        if (App()->request->getPost('savedResponsesPageSize')) {
+            App()->user->setState('savedResponsesPageSize', App()->request->getPost('savedResponsesPageSize'));
         }
-        $aData['savedResponsesPageSize'] = Yii::app()->user->getState('savedResponsesPageSize', Yii::app()->params['defaultPageSize']);
+        $aData['savedResponsesPageSize'] = App()->user->getState('savedResponsesPageSize', App()->params['defaultPageSize']);
         $aViewUrls[] = 'savedlist_view';
         $this->_renderWrappedTemplate('saved', $aViewUrls, $aData);
     }
