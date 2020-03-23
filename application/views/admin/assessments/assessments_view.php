@@ -2,7 +2,9 @@
 /**
 * Assesments view
 */
-echo PrepareEditorScript(false, $this);
+
+// todo implement new ekeditor 1580136051118
+//echo PrepareEditorScript(true, $this);
 Yii::app()->getClientScript()->registerScript(
 "AssessmentsVariables",
 "var strnogroup = '".gT("There are no groups available.", "js")."',\n
@@ -82,7 +84,7 @@ LSYii_ClientScript::POS_BEGIN
                             'baselang' => $baselang,
                             'gid' => $gid,
                             'action' => $action,
-                            'groups' => $groups
+                            'groups' => isset($groups) ? $groups : []
                         ]
                     ); 
                 ?>
