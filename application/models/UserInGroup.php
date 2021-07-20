@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    die('No direct script access allowed');
-}
+<?php
+
 /*
  * LimeSurvey
  * Copyright (C) 2007-2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -19,7 +18,7 @@
  * @property integer $ugid UserGroup ID
  * @property int $uid User ID
  *
- *
+ *@property User $users Group ownre user
  */
 class UserInGroup extends LSActiveRecord
 {
@@ -43,6 +42,15 @@ class UserInGroup extends LSActiveRecord
     public function primaryKey()
     {
         return array('ugid', 'uid');
+    }
+
+    /** @inheritdoc */
+    public function rules()
+    {
+        return array(
+            array('uid, ugid', 'required'),
+            array('uid, ugid', 'numerical', 'integerOnly' => true),
+        );
     }
 
     /** @inheritdoc */
@@ -96,5 +104,4 @@ class UserInGroup extends LSActiveRecord
         $data = $user->queryRow();
         return $data;
     }
-
 }

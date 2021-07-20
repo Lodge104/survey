@@ -1,9 +1,7 @@
 <?php
 
-
-
 /**
- * RenderClass for Boilerplate Question
+ * RenderClass for MultipleChoiceWithComments Question
  *  * The ia Array contains the following
  *  0 => string qid
  *  1 => string sgqa
@@ -28,8 +26,6 @@ class RenderMultipleChoiceWithComments extends QuestionBaseRenderer
     private $attributeLabelWidth;
     private $sLabelWidth;
     private $sInputContainerWidth;
-
-
 
     public function __construct($aFieldArray, $bRenderDirect = false)
     {
@@ -82,20 +78,19 @@ class RenderMultipleChoiceWithComments extends QuestionBaseRenderer
     public function getRows()
     {
         $aRows = [];
-        if($this->getQuestionCount() == 0) {
+        if ($this->getQuestionCount() == 0) {
             return $aRows;
         }
 
-        $checkconditionFunction = "checkconditions"; 
+        $checkconditionFunction = "checkconditions";
         foreach ($this->aSubQuestions[0] as $oQuestion) {
-
-            $myfname = $this->sSGQA.$oQuestion->title;
-            $myfname2 = $myfname."comment";
-            $mSessionValue = $this->setDefaultIfEmpty($_SESSION['survey_'.Yii::app()->getConfig('surveyID')][$myfname], '');
-            $mSessionValue2 = $this->setDefaultIfEmpty($_SESSION['survey_'.Yii::app()->getConfig('surveyID')][$myfname2], '');
+            $myfname = $this->sSGQA . $oQuestion->title;
+            $myfname2 = $myfname . "comment";
+            $mSessionValue = $this->setDefaultIfEmpty($_SESSION['survey_' . Yii::app()->getConfig('surveyID')][$myfname], '');
+            $mSessionValue2 = $this->setDefaultIfEmpty($_SESSION['survey_' . Yii::app()->getConfig('surveyID')][$myfname2], '');
             
-            if ($this->iLabelWidth < strlen(trim(strip_tags($oQuestion->questionL10ns[$this->sLanguage]->question)))) {
-                $this->iLabelWidth = strlen(trim(strip_tags($oQuestion->questionL10ns[$this->sLanguage]->question)));
+            if ($this->iLabelWidth < strlen(trim(strip_tags($oQuestion->questionl10ns[$this->sLanguage]->question)))) {
+                $this->iLabelWidth = strlen(trim(strip_tags($oQuestion->questionl10ns[$this->sLanguage]->question)));
             }
 
             $this->inputnames[] = $myfname;
@@ -108,40 +103,41 @@ class RenderMultipleChoiceWithComments extends QuestionBaseRenderer
                 'title'                => '',
                 'liclasses'            => 'responsive-content question-item answer-item checkbox-text-item',
                 'name'                 => $myfname,
-                'id'                   => 'answer'.$myfname,
+                'id'                   => 'answer' . $myfname,
                 'value'                => 'Y', // TODO : check if it should be the same than javavalue
                 'classes'              => '',
                 'otherNumber'          => $this->getQuestionAttribute('other_numbers_only'),
-                'labeltext'            => $oQuestion->questionL10ns[$this->sLanguage]->question,
+                'labeltext'            => $oQuestion->questionl10ns[$this->sLanguage]->question,
                 'javainput'            => true,
-                'javaname'             => 'java'.$myfname,
+                'javaname'             => 'java' . $myfname,
                 'javavalue'            => $mSessionValue,
                 'checked'              => ($mSessionValue == 'Y' ? CHECKED : ''),
-                'inputCommentId'       => 'answer'.$myfname2,
+                'inputCommentId'       => 'answer' . $myfname2,
                 'commentLabelText'     => gT('Make a comment on your choice here:'),
                 'inputCommentName'     => $myfname2,
-                'inputCOmmentValue'    => (isset($mSessionValue2)) ? $mSessionValue2 : '',
+                'inputCOmmentValue'    => CHtml::encode($mSessionValue2),
                 'sInputContainerWidth' => $this->sInputContainerWidth,
                 'sLabelWidth'          => $this->sLabelWidth,
             );
         }
 
         if ($this->oQuestion->other == 'Y') {
-          $aRows[] = $this->getOtherRow();
+            $aRows[] = $this->getOtherRow();
         }
 
         return $aRows;
     }
 
-    public function getOtherRow(){
+    public function getOtherRow()
+    {
 
         $sSeparator = (getRadixPointData($this->oQuestion->survey->correct_relation_defaultlanguage->surveyls_numberformat))['separator'];
 
-        $myfname = $this->sSGQA.'other';
-        $myfname2 = $myfname."comment";
+        $myfname = $this->sSGQA . 'other';
+        $myfname2 = $myfname . "comment";
 
-        $mSessionValue = $this->setDefaultIfEmpty($_SESSION['survey_'.Yii::app()->getConfig('surveyID')][$myfname], '');
-        $mSessionValue2 = $this->setDefaultIfEmpty($_SESSION['survey_'.Yii::app()->getConfig('surveyID')][$myfname2], '');
+        $mSessionValue = $this->setDefaultIfEmpty($_SESSION['survey_' . Yii::app()->getConfig('surveyID')][$myfname], '');
+        $mSessionValue2 = $this->setDefaultIfEmpty($_SESSION['survey_' . Yii::app()->getConfig('surveyID')][$myfname2], '');
 
         $this->inputnames[] = $myfname;
         $this->inputnames[] = $myfname2;
@@ -152,22 +148,7 @@ class RenderMultipleChoiceWithComments extends QuestionBaseRenderer
             if ($this->getQuestionAttribute('other_numbers_only') == 1) {
                 $dispVal = str_replace('.', $sSeparator, $dispVal);
             }
-            $sValue .= htmlspecialchars($dispVal, ENT_QUOTES);
-        }
-
-        // TODO : check if $sValueHidden === $sValue
-        $sValueHidden = '';
-        if (!empty($mSessionValue)) {
-            $dispVal = $mSessionValue;
-            if ($this->getQuestionAttribute('other_numbers_only') == 1) {
-                $dispVal = str_replace('.', $sSeparator, $dispVal);
-            }
-            $sValueHidden = htmlspecialchars($dispVal, ENT_QUOTES);
-        }
-
-        // TODO: $value is not defined for some execution paths.
-        if (!isset($value)) {
-            $sValue = '';
+            $sValue .= CHtml::encode($dispVal);
         }
 
         ////
@@ -175,18 +156,18 @@ class RenderMultipleChoiceWithComments extends QuestionBaseRenderer
         // Display the answer row
         return [
             'other'                => true,
-            'liid'                 => 'javatbd'.$myfname,
+            'liid'                 => 'javatbd' . $myfname,
             'title'                => gT('Other'),
             'name'                 => $myfname,
-            'id'                   => 'answer'.$myfname,
+            'id'                   => 'answer' . $myfname,
             'value'                => $sValue, // TODO : check if it should be the same than javavalue
             'classes'              => '',
             'otherNumber'          => $this->getQuestionAttribute('other_numbers_only'),
             'labeltext'            => $this->setDefaultIfEmpty($this->getQuestionAttribute('other_replace_text', $this->sLanguage), gT('Other:')),
-            'inputCommentId'       => 'answer'.$myfname2,
+            'inputCommentId'       => 'answer' . $myfname2,
             'commentLabelText'     => gT('Make a comment on your choice here:'),
             'inputCommentName'     => $myfname2,
-            'inputCOmmentValue'    => $mSessionValue2,
+            'inputCOmmentValue'    => CHtml::encode($mSessionValue2),
             'checked'              => ($mSessionValue == 'Y' ? CHECKED : ''),
             'javainput'            => false,
             'javaname'             => '',
@@ -202,38 +183,39 @@ class RenderMultipleChoiceWithComments extends QuestionBaseRenderer
     {
         $answer = '';
         $inputnames = [];
-        $this->sCoreClasses .= " ".$sCoreClasses;
+        $this->sCoreClasses .= " " . $sCoreClasses;
 
         if ($this->getQuestionAttribute('commented_checkbox') != "allways" && $this->getQuestionAttribute('commented_checkbox_auto')) {
             $this->aScriptFiles[] = [
-                'path' => Yii::app()->getConfig('generalscripts')."multiplechoice_withcomments.js", 
+                'path' => Yii::app()->getConfig('generalscripts') . "multiplechoice_withcomments.js",
                 'position' => LSYii_ClientScript::POS_BEGIN
             ];
             $this->addScript(
                 'doMultipleChoiceWithComments',
                 "doMultipleChoiceWithComments({$this->oQuestion->qid},'{$this->getQuestionAttribute("commented_checkbox")}');",
-                LSYii_ClientScript::POS_POSTSCRIPT, 
+                LSYii_ClientScript::POS_POSTSCRIPT,
                 true
             );
         }
         $this->registerAssets();
 
-        $answer .=  Yii::app()->twigRenderer->renderQuestion($this->getMainView().'/answer', array(
+        $answer .=  Yii::app()->twigRenderer->renderQuestion($this->getMainView() . '/answer', array(
             'aRows' => $this->getRows(),
-            'coreClass'=>$this->sCoreClasses,
-            'name'=>'MULTI'.$this->sSGQA,
-            'basename'=> $this->sSGQA,
-            'value'=> $this->getQuestionCount()
+            'coreClass' => $this->sCoreClasses,
+            'name' => 'MULTI' . $this->sSGQA,
+            'basename' => $this->sSGQA,
+            'value' => $this->getQuestionCount()
            ), true);
 
         $this->inputnames[] = $this->sSGQA;
         return array($answer, $this->inputnames);
     }
 
-    protected function getQuestionCount($iScaleId=0){
-        if(!empty($this->aSubQuestions)) {
+    protected function getQuestionCount($iScaleId = 0)
+    {
+        if (!empty($this->aSubQuestions)) {
             $counter = count($this->aSubQuestions[$iScaleId]);
-            if($this->oQuestion->other == 'Y') {
+            if ($this->oQuestion->other == 'Y') {
                 $counter++;
                 $counter++;
             }
@@ -242,4 +224,3 @@ class RenderMultipleChoiceWithComments extends QuestionBaseRenderer
         return 0;
     }
 }
-

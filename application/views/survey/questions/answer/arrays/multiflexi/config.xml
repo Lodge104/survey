@@ -26,6 +26,7 @@
 
     <compatibility>
         <version>4.0</version>
+        <version>5.0</version>
     </compatibility>
 
     <!--
@@ -65,6 +66,7 @@
             <sortorder>100</sortorder>
             <inputtype>integer</inputtype>
             <default></default>
+            <min>0</min>
             <help>Repeat headers every n-th subquestions (Set to 0 to deactivate).</help>
             <caption>Repeat headers</caption>
             <i18n></i18n>
@@ -299,6 +301,19 @@
             <readonly></readonly>
             <readonly_when_active></readonly_when_active>
             <expression></expression>
+        </attribute>
+        <attribute>
+            <name>printable_help</name>
+            <category>Display</category>
+            <sortorder>201</sortorder>
+            <inputtype>text</inputtype>
+            <expression>1</expression>
+            <i18n>1</i18n>
+            <default></default>
+            <help>In the printable version the condition is being replaced with this explanation text.</help>
+            <caption>Relevance help for printable survey</caption>
+            <readonly></readonly>
+            <readonly_when_active></readonly_when_active>
         </attribute>
         <!-- Display Attributes END -->
         <!-- Logic Attributes START -->

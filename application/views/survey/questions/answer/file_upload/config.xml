@@ -26,6 +26,7 @@
 
     <compatibility>
         <version>4.0</version>
+        <version>5.0</version>
     </compatibility>
 
     <!--
@@ -53,7 +54,6 @@
         <attribute>encrypted</attribute>
         <attribute>save_as_default</attribute>
         <attribute>clear_default</attribute>
-        <attribute>preg</attribute>
     </generalattributes>
 
     <!-- Question attributes -->
@@ -154,7 +154,7 @@
             <category>Other</category>
             <sortorder>134</sortorder>
             <inputtype>text</inputtype>
-            <default>png, gif, doc, odt, jpg, pdf, png</default>
+            <default>png, gif, doc, odt, jpg, jpeg, pdf, png, heic</default>
             <help>Allowed file types in comma separated format. e.g. pdf,doc,odt</help>
             <caption>Allowed file types</caption>
             <i18n></i18n>

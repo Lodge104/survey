@@ -1,4 +1,5 @@
 <?php
+
 /*
  * LimeSurvey
  * Copyright (C) 2007-2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -147,7 +148,7 @@ class Statistics_userController extends SurveyController
 
         // ---------- CREATE SGQA OF ALL QUESTIONS WHICH USE "PUBLIC_STATISTICS" ----------
         // only show questions where question attribute "public_statistics" is set to "1"
-        $questions = Question::model()->with(['group' => ['alias' => 'g'], 'questionAttributes' => ['alias' => 'qa']])->findAll([
+        $questions = Question::model()->with(['group' => ['alias' => 'g'], 'questionattributes' => ['alias' => 'qa']])->findAll([
             'condition' => 't.sid = :surveyid AND t.parent_qid = :parent_qid AND qa.attribute = :attribute AND qa.value = :value',
             'params'    => [':surveyid' => $iSurveyID, ':parent_qid' => 0, ':attribute' => 'public_statistics', ':value' => '1'],
             'order'     => 'g.group_order, t.question_order'
@@ -225,18 +226,15 @@ class Statistics_userController extends SurveyController
 
             //loop through all selected questions
             foreach ($runthrough as $rt) {
-
                 //update progress bar
                 if ($process_status < 100) {
                     $process_status++;
                 }
                 //~ $prb->moveStep($process_status);
-
             }    // end foreach -> loop through all questions
 
             $helper = new userstatistics_helper();
             $statisticsoutput .= $helper->generate_statistics($iSurveyID, $summary, $summary, $publicgraphs, 'html', null, $sLanguage, false);
-
         }    //end if -> show summary results
 
         $data['statisticsoutput'] = $statisticsoutput;
@@ -247,9 +245,14 @@ class Statistics_userController extends SurveyController
             //~ $prb->hide();
         }
 
+        $data['aSurveyInfo'] = getSurveyInfo($iSurveyID);
+        $data['graphUrl'] = Yii::app()->getController()->createUrl("admin/statistics/sa/graph");
+
         Yii::app()->getClientScript()->registerScriptFile(Yii::app()->getConfig('generalscripts') . 'statistics_user.js');
-        $this->layout = "public";
-        $this->render('/statistics_user_view', $data);
+        $data['aSurveyInfo']['include_content'] = 'statistics_user';
+        // Set template into last instance. Will be picked up later by the renderer
+        $oTemplate = Template::model()->getInstance('', $iSurveyID);
+        Yii::app()->twigRenderer->renderTemplateFromFile('layout_statistics_user.twig', $data, false);
 
         //Delete all Session Data
         Yii::app()->session['finished'] = true;
@@ -280,7 +283,7 @@ class Statistics_userController extends SurveyController
             switch ($type) {
                 case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION: // Multiple Numerical
                 case Question::QT_Q_MULTIPLE_SHORT_TEXT: // Multiple Short Text
-                    $results = Question::model()->with('questionL10ns')->findAll([
+                    $results = Question::model()->with('questionl10ns')->findAll([
                         'condition' => 'language=:language AND parent_qid=:parent_qid',
                         'params'    => [':language' => $this->sLanguage, ':parent_qid' => $flt->qid],
                         'order'     => 'question_order'
@@ -295,7 +298,7 @@ class Statistics_userController extends SurveyController
                 case Question::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS: // ARRAY OF Increase/Same/Decrease QUESTIONS
                 case Question::QT_F_ARRAY_FLEXIBLE_ROW: // FlEXIBLE ARRAY
                 case Question::QT_H_ARRAY_FLEXIBLE_COLUMN: // ARRAY (By Column)
-                    $results = Question::model()->with('questionL10ns')->findAll([
+                    $results = Question::model()->with('questionl10ns')->findAll([
                         'condition' => 'language=:language AND parent_qid=:parent_qid',
                         'params'    => [':language' => $this->sLanguage, ':parent_qid' => $flt->qid],
                         'order'     => 'question_order'
@@ -312,27 +315,27 @@ class Statistics_userController extends SurveyController
                     break;
                 case Question::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT:  //ARRAY (Multi Flex) (Text)
                 case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS:  //ARRAY (Multi Flex) (Numbers)
-                    $resultsScale0 = Question::model()->with('questionL10ns')->findAll([
-                        'condition' => 'language=:language AND parent_qid=:parent_qid AND scale_id=:scale:id',
+                    $resultsScale0 = Question::model()->with('questionl10ns')->findAll([
+                        'condition' => 'language=:language AND parent_qid=:parent_qid AND scale_id=:scale_id',
                         'params'    => [':language' => $this->sLanguage, ':parent_qid' => $flt->qid, ':scale_id' => 0],
                         'order'     => 'question_order'
                     ]);
-                    $resultsScale1 = Question::model()->with('questionL10ns')->findAll([
-                        'condition' => 'language=:language AND parent_qid=:parent_qid AND scale_id=:scale:id',
+                    $resultsScale1 = Question::model()->with('questionl10ns')->findAll([
+                        'condition' => 'language=:language AND parent_qid=:parent_qid AND scale_id=:scale_id',
                         'params'    => [':language' => $this->sLanguage, ':parent_qid' => $flt->qid, ':scale_id' => 1],
                         'order'     => 'question_order'
                     ]);
                     foreach ($resultsScale0 as $rowScale0) {
                         foreach ($resultsScale1 as $rowScale1) {
-                            $allfields[] = $SGQidentifier . reset($rowScale0) . "_" . $rowScale1['title'];
+                            $allfields[] = $SGQidentifier . $rowScale0['title'] . "_" . $rowScale1['title'];
                         }
                     }
                     break;
                 case Question::QT_R_RANKING_STYLE: //RANKING
-                    $results = Question::model()->with('questionL10ns')->findAll([
-                        'condition' => 'language=:language AND parent_qid=:parent_qid',
-                        'params'    => [':language' => $this->sLanguage, ':parent_qid' => $flt->qid],
-                        'order'     => 'question_order'
+                    $results = Answer::model()->with('answerl10ns')->findAll([
+                        'condition' => 'language=:language AND qid=:qid',
+                        'params'    => [':language' => $this->sLanguage, ':qid' => $flt->qid],
+                        'order'     => 'sortorder'
                     ]);
                     $count = count($results);
                     //loop through all answers. if there are 3 items to rate there will be 3 statistics
@@ -344,7 +347,7 @@ class Statistics_userController extends SurveyController
                 case Question::QT_X_BOILERPLATE_QUESTION:  //This is a boilerplate question and it has no business in this script
                     break;
                 case Question::QT_1_ARRAY_MULTISCALE: // MULTI SCALE
-                    $results = Question::model()->with('questionL10ns')->findAll([
+                    $results = Question::model()->with('questionl10ns')->findAll([
                         'condition' => 'language=:language AND parent_qid=:parent_qid',
                         'params'    => [':language' => $this->sLanguage, ':parent_qid' => $flt->qid],
                         'order'     => 'question_order'
@@ -365,7 +368,6 @@ class Statistics_userController extends SurveyController
                 default:   //Default settings
                     $allfields[] = $SGQidentifier;
                     break;
-
             }    //end switch -> check question types and create filter forms
         }
 

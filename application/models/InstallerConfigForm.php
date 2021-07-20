@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    exit('No direct script access allowed');
-}
+<?php
+
 /*
    * LimeSurvey
    * Copyright (C) 2013 The LimeSurvey Project Team / Carsten Schmitz
@@ -12,7 +11,7 @@
    * other free or open source software licenses.
    * See COPYRIGHT.php for copyright notices and details.
    *
-     *	Files Purpose: lots of common functions
+     *  Files Purpose: lots of common functions
 */
 
 /**
@@ -29,19 +28,19 @@
  */
 class InstallerConfigForm extends CFormModel
 {
-    const ENGINE_TYPE_MYISAM = 'MYISAM';
-    const ENGINE_TYPE_INNODB = 'INNODB';
+    public const ENGINE_TYPE_MYISAM = 'MYISAM';
+    public const ENGINE_TYPE_INNODB = 'INNODB';
 
-    const DB_TYPE_MYSQL = 'mysql';
-    const DB_TYPE_MYSQLI = 'mysqli';
-    const DB_TYPE_SQLSRV = 'sqlsrv';
-    const DB_TYPE_MSSQL = 'mssql';
-    const DB_TYPE_DBLIB = 'dblib';
-    const DB_TYPE_PGSQL = 'pgsql';
-    const DB_TYPE_ODBC = 'odbc';
+    public const DB_TYPE_MYSQL = 'mysql';
+    public const DB_TYPE_MYSQLI = 'mysqli';
+    public const DB_TYPE_SQLSRV = 'sqlsrv';
+    public const DB_TYPE_MSSQL = 'mssql';
+    public const DB_TYPE_DBLIB = 'dblib';
+    public const DB_TYPE_PGSQL = 'pgsql';
+    public const DB_TYPE_ODBC = 'odbc';
 
-    const MINIMUM_MEMORY_LIMIT = 128;
-    const MINIMUM_PHP_VERSION = '7.0.0';
+    public const MINIMUM_MEMORY_LIMIT = 128;
+    public const MINIMUM_PHP_VERSION = '7.2.5';
 
     // Database
     /** @var string $dbtype */
@@ -115,6 +114,9 @@ class InstallerConfigForm extends CFormModel
     public $isPhpGdPresent = false;
 
     /** @var bool */
+    public $phpGdHasJpegSupport = false;
+
+    /** @var bool */
     public $isPhpLdapPresent = false;
 
     /** @var bool */
@@ -183,7 +185,7 @@ class InstallerConfigForm extends CFormModel
     {
         return [
             'dbtype' => gT("The type of your database management system"),
-            'dblocation' => gT('Set this to the IP/net location of your database server. In most cases "localhost" will work. You can force Unix socket with complete socket path.').' '.gT('If your database is using a custom port attach it using a colon. Example: db.host.com:5431'),
+            'dblocation' => gT('Set this to the IP/net location of your database server. In most cases "localhost" will work. You can force Unix socket with complete socket path.') . ' ' . gT('If your database is using a custom port attach it using a colon. Example: db.host.com:5431'),
             'dbname' => gT("If the database does not yet exist it will be created (make sure your database user has the necessary permissions). In contrast, if there are existing LimeSurvey tables in that database they will be upgraded automatically after installation."),
             'dbuser' => gT('Your database server user name. In most cases "root" will work.'),
             'dbpwd' => gT("Your database server password."),
@@ -205,14 +207,15 @@ class InstallerConfigForm extends CFormModel
         $this->isMemoryLimitOK = $this->checkMemoryLimit();
         $this->isPhpLdapPresent = function_exists('ldap_connect');
         $this->isPhpImapPresent = function_exists('imap_open');
-        $this->isPhpZipPresent = function_exists('zip_open');
+        $this->isPhpZipPresent = class_exists('ZipArchive');
         $this->isSodiumPresent = function_exists('sodium_crypto_sign_open');
 
         if (function_exists('gd_info')) {
-            $this->isPhpGdPresent = array_key_exists('FreeType Support', gd_info());
+            $gdInfo = gd_info();
+            $this->phpGdHasJpegSupport = !empty($gdInfo['JPEG Support']);
+            $this->isPhpGdPresent = true;
         }
         $this->isPhpVersionOK = version_compare(PHP_VERSION, self::MINIMUM_PHP_VERSION, '>=');
-
     }
 
     /**
@@ -222,16 +225,17 @@ class InstallerConfigForm extends CFormModel
     public function getHasMinimumRequirements()
     {
 
-        if (!$this->isMemoryLimitOK
+        if (
+            !$this->isMemoryLimitOK
             or !$this->isUploadDirWriteable
             or !$this->isTmpDirWriteable
             or !$this->isConfigDirWriteable
             or !$this->isPhpVersionOK
             or !$this->isPhpMbStringPresent
             or !$this->isPhpZlibPresent
-            or !$this->isPhpJsonPresent) {
+            or !$this->isPhpJsonPresent
+        ) {
             return false;
-
         }
 
         if (count($this->supportedDbTypes) == 0) {
@@ -259,23 +263,35 @@ class InstallerConfigForm extends CFormModel
      * Memory limit in MB
      * @return float|int
      */
-    public function getMemoryLimit() {
+    public function getMemoryLimit()
+    {
         return convertPHPSizeToBytes(ini_get('memory_limit')) / 1024 / 1024;
     }
 
     public function validateDBEngine($attribute)
     {
-        if ($this->isMysql
-            && ($this->dbengine === null or !in_array($this->dbengine, array_keys($this->dbEngines)))) {
+        if (
+            $this->isMysql
+            && ($this->dbengine === null or !in_array($this->dbengine, array_keys($this->dbEngines)))
+        ) {
             $this->addError($attribute, gT('The database engine type must be set for MySQL'));
         }
 
         if ($this->isMysql && $this->dbengine === self::ENGINE_TYPE_INNODB) {
-            if (!$this->isInnoDbLargeFilePrefixEnabled()) {
-                $this->addError($attribute, gT('You need to enable large_file_prefix setting in your database configuration in order to use InnoDB engine for LimeSurvey!'));
-            }
-            if (!$this->isInnoDbBarracudaFileFormat()) {
-                $this->addError($attribute, gT('Your database configuration needs to have innodb_file_format and innodb_file_format_max set to use the Barracuda format in order to use InnoDB engine for LimeSurvey!'));
+            $mariadb = preg_match('/MariaDB/i', $this->getMySqlConfigValue('version'));
+            $match = preg_match('/^\d+\.\d+\.\d+/', $this->getMySqlConfigValue('version'), $version);
+            if (
+                !$match
+                    || (!$mariadb && version_compare($version[0], '5.7.0') <= 0)
+                    || ($mariadb && version_compare($version[0], '10.2.0') < 0)
+            ) {
+                // Only for older db-engine
+                if (!$this->isInnoDbLargeFilePrefixEnabled()) {
+                    $this->addError($attribute, gT('You need to enable large_file_prefix setting in your database configuration in order to use InnoDB engine for LimeSurvey!'));
+                }
+                if (!$this->isInnoDbBarracudaFileFormat()) {
+                    $this->addError($attribute, gT('Your database configuration needs to have innodb_file_format and innodb_file_format_max set to use the Barracuda format in order to use InnoDB engine for LimeSurvey!'));
+                }
             }
         }
     }
@@ -284,7 +300,8 @@ class InstallerConfigForm extends CFormModel
      * Get the array of supported DB type
      * @return array
      */
-    public function getSupportedDbTypes(){
+    public function getSupportedDbTypes()
+    {
         $result = array();
         foreach (CDbConnection::getAvailableDrivers() as $driver) {
             if (isset($this->db_names[$driver])) {
@@ -295,7 +312,8 @@ class InstallerConfigForm extends CFormModel
         return $result;
     }
 
-    private function setInitialEngine() {
+    private function setInitialEngine()
+    {
         if (isset($this->supportedDbTypes[self::DB_TYPE_MYSQL])) {
             if (getenv('DBENGINE')) {
                 $this->dbengine = getenv('DBENGINE');
@@ -308,22 +326,25 @@ class InstallerConfigForm extends CFormModel
     /**
      * @return bool
      */
-    public function getIsConfigDirWriteable() {
-        return is_writable(Yii::app()->getConfig('rootdir').'/application/config');
+    public function getIsConfigDirWriteable()
+    {
+        return is_writable(Yii::app()->getConfig('rootdir') . '/application/config');
     }
 
     /**
      * @return bool
      */
-    public function getIsTmpDirWriteable() {
-        return self::is_writable_recursive(Yii::app()->getConfig('tempdir').DIRECTORY_SEPARATOR);
+    public function getIsTmpDirWriteable()
+    {
+        return self::isWritableRecursive(Yii::app()->getConfig('tempdir') . DIRECTORY_SEPARATOR);
     }
 
     /**
      * @return bool
      */
-    public function getIsUploadDirWriteable() {
-        return self::is_writable_recursive(Yii::app()->getConfig('uploaddir').DIRECTORY_SEPARATOR);
+    public function getIsUploadDirWriteable()
+    {
+        return self::isWritableRecursive(Yii::app()->getConfig('uploaddir') . DIRECTORY_SEPARATOR);
     }
 
 
@@ -331,16 +352,18 @@ class InstallerConfigForm extends CFormModel
      * @param string $sDirectory
      * @return boolean
      */
-    public static function is_writable_recursive($sDirectory)
+    public static function isWritableRecursive($sDirectory)
     {
         $sFolder = opendir($sDirectory);
         if ($sFolder === false) {
             return false; // Dir does not exist
         }
         while ($sFile = readdir($sFolder)) {
-            if ($sFile != '.' && $sFile != '..' &&
-                (!is_writable($sDirectory.DIRECTORY_SEPARATOR.$sFile) ||
-                    (is_dir($sDirectory.DIRECTORY_SEPARATOR.$sFile) && !self::is_writable_recursive($sDirectory.DIRECTORY_SEPARATOR.$sFile)))) {
+            if (
+                $sFile != '.' && $sFile != '..' &&
+                (!is_writable($sDirectory . DIRECTORY_SEPARATOR . $sFile) ||
+                    (is_dir($sDirectory . DIRECTORY_SEPARATOR . $sFile) && !self::isWritableRecursive($sDirectory . DIRECTORY_SEPARATOR . $sFile)))
+            ) {
                 closedir($sFolder);
                 return false;
             }
@@ -349,7 +372,8 @@ class InstallerConfigForm extends CFormModel
         return true;
     }
 
-    public function isInnoDbLargeFilePrefixEnabled() {
+    public function isInnoDbLargeFilePrefixEnabled()
+    {
         return $this->getMySqlConfigValue('innodb_large_prefix') == '1';
     }
 
@@ -359,9 +383,9 @@ class InstallerConfigForm extends CFormModel
      */
     private function getMySqlConfigValue($itemName)
     {
-        $item = "@@".$itemName;
+        $item = "@@" . $itemName;
         try {
-            $query = "SELECT ".$item.";";
+            $query = "SELECT " . $item . ";";
             $result = $this->db->createCommand($query)->queryRow();
             return isset($result[$item]) ? $result[$item] : null;
         } catch (\Exception $e) {
@@ -373,7 +397,8 @@ class InstallerConfigForm extends CFormModel
     /**
      * @return bool
      */
-    private function isInnoDbBarracudaFileFormat() {
+    private function isInnoDbBarracudaFileFormat()
+    {
         $check1 = $this->getMySqlConfigValue('innodb_file_format') == 'Barracuda';
         $check2 = $this->getMySqlConfigValue('innodb_file_format_max') == 'Barracuda';
         return $check1 && $check2;
@@ -382,7 +407,8 @@ class InstallerConfigForm extends CFormModel
     /**
      * @return array
      */
-    public function getDbEngines() {
+    public function getDbEngines()
+    {
         return [
             self::ENGINE_TYPE_MYISAM => 'MyISAM',
             self::ENGINE_TYPE_INNODB => 'InnoDB'
@@ -415,15 +441,14 @@ class InstallerConfigForm extends CFormModel
                 $this->db->emulatePrepare = true;
             }
             if (in_array($this->dbtype, [ self::DB_TYPE_SQLSRV, self::DB_TYPE_DBLIB, self::DB_TYPE_MSSQL])) {
-                $this->db->initSQLs=['SET DATEFORMAT ymd;', 'SET QUOTED_IDENTIFIER ON;'];
+                $this->db->initSQLs = ['SET DATEFORMAT ymd;', 'SET QUOTED_IDENTIFIER ON;'];
             }
-            
+
             $this->db->tablePrefix = $this->dbprefix;
             $this->setMySQLDefaultEngine($this->dbengine);
-
         } catch (\Exception $e) {
             $this->addError('dblocation', gT('Try again! Connection with database failed.'));
-            $this->addError('dblocation', gT('Reason:').' '.$e->getMessage());
+            $this->addError('dblocation', gT('Reason:') . ' ' . $e->getMessage());
         }
         return true;
     }
@@ -447,13 +472,13 @@ class InstallerConfigForm extends CFormModel
      * @param string $dbEngine
      * @throws CDbException
      */
-    private function setMySQLDefaultEngine($dbEngine) {
+    private function setMySQLDefaultEngine($dbEngine)
+    {
         if (!empty($this->db) && $this->db->driverName === self::DB_TYPE_MYSQL) {
             $this->db
                 ->createCommand(new CDbExpression(sprintf('SET default_storage_engine=%s;', $dbEngine)))
                 ->execute();
         }
-
     }
 
     /**
@@ -473,7 +498,7 @@ class InstallerConfigForm extends CFormModel
                 $sDSN = $this->getPgsqlDsn();
                 break;
             case self::DB_TYPE_DBLIB:
-                $sDSN = $this->dbtype.":host={$this->dblocation};dbname={$this->dbname}";
+                $sDSN = $this->dbtype . ":host={$this->dblocation};dbname={$this->dbname}";
                 break;
             case self::DB_TYPE_MSSQL:
             case self::DB_TYPE_SQLSRV:
@@ -488,7 +513,8 @@ class InstallerConfigForm extends CFormModel
     /**
      * @return string
      */
-    private function getMysqlDsn() {
+    private function getMysqlDsn()
+    {
 
         $port = $this->getDbPort();
 
@@ -528,13 +554,14 @@ class InstallerConfigForm extends CFormModel
     /**
      * @return string
      */
-    private function getMssqlDsn() {
+    private function getMssqlDsn()
+    {
         $port = $this->getDbPort();
         $sDatabaseLocation = $this->dblocation;
         if ($port != '') {
-            $sDatabaseLocation = $this->dblocation.','.$port;
+            $sDatabaseLocation = $this->dblocation . ',' . $port;
         }
-        $sDSN = $this->dbtype.":Server={$sDatabaseLocation};";
+        $sDSN = $this->dbtype . ":Server={$sDatabaseLocation};";
         if ($this->useDbName) {
             $sDSN .= "Database={$this->dbname}";
         }
@@ -574,14 +601,16 @@ class InstallerConfigForm extends CFormModel
     /**
      * @return bool
      */
-    public function getIsMysql() {
+    public function getIsMysql()
+    {
         return in_array($this->dbtype, [self::DB_TYPE_MYSQL, self::DB_TYPE_MYSQLI]);
     }
 
     /**
      * @return bool
      */
-    public function getIsMSSql() {
+    public function getIsMSSql()
+    {
         return in_array($this->dbtype, [self::DB_TYPE_MSSQL, self::DB_TYPE_DBLIB, self::DB_TYPE_SQLSRV]);
     }
 
@@ -589,7 +618,8 @@ class InstallerConfigForm extends CFormModel
      * @return void
      * @throws Exception
      */
-    public function createDatabase() {
+    public function createDatabase()
+    {
         $query = $this->createDbQuery();
         try {
             $this->db->createCommand($query)->execute();
@@ -613,7 +643,7 @@ class InstallerConfigForm extends CFormModel
         $query = "CREATE DATABASE {$this->dbname}";
         if ($this->isMysql) {
             $query = "CREATE DATABASE `{$this->dbname}` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
-        } else if ($this->isMSSql) {
+        } elseif ($this->isMSSql) {
             $query = "CREATE DATABASE [{$this->dbname}];";
         }
         if ($this->dbtype === self::DB_TYPE_PGSQL) {
@@ -636,17 +666,17 @@ class InstallerConfigForm extends CFormModel
             switch ($this->dbtype) {
                 case self::DB_TYPE_MYSQL:
                 case self::DB_TYPE_MYSQLI:
-                    $this->db->createCommand("ALTER DATABASE ".$this->db->quoteTableName($this->dbname)." DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+                    $this->db->createCommand("ALTER DATABASE " . $this->db->quoteTableName($this->dbname) . " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
                         ->execute();
                     break;
             }
         } catch (Exception $e) {
             return array($e->getMessage());
         }
-        $fileName = dirname(APPPATH).'/installer/create-database.php';
+        $fileName = dirname(APPPATH) . '/installer/create-database.php';
         require_once($fileName);
         try {
-            createDatabase($this->db);
+            populateDatabase($this->db);
         } catch (Exception $e) {
             return array($e->getMessage());
         }

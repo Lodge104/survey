@@ -42,11 +42,12 @@ class UserManagementTest extends TestBaseClass
         return $this->createDefaultDBConnection($pdo);
     }
 
-    public static function setupBeforeClass()
+    public static function setupBeforeClass(): void
     {
         parent::setupBeforeClass();
         include(ROOT.DIRECTORY_SEPARATOR.'tests'.DIRECTORY_SEPARATOR.'data'.DIRECTORY_SEPARATOR.'datasets'.DIRECTORY_SEPARATOR.'userdata.php');
-        \Yii::import('application.controllers.admin.UserManagement', true);
+        //\Yii::import('application.controllers.admin.UserManagement', true);
+        \Yii::import('application.controllers.UserManagementController', true);
         \Yii::import('application.models.User', true);
         \Yii::app()->session['loginID'] = 1;
         
@@ -62,14 +63,15 @@ class UserManagementTest extends TestBaseClass
         self::$newUserId = $oUser->uid;
     }
 
-    public function setUp() {
+    public function setUp(): void
+    {
         $oUser = \User::model()->findByPk(self::$newUserId);
         $oUser->setAttributes($this->dataSet['new_user_data']);
         $oUser->save();
     }
 
     public function testUpdateAdminUserPassword() {
-        $oUserManagementController = new \UserManagement(); 
+        $oUserManagementController = new \UserManagementController('userManagement');
         $aChangeDataSet = $this->dataSet['user_change_password'];
         $aChangeDataSet['uid'] = self::$newUserId;
         $oUserManagementController->updateAdminUser($aChangeDataSet);
@@ -84,11 +86,10 @@ class UserManagementTest extends TestBaseClass
                 ."The password has not been changed correctly"
             );
         }
-
     }
 
     public function testUpdateAdminUserFullName() {
-        $oUserManagementController = new \UserManagement(); 
+        $oUserManagementController = new \UserManagementController('userManagement');
         $aChangeDataSet = $this->dataSet['user_change_full_name'];
         $aChangeDataSet['uid'] = self::$newUserId;
 
@@ -108,7 +109,7 @@ class UserManagementTest extends TestBaseClass
     }
 
     public function testUpdateAdminUserTamperproofed() {
-        $oUserManagementController = new \UserManagement(); 
+        $oUserManagementController = new \UserManagementController('userManagement');
         $aChangeDataSet = $this->dataSet['change_admin_user'];
         $aChangeDataSet['uid'] = 1;
         \Yii::app()->session['loginID'] = self::$newUserId;
@@ -131,7 +132,8 @@ class UserManagementTest extends TestBaseClass
 
     }
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void
+    {
         $oUser = \User::model()->findByPk(self::$newUserId);
         $oUser->delete();
     }

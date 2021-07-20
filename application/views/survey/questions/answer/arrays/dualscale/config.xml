@@ -26,6 +26,7 @@
 
     <compatibility>
         <version>4.0</version>
+        <version>5.0</version>
     </compatibility>
 
     <!--
@@ -53,7 +54,6 @@
         <attribute>encrypted</attribute>
         <attribute>save_as_default</attribute>
         <attribute>clear_default</attribute>
-        <attribute>preg</attribute>
     </generalattributes>
 
     <!-- Question attributes -->
@@ -65,6 +65,7 @@
             <sortorder>100</sortorder>
             <inputtype>integer</inputtype>
             <default></default>
+            <min>0</min>
             <help>Repeat headers every n-th subquestions (Set to 0 to deactivate).</help>
             <caption>Repeat headers</caption>
             <i18n></i18n>

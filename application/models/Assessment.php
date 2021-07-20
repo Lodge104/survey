@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    exit('No direct script access allowed');
-}
+<?php
+
 /*
    * LimeSurvey
    * Copyright (C) 2013 The LimeSurvey Project Team / Carsten Schmitz
@@ -12,7 +11,7 @@
    * other free or open source software licenses.
    * See COPYRIGHT.php for copyright notices and details.
    *
-     *	Files Purpose: lots of common functions
+     *  Files Purpose: lots of common functions
 */
 
 /**
@@ -30,6 +29,7 @@
  */
 class Assessment extends LSActiveRecord
 {
+
     public function init()
     {
         parent::init();
@@ -57,6 +57,7 @@ class Assessment extends LSActiveRecord
     {
         return array(
             array('name,message', 'LSYii_Validators'),
+            array('scope', 'in', 'range' => array('G', 'T'))
         );
     }
 
@@ -109,10 +110,10 @@ class Assessment extends LSActiveRecord
             'trash text-danger',
             gT("Delete")
         );
-        if (Permission::model()->hasSurveyPermission($this->sid,'assessments', 'delete')) {
+        if (Permission::model()->hasSurveyPermission($this->sid, 'assessments', 'delete')) {
             $buttons .= vsprintf($raw_button_template, $deleteData);
         }
-        if (Permission::model()->hasSurveyPermission($this->sid,'assessments', 'update')) {
+        if (Permission::model()->hasSurveyPermission($this->sid, 'assessments', 'update')) {
             $buttons .= vsprintf($raw_button_template, $editData);
         }
         $buttons .= '</div>';
@@ -137,7 +138,11 @@ class Assessment extends LSActiveRecord
                 'name' => 'scope',
                 'value' => '$data->scope == "G" ? eT("Group") : eT("Total")',
                 'htmlOptions' => ['class' => 'col-sm-1'],
-                'filter' => TbHtml::dropDownList('Assessment[scope]', 'scope', ['' => gT('All'), 'T' => gT('Total'), 'G' => gT("Group")])
+                'filter' => TbHtml::dropDownList(
+                    'Assessment[scope]',
+                    $this->scope,
+                    ['A' => gT('All'), 'T' => gT('Total'), 'G' => gT("Group")]
+                )
             ),
             array(
                 'name' => 'name',
@@ -154,7 +159,8 @@ class Assessment extends LSActiveRecord
             array(
                 'name' => 'message',
                 'htmlOptions' => ['class' => 'col-sm-5'],
-                "type" => 'html', // This show all html (filtered, raw show unfiltered html) … maybe need another type , something like strip tag and ellipsize ?
+                'value' => 'viewHelper::flatEllipsizeText($data->message,true,0)',
+                "type" => 'raw'
             )
         );
     }
@@ -165,23 +171,25 @@ class Assessment extends LSActiveRecord
 
         $survey = Survey::model()->findByPk($this->sid);
 
-        $criteria = new CDbCriteria;
+        $criteria = new CDbCriteria();
 
         $criteria->compare('id', $this->id);
         $criteria->compare('sid', $this->sid);
         $criteria->compare('gid', $this->gid);
-        $criteria->compare('scope', $this->scope);
+        if ($this->scope !== 'A') {
+            $criteria->compare('scope', $this->scope);
+        }
         $criteria->compare('name', $this->name, true);
         $criteria->compare('minimum', $this->minimum);
         $criteria->compare('maximum', $this->maximum);
         $criteria->compare('message', $this->message, true);
         $criteria->compare('language', $survey->language);
 
-        $pageSize = Yii::app()->user->getState('pageSizeParticipantView', Yii::app()->params['defaultPageSize']);
+        $pageSize = Yii::app()->user->getState('pageSize', Yii::app()->params['defaultPageSize']);
         return new CActiveDataProvider(
             $this,
             array(
-                'criteria'=>$criteria,
+                'criteria' => $criteria,
                 'pagination' => array(
                     'pageSize' => $pageSize
                 )
@@ -196,12 +204,12 @@ class Assessment extends LSActiveRecord
      */
     public static function insertRecords($data)
     {
-        $assessment = new self;
+        $assessment = new self();
 
         foreach ($data as $k => $v) {
                     $assessment->$k = $v;
         }
-        $assessment->scope = isset($assessment->scope) ? $assessment->scope : '0';
+        $assessment->scope = isset($assessment->scope) ? $assessment->scope : 'T';
         $assessment->save();
 
         return $assessment;
@@ -215,12 +223,40 @@ class Assessment extends LSActiveRecord
      */
     public static function updateAssessment($id, $iSurveyID, $language, array $data)
     {
-        $assessment = self::model()->findByAttributes(array('id' => $id, 'sid'=> $iSurveyID, 'language' => $language));
+        $assessment = self::model()->findByAttributes(array('id' => $id, 'sid' => $iSurveyID, 'language' => $language));
         if (!is_null($assessment)) {
             foreach ($data as $k => $v) {
                             $assessment->$k = $v;
             }
             $assessment->save();
         }
+    }
+
+    /**
+     * Checks for a survey if it has asssessment activated. Checks also inherited status ('I')
+     *
+     * @param $surveyid
+     * @return boolean true if it is actice, false otherwise and if survey does not exist
+     */
+    public static function isAssessmentActive($surveyid)
+    {
+        $bActive = false;
+        $oSurvey = Survey::model()->findByPk($surveyid);
+        if ($oSurvey !== null) {
+            $assessmentActivated = $oSurvey->assessments; // colud be Y, N or I (check inheritance ...)
+            if ($assessmentActivated === 'I') { //then value is inherited, check survey group value ...
+                if ($oSurvey->gsid === 1) { //this is the default group (it's always set to 'N')
+                    $bActive = false;
+                } else {
+                    $oSurveyGroupSettings = SurveysGroupsettings::model()->findByPk($oSurvey->gsid);
+                    $isActiveSurveyGroup = $oSurveyGroupSettings->assessments;
+                    $bActive = $isActiveSurveyGroup === 'Y';
+                }
+            } else {
+                $bActive = $assessmentActivated === 'Y';
+            }
+        }
+
+        return $bActive;
     }
 }

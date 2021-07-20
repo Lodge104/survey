@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    exit('No direct script access allowed');
-}
+<?php
+
 /*
  * LimeSurvey
  * Copyright (C) 2013 The LimeSurvey Project Team / Carsten Schmitz
@@ -61,14 +60,14 @@ class OptinController extends LSYii_Controller
             $oToken = Token::model($iSurveyID)->findByAttributes(array('token' => $sToken));
 
             if (!isset($oToken)) {
-                $sMessage = gT('You are not a participant in this survey.');
+                $sMessage = gT('You are not a participant of this survey.');
             } else {
                 if ($oToken->emailstatus == 'OptOut') {
                     $oToken->emailstatus = 'OK';
                     $oToken->save();
                     $sMessage = gT('You have been successfully added back to this survey.');
                 } elseif ($oToken->emailstatus == 'OK') {
-                    $sMessage = gT('You are already a part of this survey.');
+                    $sMessage = gT('You are already a participant of this survey.');
                 } else {
                     $sMessage = gT('You have been already removed from this survey.');
                 }

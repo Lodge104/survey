@@ -121,4 +121,3 @@ themes/survey/no_bootstrap/files/*
 !themes/survey/*/files/logo_w_s.png
 !themes/survey/*/files/pattern.png
 !themes/survey/*/files/print_img_radio.png
-application/config/security.php

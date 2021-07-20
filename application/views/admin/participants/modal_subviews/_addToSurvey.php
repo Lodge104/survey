@@ -35,7 +35,7 @@
         <div class="row ls-space margin top-10 bottom-10">
             <div class='form-group'>
                 <label class='control-label col-sm-4'>
-                    <?php eT('Display survey participants after adding?'); ?>
+                    <?php eT('Display survey participant table after addition?'); ?>
                 </label>
                 <div class='col-sm-8'>
                     <!--<input type='checkbox' name='redirect' />-->
@@ -46,7 +46,7 @@
     </div>
 
     <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal"><?php eT('Close') ?></button>
-        <input type="submit" class="btn btn-primary action_save_modal_shareparticipant" value='<?php eT('Next')?>' />
+        <button type="button" class="btn btn-default" data-dismiss="modal"><?php eT('Cancel') ?></button>
+        <input type="submit" class="btn btn-primary action_save_modal_shareparticipant" value='<?php eT('Apply')?>' />
     </div>
 <?php $this->endWidget('CActiveForm'); ?>

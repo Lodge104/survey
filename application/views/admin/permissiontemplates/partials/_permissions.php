@@ -1,16 +1,19 @@
-<div class="modal-header">
-    <h3>
-        <?php eT("Edit permissions");?>
-    </h3>
-</div>
+<?php
+Yii::app()->getController()->renderPartial(
+    '/layouts/partial_modals/modal_header',
+    ['modalTitle' => gT('Edit permissions')]
+);
+?>
+
+<?=TbHtml::formTb(
+    null,
+    App()->createUrl('admin/roles/sa/savepermissions', ['ptid' => $oModel->ptid]),
+    'post',
+    ["id"=>"RoleControl--modalform"]
+)?>
+
 <div class="modal-body selector--edit-permissions-container">
-    <div class="container-center">        
-        <?=TbHtml::formTb(
-            null, 
-            App()->createUrl('admin/roles/sa/savepermissions', ['ptid' => $oModel->ptid]), 
-            'post', 
-            ["id"=>"RoleControl--modalform"]
-        )?>
+    <div class="container-center">
             <input type='hidden' name='ptid' value='<?php echo (isset($oModel) ? $oModel->ptid : '');?>' />
             <table id='RoleControl--permissions-table' class='activecell table table-striped'>
                 <thead>
@@ -57,7 +60,7 @@
 
                                         <!-- checkbox -->
                                         <input type="checkbox"  class="specific-permission-selector" name='Permission[<?php echo $sPermissionKey.']['.$sCRUDKey;?>]' id='perm_<?php echo $sPermissionKey.'_'.$sCRUDKey;?>'
-                                            <?php if(Permission::model()->hasRolePermission( $oModel->ptid, $sPermissionKey, $sCRUDKey)):?>
+                                            <?php if(Permission::model()->roleHasPermission($oModel->ptid, $sPermissionKey, $sCRUDKey)):?>
                                                 checked="checked"
                                             <?php endif; ?>
                                             <?php if(substr($sPermissionKey,0,5) === 'auth_' && $sCRUDKey === 'read'): ?>
@@ -71,10 +74,10 @@
                     <?php endforeach; ?>
 
                 </table>
-            <div class="row ls-space margin top-25">
-                <button class="btn btn-success col-sm-3 col-xs-5 col-xs-offset-1 selector--submitForm" id="submitForm"><?=gT('Save')?></button>
-                <button class="btn btn-error col-sm-3 col-xs-5 col-xs-offset-1 selector--exitForm" id="exitForm"><?=gT('Cancel')?></button>
-            </div>
-        </form>
     </div>
 </div>
+<div class="modal-footer modal-footer-buttons" style="margin-top: 15px;">
+    <button class="btn btn-cancel selector--exitForm" id="exitForm"><?=gT('Cancel')?></button>
+    <button class="btn btn-success selector--submitForm" id="submitForm"><?=gT('Save')?></button>
+</div>
+</form>

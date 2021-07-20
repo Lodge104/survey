@@ -1,5 +1,7 @@
 <?php
+
 use LimeSurvey\PluginManager\PluginEvent;
+
 /*
 * LimeSurvey
 * Copyright (C) 2007-2013 The LimeSurvey Project Team / Carsten Schmitz
@@ -55,7 +57,7 @@ class LSUserIdentity extends CUserIdentity
         $result = new LSAuthResult(self::ERROR_NONE);
 
         // Check if the ip is locked out
-        if (FailedLoginAttempt::model()->isLockedOut()) {
+        if (FailedLoginAttempt::model()->isLockedOut(FailedLoginAttempt::TYPE_LOGIN)) {
             $message = sprintf(gT('You have exceeded the number of maximum login attempts. Please wait %d minutes before trying again.'), App()->getConfig('timeOutTime') / 60);
             $result->setError(self::ERROR_IP_LOCKED_OUT, $message);
         }
@@ -135,7 +137,7 @@ class LSUserIdentity extends CUserIdentity
                 'user_id' => App()->user->id,
                 'importance' => Notification::HIGH_IMPORTANCE,
                 'title' => 'Password warning',
-                'message' => '<span class="fa fa-exclamation-circle text-warning"></span>&nbsp;'.
+                'message' => '<span class="fa fa-exclamation-circle text-warning"></span>&nbsp;' .
                     gT("Warning: You are still using the default password ('password'). Please change your password and re-login again.")
             ));
             $not->save();
@@ -154,14 +156,14 @@ class LSUserIdentity extends CUserIdentity
         Yii::app()->session['templateeditormode'] = $user->templateeditormode;
         Yii::app()->session['questionselectormode'] = $user->questionselectormode;
         Yii::app()->session['dateformat'] = $user->dateformat;
-        Yii::app()->session['session_hash'] = hash('sha256', getGlobalSetting('SessionName').$user->users_name.$user->uid);
+        Yii::app()->session['session_hash'] = hash('sha256', getGlobalSetting('SessionName') . $user->users_name . $user->uid);
 
         // Perform language settings
         if (App()->request->getPost('loginlang', 'default') != 'default') {
             $user->lang = sanitize_languagecode(App()->request->getPost('loginlang'));
             $user->save();
             $sLanguage = $user->lang;
-        } else if ($user->lang == 'auto' || $user->lang == '') {
+        } elseif ($user->lang == 'auto' || $user->lang == '') {
             $sLanguage = getBrowserLanguage();
         } else {
             $sLanguage = $user->lang;
@@ -177,7 +179,7 @@ class LSUserIdentity extends CUserIdentity
         }
 
         //At last store the login time in the user table
-        $user->lastLogin = date('Y-m-d H:i:s');
+        $user->last_login = date('Y-m-d H:i:s');
         $user->save();
     }
 

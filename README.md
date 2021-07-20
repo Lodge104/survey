@@ -1,4 +1,4 @@
-![LimeSurvey Logo](https://www.limesurvey.org/images/logos/logo_main.png)
+![LimeSurvey Logo](https://account.limesurvey.org/images/logos/logo_main.png)
 # Sophisticated online survey software
 [![Build Status](https://travis-ci.org/LimeSurvey/LimeSurvey.svg?branch=master)](https://travis-ci.org/LimeSurvey/LimeSurvey/)
 
@@ -20,7 +20,7 @@ Or try taking one of our [test surveys](https://survey.limesurvey.org/index.php?
 
 ### Release
 We release early and often.
-The latest stable release version is available for download at https://www.limesurvey.org/about-limesurvey/download
+The latest stable release version is available for download at https://community.limesurvey.org/downloads/
 We recommend using those.
 
 ### Repository
@@ -33,7 +33,7 @@ Please be advised, that we sometimes push development versions into the reposito
 ### Minimal
 The absolute minimal requirements are:
  - Apache >= 2.4 | nginx >= 1.1 | any other php-ready webserver
- - php >= 5.4
+ - php >= 7.2.5
     - with mbstring and pdo-database drivers
  - mysql >= 5.5.9 | pgsql >= 9 | mariadb >= 5.5  | mssql >= 2005
 

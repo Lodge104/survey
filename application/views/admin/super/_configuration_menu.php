@@ -140,7 +140,7 @@
                 <?php if(Permission::model()->hasGlobalPermission('templates','read')): ?>
                     <!-- Theme Editor -->
                     <li class="dropdown-item">
-                        <a href="<?php echo $this->createUrl("admin/themeoptions"); ?>">
+                        <a href="<?php echo $this->createUrl("themeOptions/index"); ?>">
                             <?php eT("Themes");?>
                         </a>
                     </li>
@@ -149,17 +149,17 @@
                     <!-- Edit label sets -->
                     <li class="dropdown-item">
                         <a href="<?php echo $this->createUrl("admin/labels/sa/view"); ?>">
-                            <?php eT("Manage label sets");?>
+                            <?php eT("Label sets");?>
                         </a>
                     </li>
                     <?php endif;?>
 
-                <!-- Check Data Integrity -->
+                <!-- Data Integrity -->
                 <?php if(Permission::model()->hasGlobalPermission('superadmin','read')): ?>
 
                     <li class="dropdown-item">
                         <a href="<?php echo $this->createUrl("admin/checkintegrity"); ?>">
-                            <?php eT("Check data integrity");?>
+                            <?php eT("Data integrity");?>
                         </a>
                     </li>
 
@@ -200,17 +200,17 @@
                 <!-- Manage survey administrators -->
                 <?php if(Permission::model()->hasGlobalPermission('users','read')): ?>
                     <li class="dropdown-item">
-                        <a href="<?php echo $this->createUrl("admin/usermanagement/sa/view"); ?>">
-                            <?php eT("Manage survey administrators");?>
+                        <a href="<?php echo $this->createUrl("userManagement/index"); ?>">
+                            <?php eT("Survey administrators");?>
                         </a>
                     </li>
                     <?php endif;?>
                 <?php if(Permission::model()->hasGlobalPermission('usergroups','read')): ?>
 
-                    <!-- Create/edit user groups -->
+                    <!-- User groups -->
                     <li class="dropdown-item">
-                        <a href="<?php echo $this->createUrl("admin/usergroups/sa/index"); ?>">
-                            <?php eT("Create/edit user groups");?>
+                        <a href="<?php echo $this->createUrl("userGroup/index"); ?>">
+                            <?php eT("User groups");?>
                         </a>
                     </li>
 
@@ -218,10 +218,10 @@
 
                 <?php if(Permission::model()->hasGlobalPermission('superadmin','read')): ?>
 
-                    <!-- Create/edit user groups -->
+                    <!-- User groups -->
                     <li class="dropdown-item">
                         <a href="<?php echo $this->createUrl("admin/roles/"); ?>">
-                            <?php eT("Create/edit user roles");?>
+                            <?php eT("User roles");?>
                         </a>
                     </li>
 
@@ -256,54 +256,50 @@
                     <?php eT('Settings');?>
                 </li>
 
-                <!-- FileManager settings -->
-                <?php if(Permission::model()->hasGlobalPermission('surveys','create')): ?>
-                    <li class="dropdown-item">
-                        <a href="<?php echo $this->createUrl("admin/filemanager"); ?>">
-                            <?php eT("File manager");?>
-                        </a>
-                    </li>
-                <?php endif; ?>
                 <?php if(Permission::model()->hasGlobalPermission('settings','read')): ?>
-                    <!-- Home page settings -->
+                    <!-- Homepage -->
                     <li class="dropdown-item">
-                        <a href="<?php echo $this->createUrl("admin/homepagesettings"); ?>">
-                            <?php eT("Home page settings");?>
+                        <a href="<?php echo $this->createUrl("homepageSettings/index"); ?>">
+                            <?php eT("Homepage");?>
                         </a>
                     </li>
 
-                    <!-- Global settings -->
+                    <!-- Global -->
                     <li class="dropdown-item">
                         <a href="<?php echo $this->createUrl("admin/globalsettings"); ?>">
-                            <?php eT("Global settings");?>
+                            <?php eT("Global");?>
                         </a>
                     </li>
 
-                    <!-- Global survey settings -->
+                    <!-- Global Survey -->
                     <li class="dropdown-item">
                         <a href="<?php echo $this->createUrl("admin/globalsettings/sa/surveysettings"); ?>">
-                            <?php eT("Global survey settings");?>
+                            <?php eT("Global survey");?>
                         </a>
                     </li>
 
+                    <!-- Plugins -->
                     <li class="dropdown-item">
                         <a href="<?php echo $this->createUrl("/admin/pluginmanager/sa/index"); ?>">
-                            <?php eT("Plugin manager");?>
+                            <?php eT("Plugins");?>
                         </a>
                     </li>
+
                 <!-- Surveymenu Editor -->
+                <!-- Menu -->
                 <?php if(Permission::model()->hasGlobalPermission('settings','read')): ?>
                     <li class="dropdown-item">
                         <a href="<?php echo $this->createUrl("admin/menus/sa/view"); ?>">
-                            <?php eT("Menu configuration");?>
+                            <?php eT("Menu");?>
                         </a>
                     </li>
                 <?php endif;?>
                 <!-- Surveymenu entry Editor -->
+                <!-- Menu entries -->
                 <?php if(Permission::model()->hasGlobalPermission('settings','read')): ?>
                     <li class="dropdown-item">
                         <a href="<?php echo $this->createUrl("admin/menuentries/sa/view"); ?>">
-                            <?php eT("Menu entries configuration");?>
+                            <?php eT("Menu entries");?>
                         </a>
                     </li>
                 <?php endif;?>

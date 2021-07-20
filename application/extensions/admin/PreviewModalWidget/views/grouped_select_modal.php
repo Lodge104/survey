@@ -6,7 +6,7 @@
 
 <?php //The modal ?>
 <input id="<?=$this->widgetsJsName?>" name="<?=$this->widgetsJsName?>" value="<?=$this->value?>" type="hidden" />
-<div class="modal fade previewModalWidget" tabindex="-1" role="dialog" id="selector__<?=$this->widgetsJsName?>-modal" data-backdrop="false">
+<div class="modal fade previewModalWidget" tabindex="-1" role="dialog" id="selector__<?=$this->widgetsJsName?>-modal">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -76,7 +76,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">
+        <button type="button" class="btn btn-Cancel" data-dismiss="modal">
           <?=gT($this->closeButton)?>
         </button>
         <button type="button" id="selector__select-this-<?=$this->widgetsJsName?>" class="btn btn-primary">
