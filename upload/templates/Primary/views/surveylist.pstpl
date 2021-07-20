@@ -1,0 +1,33 @@
+<div class="alert alert-danger" role="alert"  id="checkjavascript">
+    {CHECKJAVASCRIPT}
+</div>
+<script>
+    document.getElementById("checkjavascript").style.display = 'none';
+</script>
+
+<div class="row" id="surveys-list-container">
+    <div class="jumbotron" id="surveys-list-jumbotron">
+        {SITELOGO}
+        <p class="">
+            {SITENAME}
+        </p>
+    </div>
+
+
+    <div class="col-xs-12 site-name">
+
+    </div>
+    <div class="col-xs-12 survey-list-heading">
+        {SURVEYLISTHEADING}
+    </div>
+    <div class="col-xs-12 survey-list">
+        {SURVEYLIST}
+    </div>
+
+</div>
+
+<div id="surveyListFooter" class="well">
+    <div class="container">
+
+    </div>
+</div>
