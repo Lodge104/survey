@@ -12,7 +12,6 @@ echo viewHelper::getViewTestTag('viewLabelSets');
 ?>
 <?php $pageSize=Yii::app()->user->getState('pageSize',Yii::app()->params['defaultPageSize']);?>
 <div class="col-lg-12">
-	<div class="pagetitle h3"><?php eT('Label sets list'); ?></div>
 
 	<div class="row">
         <div class="col-lg-12 content-right">
@@ -65,7 +64,7 @@ echo viewHelper::getViewTestTag('viewLabelSets');
                     ),
 
                     'htmlOptions'=>array('style'=>'cursor: pointer;', 'class'=>'hoverAction'),
-                    'selectionChanged'=>"function(id){window.location='" . Yii::app()->urlManager->createUrl('admin/labels/sa/multieditor/lid' ) . '/' . "' + $.fn.yiiGridView.getSelection(id.split(',', 1));}",
+                    'selectionChanged'=>"function(id){window.location='" . Yii::app()->urlManager->createUrl('admin/labels/sa/view/lid' ) . '/' . "' + $.fn.yiiGridView.getSelection(id.split(',', 1));}",
                     'ajaxUpdate' => 'labelsets-grid',
                    ));
             ?>

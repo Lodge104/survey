@@ -28,7 +28,7 @@ echo viewHelper::getViewTestTag('themeEditor');
             if(filename==""){
                 return false; // False click
             }
-            var allowedtypes=',<?php echo Yii::app()->getConfig('allowedthemeuploads'); ?>,';
+            var allowedtypes=',<?php echo Yii::app()->getConfig('allowedthemeuploads').','.Yii::app()->getConfig('allowedthemeimageformats'); ?>,';
             var lastdotpos=-1;
             var ext='';
             if ((lastdotpos=filename.lastIndexOf('.')) < 0)
@@ -55,20 +55,18 @@ echo viewHelper::getViewTestTag('themeEditor');
     //-->
 </script>
 
-
-<div class='menubar' id="templateeditorbar">
+<!-- Template Editor Bar -->
+<div class='menubar' id="templateeditorbar" style="box-shadow: 3px 3px 3px #35363f; margin-bottom: 10px;">
     <div class='row container-fluid'>
 
         <!-- Left Menu -->
-        <div class="col-md-5">
-
+        <div class="col-md-5" style="margin-top: 10px; margin-bottom: 10px;">
 
             <?php $importModal=false;?>
             <?php if(is_writable($tempdir)):?>
 
-
                 <!-- Export -->
-                <?php if(Permission::model()->hasGlobalPermission('templates','export') && function_exists("zip_open")):?>
+                <?php if(Permission::model()->hasGlobalPermission('templates','export') && class_exists('ZipArchive')):?>
                     <a class="btn btn-default" id="button-export" href="<?php echo $this->createUrl('admin/themes/sa/templatezip/templatename/' . $templatename) ?>" role="button">
                         <span class="icon-export text-success"></span>
                         <?php eT("Export"); ?>
@@ -99,7 +97,7 @@ echo viewHelper::getViewTestTag('themeEditor');
                 <!-- import disabled -->
                 <?php
 
-                if (!function_exists("zip_open"))
+                if (!class_exists('ZipArchive'))
                 {
                     $sMessage=gT("You cannot upload themes because you do not have the required ZIP library installed in PHP.");
                 }
@@ -163,7 +161,9 @@ echo viewHelper::getViewTestTag('themeEditor');
         </div>
 
         <!-- Right Menu -->
-        <div class="col-md-7 text-right form-inline">
+        <div class="col-md-7 text-right form-inline" style="margin-top: 10px; margin-bottom: 10px;">
+
+            <!-- Theme Select Box -->
             <div class="form-group">
                 <label for='templatedir'><?php eT("Theme:"); ?></label>
                 <select class="listboxtemplates form-control" id='templatedir' name='templatedir' onchange="javascript: var uri = new Uri('<?php
@@ -173,6 +173,7 @@ echo viewHelper::getViewTestTag('themeEditor');
                 </select>
             </div>
 
+            <!-- Screen Select Box -->
             <div class="form-group">
                 <label for='listboxtemplates'><?php eT("Screen:"); ?></label>
                 <?php echo CHtml::dropDownList('screenname',$screenname,$screens,array(
@@ -197,11 +198,12 @@ echo viewHelper::getViewTestTag('themeEditor');
                 </a>
                 <?php endif;?>
 
-            <?php if(isset($fullpagebar['returnbutton'])):?>
-                <a class="btn btn-default" href="<?php echo $this->createUrl("admin/themeoptions"); ?>" role="button">
+            <!-- Return to Theme List -->
+            <?php if(isset($templateEditorBar['buttons']['returnbutton'])):?>
+                <a class="btn btn-default" href="<?php echo $this->createUrl("themeOptions/index"); ?>" role="button">
                     <span class="fa fa-backward" ></span>
                     &nbsp;&nbsp;
-                    <?php eT("Return to theme list"); ?>
+                    <?php eT("Back"); ?>
                 </a>
                 <?php endif;?>
         </div>
@@ -209,11 +211,11 @@ echo viewHelper::getViewTestTag('themeEditor');
 </div>
 
 <?php if($importModal):?>
-    <?php $this->renderPartial('themeoptions/import_modal', ['importTemplate' => 'importtemplate', 'importModal' => 'importModal']); ?>
+    <?php $this->renderPartial('themeOptions/import_modal', ['importTemplate' => 'importtemplate', 'importModal' => 'importModal']); ?>
 <?php endif;?>
 
-<div class="col-lg-12 templateeditor">
-    <div class="h3 theme-editor-header"><?php eT("Theme editor:"); ?> <i><?php echo $templatename; ?></i></div>
+<!-- Template Editor -->
+<div class="col-lg-12 templateeditor" style="margin: 10px 0 0 0;">
 
     <?php if(!is_template_editable($templatename)):?>
         <div class="alert alert-info alert-dismissible" role="alert">

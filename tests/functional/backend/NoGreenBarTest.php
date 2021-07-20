@@ -14,9 +14,8 @@ class NoGreenBarTest extends TestBaseClassWeb
     /**
      * Setup green bar test.
      */
-    public function setup()
+    public function setUp(): void
     {
-        $this->markTestSkipped();
         // Import suprvey.
         $surveyFile =  'tests/data/surveys/survey_archive_358746_no_green_bar.lsa';
         self::importSurvey($surveyFile);
@@ -53,6 +52,8 @@ class NoGreenBarTest extends TestBaseClassWeb
         $input = $web->findById('firstname');
         $input->sendKeys('dummy name');
         sleep(1);
+        self::ignoreAdminNotification();
+        self::ignoreAdminNotification();
         $savebutton = $web->findById('save-button');
         $savebutton->click();
         sleep(1);
@@ -63,8 +64,6 @@ class NoGreenBarTest extends TestBaseClassWeb
      */
     public function testNoGreenBar()
     {
-        $this->markTestIncomplete('See bug #15336');
-
         $web = self::$webDriver;
         try {
             $web->findById('breadcrumb-container');

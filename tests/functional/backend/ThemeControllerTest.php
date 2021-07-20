@@ -18,7 +18,7 @@ class ThemeControllerTest extends TestBaseClassWeb
     /**
      * Login etc.
      */
-    public static function setupBeforeClass()
+    public static function setupBeforeClass(): void
     {
         parent::setupBeforeClass();
         $username = getenv('ADMINUSERNAME');
@@ -134,7 +134,7 @@ class ThemeControllerTest extends TestBaseClassWeb
 
         $urlMan = \Yii::app()->urlManager;
         $urlMan->setBaseUrl('http://' . self::$domain . '/index.php');
-        $url = $urlMan->createUrl('admin/themeoptions');
+        $url = $urlMan->createUrl('themeOptions');
 
         // NB: Less typing.
         $w = self::$webDriver;
@@ -241,6 +241,7 @@ class ThemeControllerTest extends TestBaseClassWeb
         $_POST['newname'] = 'vanilla_version_1';
         // NB: Must run as web user to get correct permissions here.
         $contr->templatecopy();
+        exec('sudo chmod -R 777 ./upload'); // Add permisions to ./upload directory, neede for CI pipeline
         //$dummy->lastAction;
         //$flashes = \Yii::app()->session['aFlashMessage'];
 
@@ -275,7 +276,7 @@ class ThemeControllerTest extends TestBaseClassWeb
             $this->assertTrue(file_exists($file));
             $fileInput->sendKeys($file)->submit();
 
-            sleep(1);
+            sleep(2);
 
             // Check that file is last in list.
             $files = $w->findElements(WebDriverBy::className('other-files-filename'));
@@ -288,7 +289,7 @@ class ThemeControllerTest extends TestBaseClassWeb
             $deleteButton->click();
             $w->switchTo()->alert()->accept();
 
-            sleep(2);
+            sleep(3);
 
             // Check that file does not exist in list anymore.
             $files = $w->findElements(WebDriverBy::className('other-files-filename'));

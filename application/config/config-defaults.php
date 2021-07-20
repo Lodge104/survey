@@ -82,20 +82,24 @@ $config['allowunblacklist']          = 'N'; // Allow participant to unblacklist 
 $config['userideditable']            = 'N'; // Allow editing of user IDs
 
 $config['defaulttheme']              = 'fruity'; // This setting specifys the default theme used for the 'public list' of surveys
+$config['createsample']              = true;
 $config['customassetversionnumber']  = 1;        // Used to generate the path of tmp assets (see: LSYii_AssetManager::generatePath()  )
 
 // Please be very careful if you want to allow SVG files - there are several XSS dangerous security issues
-$config['allowedthemeuploads'] = 'gif,ico,jpg,png,css,js,map,json,eot,ttf,woff,txt,md,xml,woff2,twig'; // File types allowed to be uploaded in the themes section.
+$config['allowedthemeimageformats'] = 'gif,ico,jpg,png'; // Image file types allowed to be uploaded in the themes section.
+$config['allowedthemeuploads'] = 'css,js,map,json,eot,ttf,woff,txt,md,xml,woff2,twig'; // Other file types allowed to be uploaded in the themes section.
 $config['allowedfileuploads'] = [
     //Documents
     'xls', 'doc', 'xlsx', 'docx', 'odt', 'ods', 'pdf',
     //Images - as mentioned above be very careful if you want to allow SVG files
     'png', 'bmp', 'gif', 'jpg', 'jpeg', 'tif',
+    // Iphone file extensions (version 11 and above)
+    'heif', 'heic', 'heifs', 'heics', 'avci', 'avcs', 'avif', 'avifs',
     //soundfiles
     'wav', 'mp3', 'flac', 'aac', 'm4a', 'opus', 'ogg', 'wma', 'mka',
     //videos
     'mp4', 'avi', 'mkv', 'mpeg', 'mpg', 'wmv', 'h264', 'h265', 'mov', 'webm', 'divx', 'xvid',
-]; 
+];
 $config['allowedresourcesuploads'] = '7z,aiff,asf,avi,bmp,csv,doc,docx,fla,flv,gif,gz,gzip,ico,jpeg,jpg,mid,mov,mp3,mp4,mpc,mpeg,mpg,ods,odt,pdf,png,ppt,pxd,qt,ram,rar,rm,rmi,rmvb,rtf,sdc,sitd,swf,sxc,sxw,tar,tgz,tif,tiff,txt,vsd,wav,wma,wmv,xls,xlsx,xml,zip,css,js'; // File types allowed to be uploaded in the resources sections, and with the HTML Editor
 $config['allowedpluginuploads'] = 'gif,ico,jpg,png,css,js,map,json,eot,ttf,woff,txt,md,xml,woff2,twig,php,html';
 
@@ -110,6 +114,7 @@ $config['showpopups']         = 2; // Show popup messages if mandatory or condit
 // -1 = Do not show the message at all (in this case, users will still see the question-specific tips indicating which questions must be answered).
 
 $config['maxemails']          = 50; // The maximum number of emails to send in one go (this is to prevent your mail server or script from timeouting when sending mass mail)
+$config['sendingrate']        = 60; // Number of seconds to wait until the next email batch is sent
 
 // Experimental parameters, only change if you know what you're doing
 //
@@ -247,6 +252,10 @@ $config['disablescriptwithxss'] = true;
 // Otherwise they can see all operators defines in LimeSurvey
 $config['usercontrolSameGroupPolicy'] = true;
 
+// ownerManageAllSurveysInGroup
+// If this option is set to true, then oner of a group
+// have all rights on surveys in is group
+$config['ownerManageAllSurveysInGroup'] = true;
 
 // demoMode
 // If this option is set to true, then LimeSurvey will go into demo mode.
@@ -414,6 +423,16 @@ $config['bPdfResponseBorder'] = '1'; // Border in responses. Accepts 0:no border
 // QueXML-PDF: If set to true, the printable_help attribute will be visible on the exported PDF survey
 // If used, the appearance (font size, justification, etc.) may be adjusted by editing td.questionHelpBefore and $helpBeforeBorderBottom of quexml.
 $config['quexmlshowprintablehelp'] = false;
+
+
+// QueXML-PDF: If set to true, each question in the PDF will be identified by the question title instead of the section and number
+$config['quexmlusequestiontitleasid'] = false;
+
+// QueXML: If set to true, the Data/Time answers will be formated with the survey's date format
+$config['quexmlkeepsurveydateformat'] = false;
+
+// QueXML: Width of the question title column in MM
+$config['quexmlquestiontitlewidth'] = 14;
 
 $config['minlengthshortimplode'] = 20; // Min length required to use short_implode instead of standard implode
 $config['maxstringlengthshortimplode'] = 100; // short_implode: Max length of returned string
@@ -585,7 +604,7 @@ $config['uniq_upload_dir'] = false; // Use a single KCFinder upload directory fo
 $config['magic_database'] = null;
 
 /**
- * Allow to use a different magic file array 
+ * Allow to use a different magic file array
  * @see https://www.yiiframework.com/doc/api/1.1/CFileHelper#getExtensionByMimeType-detail
  * This file must return a PHP array of extension by mimeTypes
  * Example : https://github.com/LimeSurvey/LimeSurvey/blob/master/framework/utils/fileExtensions.php
@@ -660,6 +679,9 @@ $config['defaultfixedtheme'] = 'vanilla';
 //The following url and dir locations do not need to be modified unless you have a non-standard
 //LimeSurvey installation. Do not change unless you know what you are doing.
 
+// The public URL is the URL that is used for anything that is facing a survey participant.
+// It can be used to have a separation / distinction between a public URL for surveys and a private one for
+// the administration - for example for certain proxy configurations or internal/external domain separation
 if (!isset($argv[0]) && Yii::app() != null) {
     $config['publicurl'] = Yii::app()->baseUrl.'/'; // The public website location (url) of the public survey script
 } else {
@@ -676,6 +698,7 @@ $config['uploadurl']              = $config['publicurl'].'upload';
 $config['standardthemerooturl']   = $config['publicurl'].'themes/survey'; // Location of the standard themes
 $config['adminscripts']           = $config['publicurl'].'assets/scripts/admin/';
 $config['generalscripts']         = $config['publicurl'].'assets/scripts/';
+$config['packages']               = $config['publicurl'].'packages/';
 $config['third_party']            = $config['publicurl'].'third_party/';
 $config['styleurl']               = $config['publicurl'].'themes/admin/';
 $config['publicstyle']            = $config['publicurl'].$config['assets'].'styles-public/';
@@ -704,8 +727,8 @@ $config['styledir']                 = $config['rootdir'].DIRECTORY_SEPARATOR.'th
 $config['questiontypedir']          = $config['rootdir'].DIRECTORY_SEPARATOR.'application'.DIRECTORY_SEPARATOR.'extensions'.DIRECTORY_SEPARATOR.'questionTypes';
 $config['userthemerootdir']         = $config['uploaddir'].DIRECTORY_SEPARATOR."themes".DIRECTORY_SEPARATOR."survey"; // The directory path of the user themes
 $config['usertwigextensionrootdir'] = $config['uploaddir'].DIRECTORY_SEPARATOR."twig".DIRECTORY_SEPARATOR."extensions"; // The directory path of the user custom twig extensions
-$config['userquestionthemedir']     = "themes".DIRECTORY_SEPARATOR."question"; // The directory containing the user's question themes.
-$config['userquestionthemerootdir'] = "upload".DIRECTORY_SEPARATOR.$config['userquestionthemedir']; // The directory containing the user's question themes.
+$config['customquestionthemedir']     = "themes".DIRECTORY_SEPARATOR."question";
+$config['userquestionthemerootdir'] = "upload".DIRECTORY_SEPARATOR.$config['customquestionthemedir']; // The directory containing the user's question themes.
 $config['userfontsrootdir']          = $config['uploaddir'].DIRECTORY_SEPARATOR.'fonts'; // The directory containing the user's fonts.
 
 $config['lsadminmodulesrootdir']    = $config['rootdir'].DIRECTORY_SEPARATOR."modules".DIRECTORY_SEPARATOR."admin";
@@ -724,6 +747,7 @@ $config['bNumRealValue'] = 0;
 $config['show_logo'] = 'show';
 $config['show_last_survey_and_question'] = 'show';
 $config['show_survey_list_search'] = 'show';
+$config['show_survey_list'] = 'hide';
 $config['boxes_by_row'] = '3';
 $config['boxes_offset'] = '3';
 $config['boxes_in_container'] = 'yes';
@@ -739,6 +763,7 @@ $config['defaultquestionselectormode'] = 'default';
 
 // Preselected Question Type
 $config['preselectquestiontype'] = 'T';
+$config['preselectquestiontheme'] = 'core';
 
 // theme editor mode
 $config['defaultthemeteeditormode'] = 'default';

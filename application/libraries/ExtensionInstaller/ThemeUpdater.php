@@ -15,6 +15,7 @@
 namespace LimeSurvey\ExtensionInstaller;
 
 /**
+ * @todo Survey theme, question theme, admin theme...?
  * @since 2018-10-09
  * @author Olle Haerstedt
  */
@@ -52,13 +53,21 @@ class ThemeUpdater extends ExtensionUpdater
     /**
      * @return string
      */
+    public function getCurrentVersion()
+    {
+        return $this->model->version;
+    }
+
+    /**
+     * @return string
+     */
     public function getExtensionType()
     {
         return 't';
     }
 
     /**
-     * @return ExtensionConfig
+     * @return \ExtensionConfig
      */
     public function getExtensionConfig()
     {
@@ -81,9 +90,13 @@ class ThemeUpdater extends ExtensionUpdater
             );
         }
 
-        libxml_disable_entity_loader(false);
+        if (\PHP_VERSION_ID < 80000) {
+            libxml_disable_entity_loader(false);
+        }
         $config = simplexml_load_file(realpath($file));
-        libxml_disable_entity_loader(true);
+        if (\PHP_VERSION_ID < 80000) {
+            libxml_disable_entity_loader(true);
+        }
 
         return new \ExtensionConfig($config);
     }

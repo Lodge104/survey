@@ -17,7 +17,7 @@
               <?php  eT("Import resources ZIP archive"); ?>
           </h4>
         </div>
-        <?php echo CHtml::form(array('admin/survey/sa/importsurveyresources'), 'post', array('id'=>'importsurveyresources', 'name'=>'importsurveyresources', 'class'=>'form30', 'enctype'=>'multipart/form-data', 'onsubmit'=>'return window.LS.validatefilename(this,"'. gT('Please select a file to import!', 'js').'");')); ?>
+        <?php echo CHtml::form(array('surveyAdministration/importsurveyresources'), 'post', array('id'=>'importsurveyresources', 'name'=>'importsurveyresources', 'class'=>'form30', 'enctype'=>'multipart/form-data', 'onsubmit'=>'return window.LS.validatefilename(this,"'. gT('Please select a file to import!', 'js').'");')); ?>
           <div class="modal-body">
             <input type='hidden' name='surveyid' value='<?php echo $surveyid; ?>' />
             <input type='hidden' name='action' value='importsurveyresources' />
@@ -28,10 +28,10 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-danger" data-dismiss="modal">
-              <?php  eT("Close");?>
+            <button type="button" class="btn btn-cancel" data-dismiss="modal">
+              <?php  eT("Cancel");?>
             </button>
-            <input type='button' class="btn btn-default" value='<?php  eT("Import resources ZIP archive"); ?>' <?php echo $ZIPimportAction; ?> />
+            <input type='button' class="btn btn-primary" value='<?php  eT("Import"); ?>' <?php echo $ZIPimportAction; ?> />
           </div>
         </form>
     </div>

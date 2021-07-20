@@ -7,6 +7,8 @@ use User;
 use PluginDynamic;
 use SurveyDynamic;
 use Template;
+use InvalidArgumentException;
+use Exception;
 
 /**
  * Class exposing a Limesurvey API to plugins.
@@ -55,8 +57,8 @@ class LimesurveyApi
      * @param PluginBase $plugin The plugin object, id or name.
      * @param string $sTableName the name of the table to be created. The name will be properly quoted and prefixed by the method.
      * @param array $aColumns the columns (name=>definition) in the new table.
-     * @param string $sOptions additional SQL fragment that will be appended to the generated SQL.
-     * @return integer number of rows affected by the execution.
+     * @param ?string $sOptions additional SQL fragment that will be appended to the generated SQL.
+     * @return integer|false number of rows affected by the execution.
      */
     public function createTable($plugin, $sTableName, $aColumns, $sOptions = null)
     {
@@ -88,7 +90,7 @@ class LimesurveyApi
      * Gets an activerecord object associated to the table.
      * @param iPlugin $plugin
      * @param string $sTableName Name of the table.
-     * @param string $bPluginTable True if the table is plugin specific.
+     * @param ?boolean $bPluginTable True if the table is plugin specific.
      * @return \Plugin|null
      */
     public function getTable(iPlugin $plugin, $sTableName, $bPluginTable = true)
@@ -100,6 +102,8 @@ class LimesurveyApi
         }
         if (isset($table)) {
             return \PluginDynamic::model($table);
+        } else {
+            return null;
         }
     }
 
@@ -118,9 +122,9 @@ class LimesurveyApi
      * Creates a new active record object instance.
      * @param iPlugin $plugin
      * @param string $sTableName
-     * @param string $scenario
-     * @param string $bPluginTable True if the table is plugin specific.
-     * @return PluginDynamic
+     * @param ?string $scenario
+     * @param ?boolean $bPluginTable True if the table is plugin specific.
+     * @return ?\PluginDynamic
      */
     public function newModel(iPlugin $plugin, $sTableName, $scenario = 'insert', $bPluginTable = true)
     {
@@ -131,6 +135,8 @@ class LimesurveyApi
         }
         if (isset($table)) {
             return new \PluginDynamic($table, $scenario);
+        } else {
+            return null;
         }
     }
 
@@ -187,7 +193,7 @@ class LimesurveyApi
      * @param int $surveyId
      * @param int $responseId
      * @param bool $bMapQuestionCodes
-     * @return array
+     * @return array|SurveyDynamic|null
      */
     public function getResponse($surveyId, $responseId, $bMapQuestionCodes = true)
     {
@@ -256,7 +262,7 @@ class LimesurveyApi
     }
 
     /**
-     * @return \Token|null
+     * @return ?\Token
      */
     public function getToken($surveyId, $token)
     {
@@ -266,9 +272,9 @@ class LimesurveyApi
     /**
      * Return a token object from a token id and a survey id
      *
-     * @param integer $iSurveyId
-     * @param integer $iTokenId
-     * @return \Token Token
+     * @param int $iSurveyId
+     * @param int $iTokenId
+     * @return ?\Token Token
      */
     public function getTokenById($iSurveyId, $iTokenId)
     {
@@ -278,8 +284,8 @@ class LimesurveyApi
     /**
      * Gets a key value list using the group name as value and the group id
      * as key.
-     * @param boolean $surveyId
-     * @return type
+     * @param int $surveyId
+     * @return \QuestionGroup[]
      */
     public function getGroupList($surveyId)
     {
@@ -289,8 +295,7 @@ class LimesurveyApi
 
     /**
      * Retrieves user details for the currently logged in user
-     * Returns false if the user is not logged and returns null if the user does not exist anymore for some reason (should not really happen)
-     * @return User
+     * @return ?User|false Returns false if the user is not logged and returns null if the user does not exist anymore for some reason (should not really happen)
      */
     public function getCurrentUser()
     {
@@ -333,7 +338,7 @@ class LimesurveyApi
      * Returns null if the user does not exist anymore for some reason (should not really happen)
      *
      * @param int $iUserID The userid
-     * @return User
+     * @return ?User
      */
     public function getUser($iUserID)
     {
@@ -370,10 +375,10 @@ class LimesurveyApi
 
     /**
      * Retrieves user permission details for a user
-     * @param $iUserID int The User ID
-     * @param  $iSurveyID int The related survey IF for survey permissions - if 0 then global permissions will be retrieved
-     * Returns null if the user does not exist anymore for some reason (should not really happen)
-     * @return User
+     * @param int $iUserID The User ID
+     * @param ?int $iSurveyID The related survey IF for survey permissions - if 0 then global permissions will be retrieved
+     * @param ?string $sEntityName
+     * @return ?array Returns null if the user does not exist anymore for some reason (should not really happen)
      */
     public function getPermissionSet($iUserID, $iEntityID = null, $sEntityName = null)
     {
@@ -382,9 +387,8 @@ class LimesurveyApi
 
     /**
      * Retrieves Participant data
-     * @param $iParticipantID int The Participant ID
-     * Returns null if the user does not exist anymore for some reason (should not really happen)
-     * @return \Participant
+     * @param int $iParticipantID The Participant ID
+     * @return ?\Participant Returns null if the user does not exist anymore for some reason (should not really happen)
      */
     public function getParticipant($iParticipantID)
     {
@@ -472,5 +476,157 @@ class LimesurveyApi
             // Don't append application dir.
             false
         );
+    }
+
+    /**
+     * Returns an array of all user groups
+     *
+     * @return array
+     */
+    public function getUserGroups()
+    {   
+        return \UserGroup::model()->findAllAsArray();
+    }
+
+    /**
+     * Returns a UserGroup object by ugid
+     * Returns null if the object does not exist
+     *
+     * @param int $ugid The user group ID
+     * @return \UserGroup|null
+     */
+    public function getUserGroup($ugid)
+    {   
+        return \UserGroup::model()->findByAttributes(array('ugid' => $ugid));
+    }
+
+    /**
+     * Returns a UserInGroup object
+     * Returns null if the object does not exist
+     *
+     * @param integer $ugid The user group ID
+     * @param integer $uid The user ID
+     * @return \UserInGroup|null
+     */
+    public function getUserInGroup($ugid, $uid)
+    {   
+        return \UserInGroup::model()->findByPk(array('ugid' => $ugid, 'uid' => $uid));
+    }
+
+    /**
+     * Adds a new user group
+     *
+     * @param string $groupName Name of user group to be created
+     * @param string $groupDescription Description of user group to be created
+     * @return boolean True or false if user group was added or not
+     * @throws InvalidArgumentException if user group name was not supplied
+     */
+    public function addUserGroup($groupName, $groupDescription)
+    {
+        $db_group_name = flattenText($groupName, false, true, 'UTF-8', true);
+        $db_group_description = flattenText($groupDescription);
+
+        if (isset($db_group_name) && strlen($db_group_name) > 0) {
+            $newUserGroup = new \UserGroup();
+            $newUserGroup->owner_id = 1;
+            $newUserGroup->name = $db_group_name;
+            $newUserGroup->description = $db_group_description;
+            if ($newUserGroup->save()) {
+                \UserInGroup::model()->insertRecords(array('ugid' => $newUserGroup->getPrimaryKey(), 'uid' => 1));
+                return true;
+            }
+            else {
+                return false;
+            }
+        } else {
+            throw new InvalidArgumentException('must provide a user group name');
+        }
+    }
+
+    /**
+     * Adds a user to a user group
+     *
+     * @param integer $ugid The user group ID
+     * @param integer $uid The user ID
+     * @return boolean True if user was added to group or false if not
+     * @throws InvalidArgumentException if user or group does not exist or group owner was supplied
+     */
+    public function addUserInGroup($ugid, $uid)
+    {
+        $group = $this->getUserGroup($ugid);
+
+        if (empty($group)) {
+            throw new InvalidArgumentException('group does not exist');
+        } else {
+            $user = $this->getUser($uid);
+            if ($uid > 0 && $user) {
+                if ($group->owner_id == $uid) {
+                    throw new InvalidArgumentException('user must not be group owner');
+                } else {
+                    $user_in_group = $this->getUserInGroup($ugid, $uid);
+                    if (empty($user_in_group) && \UserInGroup::model()->insertRecords(array('ugid' => $ugid, 'uid' => $uid))) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            } else {
+                throw new InvalidArgumentException('user does not exist');
+            }
+        }
+    }
+
+    /**
+     * Removes a user from a user group
+     *
+     * @param integer $ugid The user group ID
+     * @param integer $uid The user ID
+     * @return boolean True if user was removed to group or false if not
+     * @throws InvalidArgumentException if user or group does not exist or group owner was supplied
+     */
+    public function removeUserInGroup($ugid, $uid)
+    {
+        $group = $this->getUserGroup($ugid);
+
+        if (empty($group)) {
+            throw new InvalidArgumentException('group does not exist');
+        } else {
+            $user = $this->getUser($uid);
+            if ($uid > 0 && $user) {
+                if ($group->owner_id == $uid) {
+                    throw new InvalidArgumentException('user must no be group owner');
+                } else {
+                    $user_in_group = $this->getUserInGroup($ugid, $uid);
+                    if (!empty($user_in_group) && \UserInGroup::model()->deleteByPk(array('ugid' => $ugid, 'uid' => $uid))) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            } else {
+                throw new InvalidArgumentException('user does not exist');
+            }
+        }
+    }
+
+    /**
+     * Returns an array of all the question attributes and their values for the
+     * specified question.
+     *
+     * @param int $questionId   the ID of the question
+     * @param string|null $language     restrict to this language
+     * @return array<string, mixed>    array of question attributes and values (name=>value)
+     * @throws \InvalidArgumentException
+     */
+    public function getQuestionAttributes($questionId, $language = null)
+    {
+        /** @var array<string,mixed>|false Array of question attributes or false if the question can't be found */
+        $questionAttributes = \QuestionAttribute::model()->getQuestionAttributes($questionId, $language);
+
+        if ($questionAttributes === false) {
+            throw new \InvalidArgumentException(gT("Question does not exist."));
+        }
+
+        return $questionAttributes;
     }
 }

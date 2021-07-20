@@ -10,7 +10,6 @@ $count=0;
 // DO NOT REMOVE This is for automated testing to validate we see that page
 echo viewHelper::getViewTestTag('surveyEmailTemplates');
 
-
 App()->getClientScript()->registerScript( "EmailTemplateViews_variables", "
 var sReplaceTextConfirmation='".gT("This will replace the existing text. Continue?","js")."';
 var sKCFinderLanguage='".sTranslateLangCode2CK(App()->language)."';
@@ -81,6 +80,9 @@ var LS = LS || {};  // namespace
       <div class="modal-body" style="padding: 0;">
         <iframe frameBorder="0" style="min-height: 600px; height:100%; width: 100%;" src="about:blank"></iframe>
       </div>
+        <div class='modal-footer'>
+            <button type="button" class='btn btn-default' data-dismiss='modal'><?php eT("Cancel");?></button>
+        </div>
     </div>
   </div>
 </div>

@@ -12,15 +12,25 @@ class CheckDatabaseJsonValuesTest extends TestBaseClass
     /**
      * 
      */
-    public static function setupBeforeClass()
+    public static function setupBeforeClass(): void
     {
         parent::setupBeforeClass();
+
+        $db = \Yii::app()->getDb();
+
+        $db->schemaCachingDuration = 0;
+        // Load all tables of the application in the schema
+        $db->schema->getTables();
+        // clear the cache of all loaded tables
+        $db->schema->refresh();
+        $db->active = false;
+        $db->active = true;
     }
 
     /**
      * Tear down fixtures.
      */
-    public static function teardownAfterClass()
+    public static function teardownAfterClass(): void
     {
         self::$testHelper->teardownDatabase('__test_check_database_json');
         self::$testHelper->teardownDatabase('__test_update_helper_258');

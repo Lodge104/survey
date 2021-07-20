@@ -12,10 +12,8 @@
 </script>
 
 <div class="col-lg-12 list-surveys">
-    <h3><?php if ($action == "newlabelset") { eT("Create or import new label set(s)");} else {eT("Edit label set"); } ?></h3>
     <?=// DO NOT REMOVE This is for automated testing to validate we see that page
     viewHelper::getViewTestTag('createLabelSets');?>
-
 
     <div class="row">
         <div class="col-lg-12 content-right">
@@ -39,7 +37,7 @@
                 <div id='neweditlblset0' class="tab-pane fade in active">
 
                     <!-- Form -->
-                    <?php echo CHtml::form(array("admin/labels/sa/saveNewLabelSet"), 'post',array('class'=>'form form30 ','id'=>'labelsetform','onsubmit'=>"return isEmpty(document.getElementById('label_name'), '".gT("Error: You have to enter a name for this label set.","js")."')")); ?>
+                    <?php echo CHtml::form(array("admin/labels/sa/process"), 'post',array('class'=>'form form30 ','id'=>'labelsetform','onsubmit'=>"return isEmpty(document.getElementById('label_name'), '".gT("Error: You have to enter a name for this label set.","js")."')")); ?>
 
 
                             <!-- Set name -->
@@ -65,7 +63,7 @@
                                     'value' => $langidsarray,
                                     'name' => 'languageids',
                                     'pluginOptions' => array(
-                                        'placeholder' => gt('Select languages','unescaped'),
+                                        'placeholder' => gT('Select languages','unescaped'),
                                 )));
                                 ?>
                                 <input type='hidden' name='oldlanguageids' id='oldlanguageids' value='<?php echo $langids; ?>' />
@@ -93,7 +91,7 @@
                                     <label  class="control-label" for='the_file'>
                                     <?php echo gT("Select label set file (*.lsl):").'<br>'.sprintf(gT("(Maximum file size: %01.2f MB)"),getMaximumFileUploadSize()/1024/1024); ?>
                                     </label>
-                                    <input id='the_file' name='the_file' type='file'/>
+                                    <input id='the_file' name='the_file' type='file' accept=".lsl"/>
                                 </div>
                                 <div class="form-group">
                                     <label  class=" control-label" for='checkforduplicates'>

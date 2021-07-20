@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Twig view renderer, LimeSurvey overload
  *
@@ -34,7 +35,7 @@ class LSETwigViewRenderer extends ETwigViewRenderer
     /**
      * Main method to render a survey.
      * @param string $sLayout the name of the layout to render
-     * @param array $aDatas the datas needed to fill the layout
+     * @param array $aData the datas needed to fill the layout
      * @param boolean $bReturn if true, it will return the html string without
      *                         rendering the whole page. Usefull for debuging, and used for Print Answers
      * @return mixed|string
@@ -44,18 +45,18 @@ class LSETwigViewRenderer extends ETwigViewRenderer
      * @throws Twig_Error_Syntax
      * @throws WrongTemplateVersionException
      */
-    public function renderTemplateFromFile($sLayout, $aDatas, $bReturn)
+    public function renderTemplateFromFile($sLayout, $aData, $bReturn)
     {
         $oTemplate = Template::getLastInstance();
         $oLayoutTemplate = $this->getTemplateForView($sLayout, $oTemplate);
         if ($oLayoutTemplate) {
-            $line       = file_get_contents($oLayoutTemplate->viewPath.$sLayout);
-            $sHtml      = $this->convertTwigToHtml($line, $aDatas, $oTemplate);
+            $line       = file_get_contents($oLayoutTemplate->viewPath . $sLayout);
+            $sHtml      = $this->convertTwigToHtml($line, $aData, $oTemplate);
             $sEmHiddenInputs = LimeExpressionManager::FinishProcessPublicPage(true);
             if ($sEmHiddenInputs) {
                 $sHtml = str_replace(
                     "<!-- emScriptsAndHiddenInputs -->",
-                    "<!-- emScriptsAndHiddenInputs updated -->\n".
+                    "<!-- emScriptsAndHiddenInputs updated -->\n" .
                     $sEmHiddenInputs,
                     $sHtml
                 );
@@ -93,7 +94,7 @@ class LSETwigViewRenderer extends ETwigViewRenderer
     /**
      * Main method to render a question in the question editor preview.
      * @param string $sLayout the name of the layout to render
-     * @param array $aDatas the datas needed to fill the layout
+     * @param array $aData the datas needed to fill the layout
      * @param bool $root
      * @param boolean $bReturn if true, it will return the html string without
      *                         rendering the whole page. Usefull for debuging, and used for Print Answers
@@ -104,11 +105,11 @@ class LSETwigViewRenderer extends ETwigViewRenderer
      * @throws Twig_Error_Syntax
      * @throws WrongTemplateVersionException
      */
-    public function renderTemplateForQuestionEditPreview($sLayout, $aDatas, $root = false, $bReturn = false)
+    public function renderTemplateForQuestionEditPreview($sLayout, $aData, $root = false, $bReturn = false)
     {
         $root = (bool) $root;
         $oTemplate = Template::getInstance(
-            $aDatas['aSurveyInfo']['template'],
+            $aData['aSurveyInfo']['template'],
             null,
             null,
             null,
@@ -143,25 +144,25 @@ window.addEventListener('message', function(event) {
                 CClientScript::POS_HEAD
             );
             $line = '<div class="{{ aSurveyInfo.class.outerframe }}  {% if (aSurveyInfo.options.container == "on") %} container {% else %} container-fluid {% endif %} " id="{{ aSurveyInfo.id.outerframe }}" {{ aSurveyInfo.attr.outerframe }} >';
-            $line .= file_get_contents($oLayoutTemplate->viewPath.$sLayout);
+            $line .= file_get_contents($oLayoutTemplate->viewPath . $sLayout);
             $line .= '</div>';
             if ($root === true) {
                 $line = '<html lang="{{ aSurveyInfo.languagecode }}" dir="{{ aSurveyInfo.dir }}" class="{{ aSurveyInfo.languagecode }} dir-{{ aSurveyInfo.dir }} {{ aSurveyInfo.class.html }}" {{ aSurveyInfo.attr.html }}>'
-                    . file_get_contents($oLayoutTemplate->viewPath.'/subviews/header/head.twig')
+                    . file_get_contents($oLayoutTemplate->viewPath . '/subviews/header/head.twig')
                     . '<body style="padding-top: 0px !important;" class=" {{ aSurveyInfo.class.body }} font-{{  aSurveyInfo.options.font }} lang-{{aSurveyInfo.languagecode}} {{aSurveyInfo.surveyformat}} {% if( aSurveyInfo.options.brandlogo == "on") %}brand-logo{%endif%}" {{ aSurveyInfo.attr.body }} >'
                     . $line;
                 $line .= '</body>';
                 $line .= '</html>';
             }
 
-            $sHtml     = $this->convertTwigToHtml($line, $aDatas, $oTemplate);
+            $sHtml     = $this->convertTwigToHtml($line, $aData, $oTemplate);
             
             $sEmHiddenInputs = LimeExpressionManager::FinishProcessPublicPage(true);
             if ($sEmHiddenInputs) {
                 $sHtml = str_replace(
                     "<!-- emScriptsAndHiddenInputs -->",
                     "<!-- emScriptsAndHiddenInputs updated -->\n"
-                    .$sEmHiddenInputs,
+                    . $sEmHiddenInputs,
                     $sHtml
                 );
             }
@@ -200,7 +201,7 @@ window.addEventListener('message', function(event) {
      * Main method to render an admin page or block.
      * Extendable to use admin templates in the future currently running on pathes, like the yii render methods go.
      * @param $sLayoutFilePath
-     * @param array $aDatas the datas needed to fill the layout
+     * @param array $aData the datas needed to fill the layout
      * @param boolean $bReturn if true, it will return the html string without rendering the whole page.
      *                         Usefull for debuging, and used for Print Answers
      * @param boolean $bUseRootDir Prepend application root dir to sLayoutFilePath if true.
@@ -211,17 +212,17 @@ window.addEventListener('message', function(event) {
      * @throws Twig_Error_Syntax
      * @todo missing return statement (php warning)
      */
-    public function renderViewFromFile($sLayoutFilePath, $aDatas, $bReturn = false, $bUseRootDir = true)
+    public function renderViewFromFile($sLayoutFilePath, $aData, $bReturn = false, $bUseRootDir = true)
     {
         if ($bUseRootDir) {
-            $viewFile = App()->getConfig('rootdir').$sLayoutFilePath;
+            $viewFile = App()->getConfig('rootdir') . $sLayoutFilePath;
         } else {
             $viewFile = $sLayoutFilePath;
         }
 
         if (file_exists($viewFile)) {
             $line       = file_get_contents($viewFile);
-            $sHtml      = $this->convertTwigToHtml($line, $aDatas);
+            $sHtml      = $this->convertTwigToHtml($line, $aData);
 
             if ($bReturn) {
                 return $sHtml;
@@ -271,7 +272,7 @@ window.addEventListener('message', function(event) {
             // So other views should be rendered by core.
             $bTemplateHasThisView = $oQuestionTemplate->checkIfTemplateHasView($sView);
             if ($bTemplateHasThisView) {
-                $sDirName = 'question'.DIRECTORY_SEPARATOR.$sTemplateFolderName;
+                $sDirName = 'question' . DIRECTORY_SEPARATOR . $sTemplateFolderName;
                 $extraPath[] = $oQuestionTemplate->getTemplatePath(); // Question template views path
             }
         }
@@ -279,7 +280,7 @@ window.addEventListener('message', function(event) {
         // We check if the file is a twig file or a php file
         // This allow us to twig the view one by one, from PHP to twig.
         // The check will be removed when 100% of the views will have been twig
-        if ($this->getPathOfFile($sView.'.twig', null, $extraPath, $sDirName)) {
+        if ($this->getPathOfFile($sView . '.twig', null, $extraPath, $sDirName)) {
             // We're not using the Yii Theming system, so we don't use parent::renderFile
             // current controller properties will be accessible as {{ this.property }}
                         //  aData and surveyInfo variables are accessible from question type twig files
@@ -291,10 +292,10 @@ window.addEventListener('message', function(event) {
                     $sBaseLanguage = Survey::model()->findByPk($_SESSION['LEMsid'])->language;
                     $aData['surveyInfo'] = getSurveyInfo($_SESSION['LEMsid'], $sBaseLanguage);
                     $aData['this'] = App()->getController();
-                } else {
-                    $aData['question_template_attribute'] = null;
-                }
-            $template = $this->_twig->loadTemplate($sView.'.twig')->render($aData);
+            } else {
+                $aData['question_template_attribute'] = null;
+            }
+            $template = $this->_twig->loadTemplate($sView . '.twig')->render($aData);
             return $template;
         } else {
             return App()->getController()->renderPartial($sView, $aData, true);
@@ -319,8 +320,8 @@ window.addEventListener('message', function(event) {
         $this->_twig  = parent::getTwig(); // Twig object
         $loader       = $this->_twig->getLoader(); // Twig Template loader
         // By default, the required view is the core view
-        $requiredView = Yii::getPathOfAlias('application.views').$sView;
-        $loader->setPaths(App()->getBasePath().'/views/'); // Core views path
+        $requiredView = Yii::getPathOfAlias('application.views') . $sView;
+        $loader->setPaths(App()->getBasePath() . '/views/'); // Core views path
 
         // Question template instance has been created at top of qanda_helper::retrieveAnswers()
         $oQuestionTemplate   = QuestionTemplate::getInstance();
@@ -337,14 +338,14 @@ window.addEventListener('message', function(event) {
             if ($bTemplateHasThisView) {
                 $sQTemplatePath = $oQuestionTemplate->getTemplatePath(); // Question template views path
                 $loader->setPaths($sQTemplatePath); // Loader path
-                $requiredView = $sQTemplatePath.ltrim($sView, '/'); // Complete path of the view
+                $requiredView = $sQTemplatePath . ltrim($sView, '/'); // Complete path of the view
             }
         }
 
         // We check if the file is a twig file or a php file
         // This allow us to twig the view one by one, from PHP to twig.
         // The check will be removed when 100% of the views will have been twig
-        if (file_exists($requiredView.'.twig')) {
+        if (file_exists($requiredView . '.twig')) {
             // We're not using the Yii Theming system, so we don't use parent::renderFile
             // current controller properties will be accessible as {{ this.property }}
 
@@ -356,7 +357,7 @@ window.addEventListener('message', function(event) {
 
             $aData['question_template_attribute'] = null;
 
-            $template = $this->_twig->loadTemplate($sView.'.twig')->render($aData);
+            $template = $this->_twig->loadTemplate($sView . '.twig')->render($aData);
             return $template;
         } else {
             return App()->getController()->renderPartial($sView, $aData, true);
@@ -367,7 +368,7 @@ window.addEventListener('message', function(event) {
      * This method is called from Template Editor.
      * It returns the HTML string needed for the tmp file using the template twig file.
      * @param string $sView the view (layout) to render
-     * @param array $aDatas the datas needed for the view rendering
+     * @param array $aData the datas needed for the view rendering
      * @param Template $oEditedTemplate the template to use
      *
      * @return  string the generated html
@@ -376,15 +377,15 @@ window.addEventListener('message', function(event) {
      * @throws Twig_Error_Syntax
      * @todo missing return statement (php warning)
      */
-    public function renderTemplateForTemplateEditor($sView, $aDatas, $oEditedTemplate)
+    public function renderTemplateForTemplateEditor($sView, $aData, $oEditedTemplate)
     {
         $oTemplate = $this->getTemplateForView($sView, $oEditedTemplate);
         if ($oTemplate) {
-            $line      = file_get_contents($oTemplate->viewPath.$sView);
-            $result    = $this->convertTwigToHtml($line, $aDatas, $oEditedTemplate);
+            $line      = file_get_contents($oTemplate->viewPath . $sView);
+            $result    = $this->convertTwigToHtml($line, $aData, $oEditedTemplate);
             return $result;
         } else {
-            trigger_error("Can't find a theme for view: ".$sView, E_USER_ERROR);
+            trigger_error("Can't find a theme for view: " . $sView, E_USER_ERROR);
         }
     }
 
@@ -402,22 +403,22 @@ window.addEventListener('message', function(event) {
         $oRTemplate = $oTemplate;
         $sOptionFile = 'options/options.twig';
         $sOptionJS   = 'options/options.js';
-        $sOptionsPath = $oRTemplate->sTemplateurl.'options';
+        $sOptionsPath = $oRTemplate->sTemplateurl . 'options';
 
         // We get the options twig file from the right template (local or mother template)
-        while (!file_exists($oRTemplate->path.$sOptionFile)) {
+        while (!file_exists($oRTemplate->path . $sOptionFile)) {
             $oMotherTemplate = $oRTemplate->oMotherTemplate;
             if (!($oMotherTemplate instanceof TemplateConfiguration)) {
-                return sprintf(gT('%s not found!', $oRTemplate->path.$sOptionFile));
+                return sprintf(gT('%s not found!', $oRTemplate->path . $sOptionFile));
                 break;
             }
             $oRTemplate = $oMotherTemplate;
-            $sOptionsPath = $oRTemplate->sTemplateurl.'options';
+            $sOptionsPath = $oRTemplate->sTemplateurl . 'options';
         }
 
-        if (file_exists($oRTemplate->path.$sOptionJS)) {
+        if (file_exists($oRTemplate->path . $sOptionJS)) {
             App()->getClientScript()->registerScriptFile(
-                $oRTemplate->sTemplateurl.$sOptionJS,
+                $oRTemplate->sTemplateurl . $sOptionJS,
                 LSYii_ClientScript::POS_END
             );
         }
@@ -427,12 +428,12 @@ window.addEventListener('message', function(event) {
         $renderArray['optionsPath'] = $sOptionsPath;
         $renderArray['showpopups_disabled'] = (int) App()->getConfig('showpopups') < 2 ? 'disabled' : '';
         $renderArray['showpopups_disabled_qtip'] = (int) App()->getConfig('showpopups') < 2
-            ? 'data-hasqtip="true" title="'.
-            gT("Disabled by configuration. Set 'showpopups' option in config.php file to enable this option. ").
+            ? 'data-hasqtip="true" title="' .
+            gT("Disabled by configuration. Set 'showpopups' option in config.php file to enable this option. ") .
             '"'
             : '';
         // Twig rendering
-        $line         = file_get_contents($oRTemplate->path.$sOptionFile);
+        $line         = file_get_contents($oRTemplate->path . $sOptionFile);
         $oTwigTemplate = $twig->createTemplate($line);
         $sHtml        = $oTwigTemplate->render($renderArray, false);
 
@@ -469,14 +470,14 @@ window.addEventListener('message', function(event) {
      * Convert a string containing twig tags to an HTML string.
      *
      * @param string $sString The string of HTML/Twig to convert
-     * @param array $aDatas Array containing the datas needed to render the view ($thissurvey)
+     * @param array $aData Array containing the datas needed to render the view ($thissurvey)
      * @param TemplateConfiguration|null $oTemplate
      * @return string
      * @throws Throwable
      * @throws Twig_Error_Loader
      * @throws Twig_Error_Syntax
      */
-    public function convertTwigToHtml($sString, $aDatas = array(), $oTemplate = null)
+    public function convertTwigToHtml($sString, $aData = array(), $oTemplate = null)
     {
 
         // Twig init
@@ -485,18 +486,18 @@ window.addEventListener('message', function(event) {
         //Run theme related things only if a theme is provided!
         if ($oTemplate !== null) {
             // Get the additional infos for the view, such as language, direction, etc
-            $aDatas = $this->getAdditionalInfos($aDatas, $oTemplate);
+            $aData = $this->getAdditionalInfos($aData, $oTemplate);
 
             // Add to the loader the path of the template and its parents.
             $this->addRecursiveTemplatesPath($oTemplate);
 
             // Plugin for blocks replacement
-            list($sString, $aDatas) = $this->getPluginsData($sString, $aDatas);
+            list($sString, $aData) = $this->getPluginsData($sString, $aData);
         }
 
         // Twig rendering
         $oTwigTemplate = $twig->createTemplate($sString);
-        $sHtml         = $oTwigTemplate->render($aDatas, false);
+        $sHtml         = $oTwigTemplate->render($aData, false);
 
         return $sHtml;
     }
@@ -509,7 +510,7 @@ window.addEventListener('message', function(event) {
      */
     private function getTemplateForView($sView, $oRTemplate)
     {
-        while (!file_exists($oRTemplate->viewPath.$sView)) {
+        while (!file_exists($oRTemplate->viewPath . $sView)) {
             $oMotherTemplate = $oRTemplate->oMotherTemplate;
             if (!($oMotherTemplate instanceof TemplateConfiguration)) {
                 return false;
@@ -555,14 +556,14 @@ window.addEventListener('message', function(event) {
 
         if (!empty($dirName)) {
             /* This template for dirName template*/
-            if (is_dir($oRTemplate->viewPath.$dirName)) {
-                $loader->addPath($oRTemplate->viewPath.$dirName.DIRECTORY_SEPARATOR);
+            if (is_dir($oRTemplate->viewPath . $dirName)) {
+                $loader->addPath($oRTemplate->viewPath . $dirName . DIRECTORY_SEPARATOR);
             }
             /* Parent template (for question)*/
             while ($oRTemplate->oMotherTemplate instanceof TemplateConfiguration) {
                 $oRTemplate = $oRTemplate->oMotherTemplate;
-                if (is_dir($oRTemplate->viewPath.$dirName)) {
-                    $loader->addPath($oRTemplate->viewPath.$dirName.DIRECTORY_SEPARATOR);
+                if (is_dir($oRTemplate->viewPath . $dirName)) {
+                    $loader->addPath($oRTemplate->viewPath . $dirName . DIRECTORY_SEPARATOR);
                 }
             }
         }
@@ -589,33 +590,33 @@ window.addEventListener('message', function(event) {
             }
         }
 
-        $loader->addPath(App()->getBasePath().'/views/'); // Core views path
+        $loader->addPath(App()->getBasePath() . '/views/'); // Core views path
     }
 
     /**
      * Plugin event, should be replaced by Question Template
      * @param string $sString
-     * @param array $aDatas
+     * @param array $aData
      * @return array
      */
-    private function getPluginsData($sString, $aDatas)
+    private function getPluginsData($sString, $aData)
     {
         $event = new PluginEvent('beforeTwigRenderTemplate');
 
-        if (!empty($aDatas['aSurveyInfo']['sid'])) {
-            $surveyid = $aDatas['aSurveyInfo']['sid'];
-            $event->set('surveyId', $aDatas['aSurveyInfo']['sid']);
+        if (!empty($aData['aSurveyInfo']['sid'])) {
+            $surveyid = $aData['aSurveyInfo']['sid'];
+            $event->set('surveyId', $aData['aSurveyInfo']['sid']);
 
             // show "Exit and clear survey" button whenever there is 'srid' key set,
             // button won't be rendered on welcome and final page because 'srid' key doesn't exist on those pages
             // additionally checks for submit page to compensate when srid is needed to render other views
             if (
                 isset($_SESSION['survey_' . $surveyid]['srid'])
-                && isset($aDatas['aSurveyInfo']['active']) && $aDatas['aSurveyInfo']['active'] == 'Y'
-                && isset($aDatas['aSurveyInfo']['include_content']) && $aDatas['aSurveyInfo']['include_content'] !== 'submit'
-                && isset($aDatas['aSurveyInfo']['include_content']) && $aDatas['aSurveyInfo']['include_content'] !== 'submit_preview'
+                && isset($aData['aSurveyInfo']['active']) && $aData['aSurveyInfo']['active'] == 'Y'
+                && isset($aData['aSurveyInfo']['include_content']) && $aData['aSurveyInfo']['include_content'] !== 'submit'
+                && isset($aData['aSurveyInfo']['include_content']) && $aData['aSurveyInfo']['include_content'] !== 'submit_preview'
             ) {
-                $aDatas['aSurveyInfo']['bShowClearAll'] = true;
+                $aData['aSurveyInfo']['bShowClearAll'] = true;
             }
         }
 
@@ -623,11 +624,11 @@ window.addEventListener('message', function(event) {
             App()->getPluginManager()->dispatchEvent($event);
             $aPluginContent = $event->getAllContent();
             if (!empty($aPluginContent['sTwigBlocks'])) {
-                $sString = $sString.$aPluginContent['sTwigBlocks'];
+                $sString = $sString . $aPluginContent['sTwigBlocks'];
             }
         }
 
-        return array($sString, $aDatas);
+        return array($sString, $aData);
     }
 
     /**
@@ -640,62 +641,69 @@ window.addEventListener('message', function(event) {
      * @param TemplateConfiguration $oTemplate
      * @return
      */
-    private function getAdditionalInfos($aDatas, $oTemplate)
+    private function getAdditionalInfos($aData, $oTemplate)
     {
         /* get minimal surveyInfo if we can have a sid, used in ExpressionManager for example */
-        if (empty($aDatas["aSurveyInfo"])) {
-            $aDatas["aSurveyInfo"] = array();
-            if (!empty($aDatas["sid"]) || LimeExpressionManager::getLEMsurveyId()) {
-                $sid = empty($aDatas["sid"]) ? LimeExpressionManager::getLEMsurveyId() : $aDatas["sid"];
-                $language = empty($aDatas["language"]) ? App()->getLanguage() : $aDatas["language"];
-                $aDatas["aSurveyInfo"] = getSurveyInfo($sid, $language);
+        if (empty($aData["aSurveyInfo"])) {
+            $aData["aSurveyInfo"] = array();
+            if (!empty($aData["sid"]) || LimeExpressionManager::getLEMsurveyId()) {
+                $sid = empty($aData["sid"]) ? LimeExpressionManager::getLEMsurveyId() : $aData["sid"];
+                $language = empty($aData["language"]) ? App()->getLanguage() : $aData["language"];
+                $aData["aSurveyInfo"] = getSurveyInfo($sid, $language);
             }
         }
         // We retreive the definition of the core class and attributes
         // (in the future, should be template dependant done via XML file)
-        $aDatas["aSurveyInfo"] = array_merge($aDatas["aSurveyInfo"], $oTemplate->getClassAndAttributes());
+        $aData["aSurveyInfo"] = array_merge($aData["aSurveyInfo"], $oTemplate->getClassAndAttributes());
 
         $languagecode = App()->getLanguage();
-        if (!empty($aDatas['aSurveyInfo']['sid']) && Survey::model()->findByPk($aDatas['aSurveyInfo']['sid'])) {
-            if (!in_array($languagecode, Survey::model()->findByPk($aDatas['aSurveyInfo']['sid'])->getAllLanguages())) {
-                $languagecode = Survey::model()->findByPk($aDatas['aSurveyInfo']['sid'])->language;
+        if (!empty($aData['aSurveyInfo']['sid']) && Survey::model()->findByPk($aData['aSurveyInfo']['sid'])) {
+            if (!in_array($languagecode, Survey::model()->findByPk($aData['aSurveyInfo']['sid'])->getAllLanguages())) {
+                $languagecode = Survey::model()->findByPk($aData['aSurveyInfo']['sid'])->language;
             }
         }
 
-        $aDatas["aSurveyInfo"]['languagecode']     = $languagecode;
-        $aDatas["aSurveyInfo"]['dir']              = (getLanguageRTL($languagecode)) ? "rtl" : "ltr";
+        $aData["aSurveyInfo"]['languagecode']     = $languagecode;
+        $aData["aSurveyInfo"]['dir']              = (getLanguageRTL($languagecode)) ? "rtl" : "ltr";
 
-        if (!empty($aDatas['aSurveyInfo']['sid'])) {
+        if (!empty($aData['aSurveyInfo']['sid'])) {
             $showxquestions                            = App()->getConfig('showxquestions');
-            $aDatas["aSurveyInfo"]['bShowxquestions']  = ($showxquestions == 'show' ||
-                ($showxquestions == 'choose' && !isset($aDatas['aSurveyInfo']['showxquestions'])) ||
-                ($showxquestions == 'choose' && $aDatas['aSurveyInfo']['showxquestions'] == 'Y'));
+            $aData["aSurveyInfo"]['bShowxquestions']  = ($showxquestions == 'show' ||
+                ($showxquestions == 'choose' && !isset($aData['aSurveyInfo']['showxquestions'])) ||
+                ($showxquestions == 'choose' && $aData['aSurveyInfo']['showxquestions'] == 'Y'));
 
 
             // NB: Session is flushed at submit, so sid is not defined here.
-            if (isset($_SESSION['survey_'.$aDatas['aSurveyInfo']['sid']]) &&
-                isset($_SESSION['survey_'.$aDatas['aSurveyInfo']['sid']]['totalquestions'])) {
-                $aDatas["aSurveyInfo"]['iTotalquestions'] = $_SESSION['survey_'.
-                $aDatas['aSurveyInfo']['sid']]['totalquestions'];
+            if (
+                isset($_SESSION['survey_' . $aData['aSurveyInfo']['sid']]) &&
+                isset($_SESSION['survey_' . $aData['aSurveyInfo']['sid']]['totalquestions'])
+            ) {
+                $aData["aSurveyInfo"]['iTotalquestions'] = $_SESSION['survey_' .
+                $aData['aSurveyInfo']['sid']]['totalquestions'];
             }
 
             // Add the survey theme options
             if ($oTemplate->oOptions) {
                 foreach ($oTemplate->oOptions as $key => $value) {
-                    $aDatas["aSurveyInfo"]["options"][$key] = (string) $value;
+                    // TODO: Same issue as commit 2972aea41c51c74db95bfe40c337ae839471152c
+                    // Options are not loaded the same way in all places.
+                    if ($value instanceof stdClass) {
+                        $value = 'N/A';
+                    }
+                    $aData["aSurveyInfo"]["options"][$key] = (string) $value;
                 }
             }
         } else {
             // Add the global theme options
             $oTemplateConfigurationCurrent = Template::getInstance($oTemplate->sTemplateName);
-            $aDatas["aSurveyInfo"]["options"] = isJson($oTemplateConfigurationCurrent['options'])
+            $aData["aSurveyInfo"]["options"] = isJson($oTemplateConfigurationCurrent['options'])
                 ? (array) json_decode($oTemplateConfigurationCurrent['options'])
                 : $oTemplateConfigurationCurrent['options'];
         }
 
-        $aDatas = $this->fixDataCoherence($aDatas);
+        $aData = $this->fixDataCoherence($aData);
 
-        return $aDatas;
+        return $aData;
     }
 
 
@@ -704,23 +712,26 @@ window.addEventListener('message', function(event) {
      * With some server configuration, it can lead to critical errors : empty values in image src or url()
      * can block submition
      * This function will check thoses cases. It can be used in the future for further checks
-     * @param array $aDatas
+     * @param array $aData
      * @return array
      *
      */
-    private function fixDataCoherence($aDatas)
+    private function fixDataCoherence($aData)
     {
         // Clean option with files
         $aFilesOptions = array( 'brandlogo' => 'brandlogofile'  , 'backgroundimage' => 'backgroundimagefile' );
 
         foreach ($aFilesOptions as $sOption => $sFileOption) {
-            if ( array_key_exists ( $sFileOption ,$aDatas["aSurveyInfo"]["options"]) )
-                if ( empty ($aDatas["aSurveyInfo"]["options"][$sFileOption])  ){
-                    $aDatas["aSurveyInfo"]["options"][$sOption] = "false";
+            if ($aData["aSurveyInfo"]["options"] !== null) {
+                if (array_key_exists($sFileOption, $aData["aSurveyInfo"]["options"])) {
+                    if (empty($aData["aSurveyInfo"]["options"][$sFileOption])) {
+                        $aData["aSurveyInfo"]["options"][$sOption] = "false";
+                    }
                 }
+            }
         }
 
-        return $aDatas;
+        return $aData;
     }
 
 
@@ -787,5 +798,15 @@ window.addEventListener('message', function(event) {
             return null;
         }
         return $this->_twig->getLoader()->getSourceContext($twigView)->getPath();
+    }
+
+    /**
+     * This is used to add paths in controller views.
+     *
+     * @return FileLoader
+     */
+    public function getLoader()
+    {
+        return $this->_twig->getLoader();
     }
 }

@@ -1,6 +1,4 @@
-<?php if (!defined('BASEPATH')) {
-    exit('No direct script access allowed');
-}
+<?php
 
 /**
  * LimeSurvey
@@ -68,16 +66,15 @@ class responses extends Survey_Common_Action
         $aData['all'] = App()->request->getParam('all');
         $thissurvey = getSurveyInfo($iSurveyId);
         if (!$thissurvey) {
-// Already done in Survey_Common_Action
+            // Already done in Survey_Common_Action
             App()->session['flashmessage'] = gT("Invalid survey ID");
             $this->getController()->redirect(array("admin/index"));
         } elseif ($thissurvey['active'] != 'Y') {
             App()->session['flashmessage'] = gT("This survey has not been activated. There are no results to browse.");
-            $this->getController()->redirect(array("/admin/survey/sa/view/surveyid/{$iSurveyId}"));
+            $this->getController()->redirect(array("/surveyAdministration/view/surveyid/{$iSurveyId}"));
         }
 
         //OK. IF WE GOT THIS FAR, THEN THE SURVEY EXISTS AND IT IS ACTIVE, SO LETS GET TO WORK.
-
         if (App()->request->getParam('browselang')) {
             $aData['language'] = App()->request->getParam('browselang');
             $aData['languagelist'] = $languagelist = Survey::model()->findByPk($iSurveyId)->additionalLanguages;
@@ -113,7 +110,7 @@ class responses extends Survey_Common_Action
     public function viewbytoken($iSurveyID, $token, $sBrowseLang = '')
     {
         // Get Response ID from token
-        $oResponse = SurveyDynamic::model($iSurveyID)->findByAttributes(array('token'=>$token));
+        $oResponse = SurveyDynamic::model($iSurveyID)->findByAttributes(array('token' => $token));
         if (!$oResponse) {
             App()->setFlashMessage(gT("Sorry, this response was not found."), 'error');
             $this->getController()->redirect(array("admin/responses/sa/browse/surveyid/{$iSurveyID}"));
@@ -163,7 +160,7 @@ class responses extends Survey_Common_Action
             $message['title'] = gT('Access denied!');
             $message['message'] = gT('You do not have permission to access this page.');
             $message['class'] = "error";
-            $this->_renderWrappedTemplate('survey', array("message"=>$message), $aData);
+            $this->_renderWrappedTemplate('survey', array("message" => $message), $aData);
         }
     }
 
@@ -190,7 +187,7 @@ class responses extends Survey_Common_Action
 
             $fieldmap = createFieldMap($survey, 'full', false, false, $aData['language']);
             $bHaveToken = $survey->anonymized == "N" &&
-                tableExists('tokens_'.$iSurveyID); // Boolean : show (or not) the token
+                tableExists('tokens_' . $iSurveyID); // Boolean : show (or not) the token
             if (!Permission::model()->hasSurveyPermission($iSurveyID, 'tokens', 'read')) {
                 // If not allowed to read: remove it
                 unset($fieldmap['token']);
@@ -198,12 +195,12 @@ class responses extends Survey_Common_Action
             }
             //add token to top of list if survey is not private
             if ($bHaveToken) {
-                $fnames[] = array("token", gT("Access code"), 'code'=>'token');
-                $fnames[] = array("firstname", gT("First name"), 'code'=>'firstname'); // or token:firstname ?
-                $fnames[] = array("lastname", gT("Last name"), 'code'=>'lastname');
-                $fnames[] = array("email", gT("Email"), 'code'=>'email');
+                $fnames[] = array("token", gT("Access code"), 'code' => 'token');
+                $fnames[] = array("firstname", gT("First name"), 'code' => 'firstname'); // or token:firstname ?
+                $fnames[] = array("lastname", gT("Last name"), 'code' => 'lastname');
+                $fnames[] = array("email", gT("Email"), 'code' => 'email');
             }
-            $fnames[] = array("submitdate", gT("Submission date"), gT("Completed"), "0", 'D', 'code'=>'submitdate');
+            $fnames[] = array("submitdate", gT("Submission date"), gT("Completed"), "0", 'D', 'code' => 'submitdate');
             $fnames[] = array("completed", gT("Completed"), "0");
 
             foreach ($fieldmap as $field) {
@@ -227,7 +224,7 @@ class responses extends Survey_Common_Action
                     $fnames[] = array(
                         $field['fieldname'],
                         viewHelper::getFieldText($field),
-                        'code' => viewHelper::getFieldCode($field, array('LEMcompat'=>true))
+                        'code' => viewHelper::getFieldCode($field, array('LEMcompat' => true))
                     );
                 } elseif ($field['aid'] !== 'filecount') {
                     $qidattributes = QuestionAttribute::model()->getQuestionAttributes($field['qid']);
@@ -237,8 +234,8 @@ class responses extends Survey_Common_Action
                         if ($qidattributes['show_title'] == 1) {
                             $fnames[] = array(
                                 $field['fieldname'],
-                                "{$filenum} - {$question} (".gT('Title').")",
-                                'code' => viewHelper::getFieldCode($field).'(title)',
+                                "{$filenum} - {$question} (" . gT('Title') . ")",
+                                'code' => viewHelper::getFieldCode($field) . '(title)',
                                 "type" => Question::QT_VERTICAL_FILE_UPLOAD,
                                 "metadata" => "title",
                                 "index" => $i
@@ -248,8 +245,8 @@ class responses extends Survey_Common_Action
                         if ($qidattributes['show_comment'] == 1) {
                             $fnames[] = array(
                                 $field['fieldname'],
-                                "{$filenum} - {$question} (".gT('Comment').")",
-                                'code' => viewHelper::getFieldCode($field).'(comment)',
+                                "{$filenum} - {$question} (" . gT('Comment') . ")",
+                                'code' => viewHelper::getFieldCode($field) . '(comment)',
                                 "type" => Question::QT_VERTICAL_FILE_UPLOAD,
                                 "metadata" => "comment",
                                 "index" => $i
@@ -258,16 +255,16 @@ class responses extends Survey_Common_Action
 
                         $fnames[] = array(
                             $field['fieldname'],
-                            "{$filenum} - {$question} (".gT('File name').")",
-                            'code' => viewHelper::getFieldCode($field).'(name)',
+                            "{$filenum} - {$question} (" . gT('File name') . ")",
+                            'code' => viewHelper::getFieldCode($field) . '(name)',
                             "type" => "|",
                             "metadata" => "name",
-                            "index" => $i, 'qid'=>$field['qid']
+                            "index" => $i, 'qid' => $field['qid']
                         );
                         $fnames[] = array(
                             $field['fieldname'],
-                            "{$filenum} - {$question} (".gT('File size').")",
-                            'code' => viewHelper::getFieldCode($field).'(size)',
+                            "{$filenum} - {$question} (" . gT('File size') . ")",
+                            'code' => viewHelper::getFieldCode($field) . '(size)',
                             "type" => "|",
                             "metadata" => "size",
                             "index" => $i
@@ -356,7 +353,8 @@ class responses extends Survey_Common_Action
                                                     "surveyid" => $iSurveyID,
                                                     "iResponseId" => $iId,
                                                     "iQID" => $fnames[$i]['qid'],
-                                                    "iIndex" => $index)
+                                                    "iIndex" => $index
+                                                )
                                             )
                                         );
                                         break;
@@ -399,13 +397,12 @@ class responses extends Survey_Common_Action
 
             $aViewUrls[] = 'browseidfooter_view';
             $aData['sidemenu']['state'] = false;
-            $aData['menu']['edition'] = true;
-            $aData['menu']['view'] = true;
-            $aData['menu']['close'] = true;
             // This resets the url on the close button to go to the upper view
-            $aData['menu']['closeurl'] = $this->getController()->createUrl(
-                "admin/responses/sa/browse/surveyid/".$iSurveyID
+            $aData['closeUrl'] = $this->getController()->createUrl(
+                "admin/responses/sa/browse/surveyid/" . $iSurveyID
             );
+            $aData['topBar']['name'] = 'baseTopbar_view';
+            $aData['topBar']['rightSideView'] = 'responseViewTopbarRight_view';
 
             $this->_renderWrappedTemplate('', $aViewUrls, $aData);
         } else {
@@ -448,7 +445,8 @@ class responses extends Survey_Common_Action
             $aData['tokeninfo'] = Token::model($iSurveyID)->summary();
         }
 
-        $aData['menu']['edition'] = false;
+        $aData['topBar']['name'] = 'baseTopbar_view';
+        $aData['topBar']['leftSideView'] = 'responsesTopbarLeft_view';
 
         $aViewUrls[] = 'browseindex_view';
         $this->_renderWrappedTemplate('', $aViewUrls, $aData);
@@ -493,20 +491,19 @@ class responses extends Survey_Common_Action
 
         if (Permission::model()->hasSurveyPermission($iSurveyId, 'responses', 'read')) {
             App()->getClientScript()->registerScriptFile(
-                App()->getConfig('adminscripts').
-                'listresponse.js',
+                App()->getConfig('adminscripts') .
+                    'listresponse.js',
                 LSYii_ClientScript::POS_BEGIN
             );
             App()->getClientScript()->registerScriptFile(
-                App()->getConfig('adminscripts').
-                'tokens.js',
+                App()->getConfig('adminscripts') .
+                    'tokens.js',
                 LSYii_ClientScript::POS_BEGIN
             );
 
-            // Basic datas for the view
+            // Basic data for the view
             $aData                      = $this->_getData($iSurveyId);
             $aData['surveyid']          = $iSurveyId;
-            $aData['menu']['edition']   = false;
             $aData['sidemenu']['state'] = false;
             $aData['issuperadmin']      = Permission::model()->hasGlobalPermission('superadmin');
             $aData['hasUpload']         = hasFileUploadQuestion($iSurveyId);
@@ -517,14 +514,14 @@ class responses extends Survey_Common_Action
             // Setting the grid
 
             // Basic variables
-            $bHaveToken                 = $survey->anonymized == "N" && tableExists('tokens_'.$iSurveyId) && Permission::model()->hasSurveyPermission($iSurveyId, 'tokens', 'read'); // Boolean : show (or not) the token
+            $bHaveToken                 = $survey->anonymized == "N" && tableExists('tokens_' . $iSurveyId) && Permission::model()->hasSurveyPermission($iSurveyId, 'tokens', 'read'); // Boolean : show (or not) the token
             $aViewUrls                  = array('listResponses_view');
             $model                      = SurveyDynamic::model($iSurveyId);
             $model->bEncryption         = true;
 
             // Reset filters from stats
             if (App()->request->getParam('filters') == "reset") {
-                App()->user->setState('sql_'.$iSurveyId, '');
+                App()->user->setState('sql_' . $iSurveyId, '');
             }
 
             // Page size
@@ -541,7 +538,6 @@ class responses extends Survey_Common_Action
                 if (!empty($visibleColumns)) {
                     $model->setAttributes($visibleColumns, false);
                 }
-
             };
             // Using safe search on dynamic column names would be far too much complex.
             // So we pass over the safe validation and directly set attributes (second parameter of setAttributes to false).
@@ -574,41 +570,14 @@ class responses extends Survey_Common_Action
             // Page size
             $aData['pageSize']          = App()->user->getState('pageSize', App()->params['defaultPageSize']);
 
+            $aData['topBar']['name'] = 'baseTopbar_view';
+            $aData['topBar']['leftSideView'] = 'responsesTopbarLeft_view';
+
             $this->_renderWrappedTemplate('responses', $aViewUrls, $aData);
         } else {
-                App()->setFlashMessage(gT("You do not have permission to access this page."), 'error');
-                $this->getController()->redirect(array('admin/survey', 'sa'=>'view', 'surveyid'=>$iSurveyId));
+            App()->setFlashMessage(gT("You do not have permission to access this page."), 'error');
+            $this->getController()->redirect(array('admin/survey', 'sa' => 'view', 'surveyid' => $iSurveyId));
         }
-    }
-
-    /**
-     * Returns Data for Responses Top Bar as JSON.
-     *
-     * @param $sid
-     * @return void
-     * @throws CException
-     */
-    public function getResponsesTopBarData($sid)
-    {
-        $survey = Survey::model()->findByPk($sid);
-
-        $hasResponsesReadPermission   = Permission::model()->hasSurveyPermission($sid, 'responses', 'read');
-        $hasResponsesCreatePermission = Permission::model()->hasSurveyPermission($sid, 'responses', 'create');
-        $hasStatisticsReadPermission  = Permission::model()->hasSurveyPermission($sid, 'statistics', 'read');
-        $hasResponsesExportPermission = Permission::model()->hasSurveyPermission($sid, 'responses', 'export');
-        $hasResponsesDeletePermission = Permission::model()->hasSurveyPermission($sid, 'responses', 'delete');
-
-        return App()->getController()->renderPartial(
-            '/admin/survey/topbar/responses_topbar',
-            array(
-                'survey' => $survey,
-                'hasResponsesReadPermission'   => $hasResponsesReadPermission,
-                'hasResponsesCreatePermission' => $hasResponsesCreatePermission,
-                'hasStatisticsReadPermission'  => $hasStatisticsReadPermission,
-                'hasResponsesExportPermission' => $hasResponsesExportPermission,
-                'hasResponsesDeletePermission' => $hasResponsesDeletePermission,
-            )
-        );
     }
 
     /**
@@ -690,59 +659,105 @@ class responses extends Survey_Common_Action
 
         $iSurveyId = (int) $surveyid;
         $ResponseId  = (App()->request->getPost('sItems') != '') ? json_decode(App()->request->getPost('sItems')) : json_decode(App()->request->getParam('sResponseId'), true);
-        if (App()->request->getPost('modalTextArea') != '' ) {
+        if (App()->request->getPost('modalTextArea') != '') {
             $ResponseId = explode(',', App()->request->getPost('modalTextArea'));
-            foreach ($ResponseId as $key => $sResponseId){
+            foreach ($ResponseId as $key => $sResponseId) {
                 $ResponseId[$key] = str_replace(' ', '', $sResponseId);
             }
         }
 
         $aResponseId = (is_array($ResponseId)) ? $ResponseId : array($ResponseId);
-
         $errors = 0;
         $timingErrors = 0;
 
         foreach ($aResponseId as $iResponseId) {
-            $beforeDataEntryDelete = new PluginEvent('beforeDataEntryDelete');
-            $beforeDataEntryDelete->set('iSurveyID', $iSurveyId);
-            $beforeDataEntryDelete->set('iResponseID', $iResponseId);
-            App()->getPluginManager()->dispatchEvent($beforeDataEntryDelete);
-
-            $response = Response::model($iSurveyId)->findByPk($iResponseId);
-            if ($response) {
-                $result = $response->delete(true);
-                if (!$result) {
-                    $errors++;
-                } else {
-                    $oSurvey = Survey::model()->findByPk($iSurveyId);
-                    // TODO : add it to response->delete and response->afterDelete
-                    if ($oSurvey->savetimings == "Y") {
-                        $result = SurveyTimingDynamic::model($iSurveyId)->deleteByPk($iResponseId);
-                        if (!$result) {
-                            $timingErrors++;
-                        }
-                    }
-                }
-            } else {
-                $errors++;
-            }
+            $resultErrors = $this->deleteResponse($iSurveyId, $iResponseId);
+            $errors += $resultErrors['numberOfErrors'];
+            $timingErrors += $resultErrors['numberOfTimingErrors'];
         }
 
         if ($errors || $timingErrors) {
-            $message = ($errors) ? ngT("A response was not deleted.|{n} responses were not deleted.",$errors) : "";
-            $message.= ($timingErrors) ? ngT("A timing record was not deleted.|{n} timing records were not deleted.",$errors) : "";
+            $message = ($errors) ? ngT("A response was not deleted.|{n} responses were not deleted.", $errors) : "";
+            $message .= ($timingErrors) ? ngT("A timing record was not deleted.|{n} timing records were not deleted.", $errors) : "";
             if (App()->getRequest()->isAjaxRequest) {
                 ls\ajax\AjaxHelper::outputError($message);
             } else {
-                App()->setFlashMessage($message,'error');
-                $this->getController()->redirect(array("admin/responses", "sa"=>"browse", "surveyid"=>$iSurveyId));
+                App()->setFlashMessage($message, 'error');
+                $this->getController()->redirect(array("admin/responses", "sa" => "browse", "surveyid" => $iSurveyId));
             }
         }
         if (App()->getRequest()->isAjaxRequest) {
             ls\ajax\AjaxHelper::outputSuccess(gT('Response(s) deleted.'));
         }
-        App()->setFlashMessage(gT('Response(s) deleted.'),'success');
-        $this->getController()->redirect(array("admin/responses", "sa"=>"browse", "surveyid"=>$iSurveyId));
+        App()->setFlashMessage(gT('Response(s) deleted.'), 'success');
+        $this->getController()->redirect(array("admin/responses", "sa" => "browse", "surveyid" => $iSurveyId));
+    }
+
+    /**
+     * Deletes a single response and redirects to the gridview.
+     *
+     * @param $surveyid     -- the survey id
+     * @param $responseId   -- the response id to be deleted
+     * @throws CDbException
+     * @throws CHttpException
+     */
+    public function actionDeleteSingle($surveyid, $responseId)
+    {
+        if (!Permission::model()->hasSurveyPermission($surveyid, 'responses', 'delete')) {
+            throw new CHttpException(403, gT("You do not have permission to access this page."));
+        }
+
+        $iSurveyId =(int) $surveyid;
+        $iResponseId = (int) $responseId;
+        $resultErrors = $this->deleteResponse($iSurveyId, $iResponseId);
+        if ($resultErrors['numberOfErrors'] > 0 || $resultErrors['numberOfTimingErrors']) {
+            $message = gt('Response could not be deleted');
+            App()->setFlashMessage($message, 'error');
+            $this->getController()->redirect(array("admin/responses", "sa" => "browse", "surveyid" => $iSurveyId));
+        }
+
+        App()->setFlashMessage(gT('Response deleted.'), 'success');
+        $this->getController()->redirect(array("admin/responses", "sa" => "browse", "surveyid" => $iSurveyId));
+    }
+
+    /**
+     * Deletes a response
+     *
+     * @param $iSurveyId
+     * @param $iResponseId
+     * @return int[]
+     * @throws CDbException
+     */
+    private function deleteResponse($iSurveyId, $iResponseId)
+    {
+        $errors = 0;
+        $timingErrors = 0;
+
+        $beforeDataEntryDelete = new PluginEvent('beforeDataEntryDelete');
+        $beforeDataEntryDelete->set('iSurveyID', $iSurveyId);
+        $beforeDataEntryDelete->set('iResponseID', $iResponseId);
+        App()->getPluginManager()->dispatchEvent($beforeDataEntryDelete);
+
+        $response = Response::model($iSurveyId)->findByPk($iResponseId);
+        if ($response) {
+            $result = $response->delete(true);
+            if (!$result) {
+                $errors += 1;
+            } else {
+                $oSurvey = Survey::model()->findByPk($iSurveyId);
+                // TODO : add it to response->delete and response->afterDelete
+                if ($oSurvey->savetimings == "Y") {
+                    $result = SurveyTimingDynamic::model($iSurveyId)->deleteByPk($iResponseId);
+                    if (!$result) {
+                        $timingErrors += 1;
+                    }
+                }
+            }
+        } else {
+            $errors += 1;
+        }
+
+        return ['numberOfErrors' => $errors, 'numberOfTimingErrors' => $timingErrors];
     }
 
     /**
@@ -760,12 +775,18 @@ class responses extends Survey_Common_Action
         $iResponseId = (int) $iResponseId;
         $iQID = (int) $iQID;
 
+        $oSurvey = Survey::model()->findByPk($iSurveyId);
+        if (!$oSurvey->isActive) {
+            Yii::app()->setFlashMessage(gT("Sorry, this file was not found."), 'error');
+            $this->getController()->redirect(array("admin/survey", "sa" => "view", "surveyid" => $iSurveyId));
+        }
+
         if (Permission::model()->hasSurveyPermission($iSurveyId, 'responses', 'read')) {
             $oResponse = Response::model($iSurveyId)->findByPk($iResponseId);
             $aQuestionFiles = $oResponse->getFiles($iQID);
             if (isset($aQuestionFiles[$iIndex])) {
                 $aFile = $aQuestionFiles[$iIndex];
-                $sFileRealName = App()->getConfig('uploaddir')."/surveys/".$iSurveyId."/files/".$aFile['filename'];
+                $sFileRealName = App()->getConfig('uploaddir') . "/surveys/" . $iSurveyId . "/files/" . $aFile['filename'];
                 if (file_exists($sFileRealName)) {
                     $mimeType = CFileHelper::getMimeType($sFileRealName, null, false);
                     if (is_null($mimeType)) {
@@ -773,18 +794,20 @@ class responses extends Survey_Common_Action
                     }
                     @ob_clean();
                     header('Content-Description: File Transfer');
-                    header('Content-Type: '.$mimeType);
-                    header('Content-Disposition: attachment; filename="'.sanitize_filename(rawurldecode($aFile['name'])).'"');
+                    header('Content-Type: ' . $mimeType);
+                    header('Content-Disposition: attachment; filename="' . sanitize_filename(rawurldecode($aFile['name'])) . '"');
                     header('Content-Transfer-Encoding: binary');
                     header('Expires: 0');
                     header("Cache-Control: must-revalidate, no-store, no-cache");
-                    header('Content-Length: '.filesize($sFileRealName));
+                    header('Content-Length: ' . filesize($sFileRealName));
                     readfile($sFileRealName);
                     exit;
                 }
             }
             App()->setFlashMessage(gT("Sorry, this file was not found."), 'error');
-            $this->getController()->redirect(array("admin/responses", "sa"=>"browse", "surveyid"=>$iSurveyId));
+            $this->getController()->redirect(array("admin/responses", "sa" => "browse", "surveyid" => $iSurveyId));
+        } else {
+            throw new CHttpException(403, gT("You do not have permission to access this page."));
         }
     }
 
@@ -801,14 +824,19 @@ class responses extends Survey_Common_Action
     {
 
         if (Permission::model()->hasSurveyPermission($iSurveyId, 'responses', 'read')) {
+            $oSurvey = Survey::model()->findByPk($iSurveyId);
+            if (!$oSurvey->isActive) {
+                Yii::app()->setFlashMessage(gT("Sorry, this file was not found."), 'error');
+                $this->getController()->redirect(array("admin/survey", "sa" => "view", "surveyid" => $iSurveyId));
+            }
             if (!$sResponseId) {
                 // No response id : get all survey files
                 $oCriteria = new CDbCriteria();
                 $oCriteria->select = "id";
                 $oSurvey = SurveyDynamic::model($iSurveyId);
                 $aResponseId = $oSurvey->getCommandBuilder()
-                ->createFindCommand($oSurvey->tableSchema, $oCriteria)
-                ->queryColumn();
+                    ->createFindCommand($oSurvey->tableSchema, $oCriteria)
+                    ->queryColumn();
             } else {
                 $aResponseId = explode(",", $sResponseId);
             }
@@ -823,8 +851,10 @@ class responses extends Survey_Common_Action
             } else {
                 // No response : redirect to browse with a alert
                 App()->setFlashMessage(gT("The requested files do not exist on the server."), 'error');
-                $this->getController()->redirect(array("admin/responses", "sa"=>"browse", "surveyid"=>$iSurveyId));
+                $this->getController()->redirect(array("admin/responses", "sa" => "browse", "surveyid" => $iSurveyId));
             }
+        } else {
+            throw new CHttpException(403, gT("You do not have permission to access this page."));
         }
     }
 
@@ -875,7 +905,7 @@ class responses extends Survey_Common_Action
             }
         }
         if (!empty($allErrors)) {
-            $message = gT('Error: Could not delete some files: ').implode(', ', $allErrors);
+            $message = gT('Error: Could not delete some files: ') . implode(', ', $allErrors);
             if ($request->isAjaxRequest) {
                 ls\ajax\AjaxHelper::outputError(
                     $message
@@ -883,15 +913,15 @@ class responses extends Survey_Common_Action
                 App()->end();
             }
             App()->setFlashMessage($message, 'error');
-            $this->getController()->redirect(array("admin/responses", "sa"=>"browse", "surveyid"=>$surveyId));
+            $this->getController()->redirect(array("admin/responses", "sa" => "browse", "surveyid" => $surveyId));
         }
         $message = sprintf(ngT('%d file deleted.|%d files deleted.', $allSuccess), $allSuccess);
         if ($request->isAjaxRequest) {
             ls\ajax\AjaxHelper::outputSuccess($message);
             App()->end();
         }
-        App()->setFlashMessage($message,'success');
-        $this->getController()->redirect(array("admin/responses", "sa"=>"browse", "surveyid"=>$surveyId));
+        App()->setFlashMessage($message, 'success');
+        $this->getController()->redirect(array("admin/responses", "sa" => "browse", "surveyid" => $surveyId));
     }
 
     /**
@@ -906,42 +936,11 @@ class responses extends Survey_Common_Action
         $aData = $this->_getData(array('iSurveyId' => $iSurveyID));
         $survey = Survey::model()->findByPk($iSurveyID);
 
-        // TODO: Remove unused code?
-        /*
-        extract($aData);
-        $aViewUrls = array();
-
-        if ($survey->savetimings != "Y")
-            die();
-
-        if (Yii::app()->request->getPost('deleteanswer') && Yii::app()->request->getPost('deleteanswer') != '' && Yii::app()->request->getPost('deleteanswer') != 'marked'
-        && Permission::model()->hasSurveyPermission($iSurveyID, 'responses', 'delete'))
-        {
-            $iResponseID=(int) Yii::app()->request->getPost('deleteanswer');
-            SurveyDynamic::model($iSurveyID)->deleteByPk($iResponseID);
-            SurveyTimingDynamic::model($iSurveyID)->deleteByPk($iResponseID);
-        }
-
-        if (Yii::app()->request->getPost('markedresponses') && count(Yii::app()->request->getPost('markedresponses')) > 0)
-        {
-            if (Yii::app()->request->getPost('deleteanswer') && Yii::app()->request->getPost('deleteanswer') === 'marked' &&
-            Permission::model()->hasSurveyPermission($iSurveyID, 'responses', 'delete'))
-            {
-                foreach (Yii::app()->request->getPost('markedresponses') as $iResponseID)
-                {
-                    $iResponseID=(int) $iResponseID;
-                    SurveyDynamic::model($iSurveyID)->deleteByPk($iResponseID);
-                    SurveyTimingDynamic::model($iSurveyID)->deleteByPk($iResponseID);
-                }
-            }
-        }
-        */
-
         $aData['columns'] = array(
             array(
                 'header' => gT('ID'),
                 'name' => 'id',
-                'value'=> '$data->id',
+                'value' => '$data->id',
                 'headerHtmlOptions' => array('class' => 'hidden-xs'),
                 'htmlOptions' => array('class' => 'hidden-xs')
             ),
@@ -964,156 +963,40 @@ class responses extends Survey_Common_Action
             }
 
             if ($fielddetails['type'] == 'page_time') {
-                $fnames[] = array($fielddetails['fieldname'], gT('Group').": ".$fielddetails['group_name']);
+                $fnames[] = array($fielddetails['fieldname'], gT('Group') . ": " . $fielddetails['group_name']);
                 $aData['columns'][] = array(
-                    'header' => gT('Group: ').$fielddetails['group_name'],
+                    'header' => gT('Group: ') . $fielddetails['group_name'],
                     'name' => $fielddetails['fieldname']
                 );
             }
 
             if ($fielddetails['type'] == 'answer_time') {
-                $fnames[] = array($fielddetails['fieldname'], gT('Question').": ".$fielddetails['title']);
+                $fnames[] = array($fielddetails['fieldname'], gT('Question') . ": " . $fielddetails['title']);
                 $aData['columns'][] = array(
-                    'header' => gT('Question: ').$fielddetails['title'],
+                    'header' => gT('Question: ') . $fielddetails['title'],
                     'name' => $fielddetails['fieldname']
                 );
             }
         }
         $fncount = count($fnames);
-
-        // TODO: Remove unused code
-        /*
-        //NOW LETS CREATE A TABLE WITH THOSE HEADINGS
-        foreach ($fnames as $fn)
-        {
-            if (!isset($currentgroup))
-            {
-                $currentgroup = $fn[1];
-                $gbc = "oddrow";
-            }
-            if ($currentgroup != $fn[1])
-            {
-                $currentgroup = $fn[1];
-                if ($gbc == "oddrow")
-                {
-                    $gbc = "evenrow";
-                }
-                else
-                {
-                    $gbc = "oddrow";
-                }
-            }
-        }
-        $aData['fnames'] = $fnames;
-        $start = Yii::app()->request->getParam('start', 0);
-        $limit = Yii::app()->request->getParam('limit', 50);
-        if(!$limit){$limit=50;}
-        //LETS COUNT THE DATA
-        $oCriteria = new CdbCriteria();
-        $oCriteria->select = 'tid';
-        $oCriteria->join = "INNER JOIN {{survey_{$iSurveyID}}} s ON t.id=s.id";
-        $oCriteria->condition = 'submitdate IS NOT NULL';
-        $dtcount = SurveyTimingDynamic::model($iSurveyID)->count($oCriteria); // or die("Couldn't get response data");
-
-        if ($limit > $dtcount)
-        {
-            $limit = $dtcount;
-        }
-
-        //NOW LETS SHOW THE DATA
-        $oCriteria = new CdbCriteria();
-        $oCriteria->join = "INNER JOIN {{survey_{$iSurveyID}}} s ON t.id=s.id";
-        $oCriteria->condition = 'submitdate IS NOT NULL';
-        $oCriteria->order = "s.id " . (Yii::app()->request->getParam('order') == 'desc' ? 'desc' : 'asc');
-        $oCriteria->offset = $start;
-        $oCriteria->limit = $limit;
-
-        $dtresult = SurveyTimingDynamic::model($iSurveyID)->findAllAsArray($oCriteria);
-
-        //CONTROL MENUBAR
-        $last = $start - $limit;
-        $next = $start + $limit;
-        $end = $dtcount - $limit;
-        if ($end < 0)
-        {
-            $end = 0;
-        }
-        if ($last < 0)
-        {
-            $last = 0;
-        }
-        if ($next >= $dtcount)
-        {
-            $next = $dtcount - $limit;
-        }
-        if ($end < 0)
-        {
-            $end = 0;
-        }
-
-        $aData['sCompletionStateValue']=incompleteAnsFilterState();
-        $aData['start'] = $start;
-        $aData['limit'] = $limit;
-        $aData['last'] = $last;
-        $aData['next'] = $next;
-        $aData['end'] = $end;
-        */
         $aViewUrls[] = 'browsetimeheader_view';
-
-        // TODO: Remove unused code
-        /*
-
-        $aData['fncount'] = $fncount;
-        $bgcc = 'oddrow';
-
-        foreach ($dtresult as $dtrow)
-        {
-            if ($bgcc == "evenrow")
-            {
-                $bgcc = "oddrow";
-            }
-            else
-            {
-                $bgcc = "evenrow";
-            }
-            $browsedatafield=array();
-            for ($i = 0; $i < $fncount; $i++)
-            {
-                $browsedatafield[$i] = $dtrow[$fnames[$i][0]];
-                // seconds -> minutes & seconds
-                if (strtolower(substr($fnames[$i][0], -4)) == "time")
-                {
-                    $minutes = (int) ($browsedatafield[$i] / 60);
-                    $seconds = $browsedatafield[$i] % 60;
-                    $browsedatafield[$i] = '';
-                    if ($minutes > 0)
-                        $browsedatafield[$i] .= "$minutes min ";
-                    $browsedatafield[$i] .= "$seconds s";
-                }
-            }
-            $aData['browsedatafield'] = $browsedatafield;
-            $aData['bgcc'] = $bgcc;
-            $aData['dtrow'] = $dtrow;
-            */
-            $aViewUrls['browsetimerow_view'][] = $aData;
-            /*
-        }
-        */
-
+        $aViewUrls['browsetimerow_view'][] = $aData;
         // Set number of page
         if (App()->request->getParam('pageSize')) {
             App()->user->setState('pageSize', (int) App()->request->getParam('pageSize'));
         }
 
-
         //interview Time statistics
         $aData['model'] = SurveyTimingDynamic::model($iSurveyID);
-        $aData['menu']['edition'] = false;
 
         $aData['pageSize'] = 10;
         $aData['statistics'] = SurveyTimingDynamic::model($iSurveyID)->statistics();
         $aData['num_total_answers'] = SurveyDynamic::model($iSurveyID)->count();
         $aData['num_completed_answers'] = SurveyDynamic::model($iSurveyID)->count('submitdate IS NOT NULL');
+
+        $aData['topBar']['name'] = 'baseTopbar_view';
+        $aData['topBar']['leftSideView'] = 'responsesTopbarLeft_view';
+
         $aViewUrls[] = 'browsetimefooter_view';
         $this->_renderWrappedTemplate('', $aViewUrls, $aData);
     }
@@ -1130,12 +1013,7 @@ class responses extends Survey_Common_Action
      */
     private function _zipFiles($iSurveyID, $responseIds, $zipfilename)
     {
-        /**
-         * @todo Move this to model.
-         */
-        App()->loadLibrary('admin/pclzip');
-
-        $tmpdir = App()->getConfig('uploaddir').DIRECTORY_SEPARATOR."surveys".DIRECTORY_SEPARATOR.$iSurveyID.DIRECTORY_SEPARATOR."files".DIRECTORY_SEPARATOR;
+        $tmpdir = App()->getConfig('uploaddir') . DIRECTORY_SEPARATOR . "surveys" . DIRECTORY_SEPARATOR . $iSurveyID . DIRECTORY_SEPARATOR . "files" . DIRECTORY_SEPARATOR;
 
         $filelist = array();
         $responses = Response::model($iSurveyID)->findAllByPk($responseIds);
@@ -1148,38 +1026,39 @@ class responses extends Survey_Common_Action
                 * unique. This way we can have 234_1_image1.gif, 234_2_image1.gif as it could be
                 * files from a different source with the same name.
                 */
-                if (file_exists($tmpdir.basename($fileInfo['filename']))) {
+                if (file_exists($tmpdir . basename($fileInfo['filename']))) {
                     $filelist[] = array(
-                        PCLZIP_ATT_FILE_NAME => $tmpdir.basename($fileInfo['filename']),
-                        PCLZIP_ATT_FILE_NEW_FULL_NAME => sprintf("%05s_%02s-%s_%02s-%s", $response->id, $filecount, $fileInfo['question']['title'],$fileInfo['index'], sanitize_filename(rawurldecode($fileInfo['name'])))
+                        $tmpdir . basename($fileInfo['filename']),
+                        sprintf("%05s_%02s-%s_%02s-%s", $response->id, $filecount, $fileInfo['question']['title'], $fileInfo['index'], sanitize_filename(rawurldecode($fileInfo['name'])))
                     );
                 }
             }
         }
 
         if (count($filelist) > 0) {
-            $zip = new PclZip($tmpdir.$zipfilename);
-            if ($zip->create($filelist) === 0) {
-                //Oops something has gone wrong!
+            $zip = new ZipArchive();
+            $zip->open($tmpdir.$zipfilename,ZipArchive::CREATE);
+            foreach($filelist as $aFile) {
+                $zip->addFile($aFile[0],$aFile[1]);
             }
-
-            if (file_exists($tmpdir.'/'.$zipfilename)) {
+            $zip->close();
+            if (file_exists($tmpdir . '/' . $zipfilename)) {
                 @ob_clean();
                 header('Content-Description: File Transfer');
                 header('Content-Type: application/zip, application/octet-stream');
-                header('Content-Disposition: attachment; filename='.basename($zipfilename));
+                header('Content-Disposition: attachment; filename=' . basename($zipfilename));
                 header('Content-Transfer-Encoding: binary');
                 header('Expires: 0');
                 header("Cache-Control: must-revalidate, no-store, no-cache");
-                header('Content-Length: '.filesize($tmpdir."/".$zipfilename));
-                readfile($tmpdir.'/'.$zipfilename);
-                unlink($tmpdir.'/'.$zipfilename);
+                header('Content-Length: ' . filesize($tmpdir . "/" . $zipfilename));
+                readfile($tmpdir . '/' . $zipfilename);
+                unlink($tmpdir . '/' . $zipfilename);
                 exit;
             }
         }
         // No files : redirect to browse with a alert
         App()->setFlashMessage(gT("Sorry, there are no files for this response."), 'error');
-        $this->getController()->redirect(array("admin/responses", "sa"=>"browse", "surveyid"=>$iSurveyID));
+        $this->getController()->redirect(array("admin/responses", "sa" => "browse", "surveyid" => $iSurveyID));
     }
 
     /**
@@ -1194,7 +1073,7 @@ class responses extends Survey_Common_Action
             App()->session['responsesid'] = App()->request->getPost('itemsid');
         } else {
             unset(App()->session['responsesid']);
-            $this->getController()->redirect(array("admin/export", "sa"=>"exportresults", "surveyid"=>$sid));
+            $this->getController()->redirect(array("admin/export", "sa" => "exportresults", "surveyid" => $sid));
         }
     }
 
@@ -1207,18 +1086,15 @@ class responses extends Survey_Common_Action
      */
     protected function _renderWrappedTemplate($sAction = '', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
-        // TODO: Remove unused code.
-        // App()->getClientScript()->registerScriptFile( App()->getConfig('adminscripts') . 'browse.js');
-        App()->getClientScript()->registerCssFile(App()->getConfig('publicstyleurl').'browse.css');
+        App()->getClientScript()->registerCssFile(App()->getConfig('publicstyleurl') . 'browse.css');
 
         $iSurveyId = $aData['iSurveyId'];
         $oSurvey = Survey::model()->findByPk($iSurveyId);
         $aData['display']['menu_bars'] = false;
         $aData['subaction'] = gT("Responses and statistics");
         $aData['display']['menu_bars']['browse'] = gT('Browse responses'); // browse is independent of the above
-        $aData['title_bar']['title'] = gT('Browse responses').': '.$oSurvey->currentLanguageSettings->surveyls_title;
+        $aData['title_bar']['title'] = gT('Browse responses') . ': ' . $oSurvey->currentLanguageSettings->surveyls_title;
         $aData['topBar']['type'] = 'responses';
         parent::_renderWrappedTemplate('responses', $aViewUrls, $aData);
     }
-
 }

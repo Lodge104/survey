@@ -61,7 +61,7 @@ $googleAnalyticsStyleOptions = array(
                             /*$this->widget('bootstrap.widgets.TbModal', array(
                                 'id' => 'datestampModal_1',
                                 'htmlOptions' => ['class' => 'selector_dateStampModal_notification'],
-                                'header' => gt('Warning','unescaped'),
+                                'header' => gT('Warning','unescaped'),
                                 'content' => '<p>'.gT("If the option -Anonymized responses- is activated only a dummy date stamp (1980-01-01) will be used for all responses to ensure the anonymity of your participants.").'</p>',
                                 'footer' => TbHtml::button('Close', array('data-dismiss' => 'modal'))
                             ));*/
@@ -77,7 +77,7 @@ $googleAnalyticsStyleOptions = array(
                         if ($oSurvey->ipaddr!= "Y") {
                             eT("Responses will not have the IP address logged.");
                         } else {
-                            eT("Responses will have the IP address logged");
+                            eT("Responses will have the IP address logged.");
                         } ?>
                         <span class='annotation'> <?php  eT("Cannot be changed"); ?></span>
                         <?php echo CHtml::hiddenField('ipaddr',$oSurvey->ipaddr);
@@ -92,13 +92,39 @@ $googleAnalyticsStyleOptions = array(
                                 }
                             }")*/
                         ));
+
                         /*$this->widget('bootstrap.widgets.TbModal', array(
                             'id' => 'datestampModal_2',
-                            'header' => gt('Warning','unescaped'),
+                            'header' => gT('Warning','unescaped'),
                             'content' => '<p>'.gT("If the option -Anonymized responses- is activated only a dummy date stamp (1980-01-01) will be used for all responses to ensure the anonymity of your participants. If you are running a closed survey you will NOT be able to link responses to participants if the survey is set to be anonymous.").'</p>',
                             'footer' => TbHtml::button('Close', array('data-dismiss' => 'modal'))
                         ));*/
                         }
+                    ?>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class=" control-label" for='ipanonymize'><?php  eT("Anonymize IP address:"); ?></label>
+                <div class="">
+                    <?php
+                    if ($oSurvey->isActive) {
+                        if ($oSurvey->ipanonymize!= "Y") {
+                            eT("Responses will not have the IP address anonymized.");
+                        } else {
+                            eT("Responses will have the IP address anonymized.");
+                        } ?>
+                        <span class='annotation'> <?php  eT("Cannot be changed"); ?></span>
+                        <?php echo CHtml::hiddenField('ipanonymize',$oSurvey->ipanonymize);
+                    }else {
+                        // <!-- only visible if ipaddr is set to yes in db or switch to yes -->
+                        $this->widget('yiiwheels.widgets.buttongroup.WhButtonGroup', array(
+                            'name' => 'ipanonymize',
+                            'value' => $oSurvey->ipanonymize,
+                            'selectOptions' => ($bShowInherited) ? array_merge($optionsOnOff, array(
+                                'I' => gT('Inherit', 'unescaped') . ' [' . $oSurveyOptions->ipanonymize . ']'
+                            )) : $optionsOnOff,
+                        ));
+                    }
                     ?>
                 </div>
             </div>

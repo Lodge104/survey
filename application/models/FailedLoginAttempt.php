@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    die('No direct script access allowed');
-}
+<?php
+
 /*
  * LimeSurvey
  * Copyright (C) 2007-2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -24,6 +23,9 @@
  */
 class FailedLoginAttempt extends LSActiveRecord
 {
+    const TYPE_LOGIN = 'login';
+    const TYPE_TOKEN = 'token';
+
     /**
      * @inheritdoc
      * @return FailedLoginAttempt
@@ -55,20 +57,28 @@ class FailedLoginAttempt extends LSActiveRecord
      */
     public function deleteAttempts()
     {
-        $ip = substr($_SERVER['REMOTE_ADDR'], 0, 40);
+        $ip = substr(getIPAddress(), 0, 40);
         $this->deleteAllByAttributes(array('ip' => $ip));
     }
 
     /**
      * Check if an IP address is allowed to login or not
      *
+     * @param string $attemptType  The attempt type ('login' or 'token'). Used to check the white lists.
+     *
      * @return boolean Returns true if the user is blocked
      */
-    public function isLockedOut()
+    public function isLockedOut($attemptType = '')
     {
         $isLockedOut = false;
-        $ip = substr($_SERVER['REMOTE_ADDR'], 0, 40);
-        $criteria = new CDbCriteria;
+        $ip = substr(getIPAddress(), 0, 40);
+
+        // Return false if IP is whitelisted
+        if (!empty($attemptType) && $this->isWhitelisted($ip, $attemptType)) {
+            return false;
+        }
+
+        $criteria = new CDbCriteria();
         $criteria->condition = 'number_attempts > :attempts AND ip = :ip';
         $criteria->params = array(':attempts' => Yii::app()->getConfig('maxLoginAttempt'), ':ip' => $ip);
 
@@ -106,7 +116,7 @@ class FailedLoginAttempt extends LSActiveRecord
     {
         if (!$this->isLockedOut()) {
             $timestamp = date("Y-m-d H:i:s");
-            $ip = substr($_SERVER['REMOTE_ADDR'], 0, 40);
+            $ip = substr(getIPAddress(), 0, 40);
             $row = $this->findByAttributes(array('ip' => $ip));
     
             if ($row !== null) {
@@ -114,7 +124,7 @@ class FailedLoginAttempt extends LSActiveRecord
                 $row->last_attempt = $timestamp;
                 $row->save();
             } else {
-                $record = new FailedLoginAttempt;
+                $record = new FailedLoginAttempt();
                 $record->ip = $ip;
                 $record->number_attempts = 1;
                 $record->last_attempt = $timestamp;
@@ -122,5 +132,53 @@ class FailedLoginAttempt extends LSActiveRecord
             }
         }
         return true;
+    }
+
+    /**
+     * Returns true if the specified IP is whitelisted
+     *
+     * @param string $ip
+     * @param string $attemptType   'login' or 'token'
+     *
+     * @throws InvalidArgumentException if an invalid attempt type is specified
+     * @return boolean
+     */
+    private function isWhitelisted($ip, $attemptType)
+    {
+        // Init
+        if ($attemptType != self::TYPE_LOGIN && $attemptType != self::TYPE_TOKEN) {
+            throw new InvalidArgumentException(sprintf("Invalid attempt type: %s", $attemptType));
+        }
+        if (empty($ip)) {
+            return false;
+        }
+        $binaryIP = inet_pton($ip);
+
+        $whiteList = Yii::app()->getConfig($attemptType . 'IpWhitelist');
+        if (empty($whiteList)) {
+            return false;
+        }
+
+        // Validating
+        $whiteListEntries = preg_split('/\n|,/', $whiteList);
+        foreach ($whiteListEntries as $whiteListEntry) {
+            if (empty($whiteListEntry)) {
+                continue;
+            }
+            // Compare directly
+            if ($whiteListEntry == $ip) {
+                // The IP is whitelisted
+                return true;
+            }
+            // Compare binary representations
+            $binaryWhiteListEntry = inet_pton($whiteListEntry);
+            if ($binaryWhiteListEntry !== false && $binaryWhiteListEntry == $binaryIP) {
+                // The IP is whitelisted
+                return true;
+            }
+        }
+
+        // Not whitelisted
+        return false;
     }
 }

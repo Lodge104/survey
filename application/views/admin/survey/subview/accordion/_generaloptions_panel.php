@@ -111,7 +111,7 @@
                             'value' =>  $oSurvey->additionalLanguages,
                             'name' => 'additional_languages',
                             'pluginOptions' => array(
-                                'placeholder' => gt('Select additional languages','unescaped'),
+                                'placeholder' => gT('Select additional languages','unescaped'),
                         )));
                         ?>
                         <input type='hidden' name='oldlanguages' id='oldlanguages' value='<?php echo implode(' ', $oSurvey->additionalLanguages); ?>'>
@@ -323,9 +323,9 @@
         <!-- Template -->
 
         <div class="form-group">
-            <label class=" control-label" for='template'><?php  eT("Template:"); ?></label>
+            <label class=" control-label" for='template'><?php  eT("Theme:"); ?></label>
             <div class="">
-                <select id='template' class="form-control"  name='template' data-updateurl='<?php echo App()->createUrl('/admin/themeoptions/sa/getpreviewtag') ?>' data-inherit-template-name='<?php echo $oSurveyOptions->template?>'>
+                <select id='template' class="form-control"  name='template' data-updateurl='<?php echo App()->createUrl('themeOptions/getPreviewTag') ?>' data-inherit-template-name='<?php echo $oSurveyOptions->template?>'>
                     <?php if ($bShowInherited){ ?>
                         <option value="inherit" <?php echo ($oSurvey->template == 'inherit')?'selected="selected"':''; ?>><?php echo eT('Inherit').' ['. $oSurveyOptions->template . ']'; ?></option>
                     <?php } ?>

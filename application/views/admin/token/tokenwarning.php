@@ -32,7 +32,7 @@
 
                         <?php echo CHtml::form(array("admin/tokens/sa/index/surveyid/{$oSurvey->sid}"), 'post'); ?>
                             <button type="submit" class="btn btn-default  btn-lg"  name="createtable" value="Y"><?php eT("Initialise participant table"); ?></button>
-                            <a href="<?php echo $this->createUrl("admin/survey/sa/view/surveyid/$oSurvey->sid"); ?>" class="btn btn-default  btn-lg"><?php eT("No, thanks."); ?></a>
+                            <a href="<?php echo $this->createUrl("surveyAdministration/view/surveyid/$oSurvey->sid"); ?>" class="btn btn-default  btn-lg"><?php eT("No, thanks."); ?></a>
                     <?php echo CHtml::endForm() ?>
 
 
@@ -40,7 +40,7 @@
                     }else{
                         eT("You don't have the permission to activate participants.");
                     ?>
-                    <input type='submit' value='<?php eT("Back to main menu"); ?>' onclick="window.open('<?php echo $this->createUrl("admin/survey/sa/view/surveyid/$oSurvey->sid"); ?>', '_top')" /></div>
+                    <input type='submit' value='<?php eT("Back to main menu"); ?>' onclick="window.open('<?php echo $this->createUrl("surveyAdministration/view/surveyid/$oSurvey->sid"); ?>', '_top')" /></div>
 
                     <?php
                     }
@@ -56,6 +56,9 @@ if ($tcount > 0 && (Permission::model()->hasSurveyPermission($oSurvey->sid, 'sur
         <div class="col-sm-12 content-right">
             <div class="jumbotron message-box">
                 <h2><?php eT("Restore options"); ?></h2>
+                <p class="text-info">
+                    <?php eT("Please be aware that tables including encryption should not be restored if they have been created in LimeSurvey 4 before version 4.6.1")?>
+                </p>
                 <p class="lead text-success">
                     <strong>
                         <?php eT("The following old survey participants tables could be restored:"); ?>

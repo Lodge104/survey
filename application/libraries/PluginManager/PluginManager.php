@@ -2,12 +2,13 @@
 
 namespace LimeSurvey\PluginManager;
 
-use \Yii;
+use Yii;
 use Plugin;
+use ExtensionConfig;
 
 /**
  * Factory for limesurvey plugin objects.
- * @method mixed dispatchEvent
+ * @method mixed dispatchEvent(): void
  */
 class PluginManager extends \CApplicationComponent
 {
@@ -37,7 +38,7 @@ class PluginManager extends \CApplicationComponent
         // Core plugins.
         'core' => 'application.core.plugins',
         // Uploaded plugins installed through ZIP file.
-        'upload' => 'webroot.upload.plugins'
+        'upload' => 'uploaddir.plugins'
     ];
 
     /**
@@ -68,6 +69,8 @@ class PluginManager extends \CApplicationComponent
         // before attempting to load plugins (and disabled after).
         $this->shutdownObject = new PluginManagerShutdownFunction();
         register_shutdown_function($this->shutdownObject);
+
+        \Yii::setPathOfAlias('uploaddir', Yii::app()->getConfig('uploaddir'));
 
         parent::init();
         if (!is_object($this->api)) {
@@ -107,7 +110,7 @@ class PluginManager extends \CApplicationComponent
     public function installUploadedPlugin($destdir)
     {
         $configFile = $destdir . '/config.xml';
-        $extensionConfig = \ExtensionConfig::loadConfigFromFile($configFile);
+        $extensionConfig = \ExtensionConfig::loadFromFile($configFile);
         if (empty($extensionConfig)) {
             return [false, gT('Could not parse config.xml file.')];
         } else {
@@ -276,7 +279,7 @@ class PluginManager extends \CApplicationComponent
         $this->shutdownObject->enable();
 
         $result = array();
-        foreach ($this->pluginDirs as $pluginDir) {
+        foreach ($this->pluginDirs as $pluginType => $pluginDir) {
             $currentDir = Yii::getPathOfAlias($pluginDir);
             if (is_dir($currentDir)) {
                 foreach (new \DirectoryIterator($currentDir) as $fileInfo) {
@@ -292,6 +295,15 @@ class PluginManager extends \CApplicationComponent
                             if (file_exists($file) && $this->_checkWhitelist($pluginName)) {
                                 try {
                                     $result[$pluginName] = $this->getPluginInfo($pluginName, $pluginDir);
+                                    // getPluginInfo returns false instead of an array when config is not found.
+                                    // So we build an "empty" array
+                                    if (!$result[$pluginName]) {
+                                        $result[$pluginName] = array(
+                                            'extensionConfig' => null,
+                                            'pluginType' => $pluginType,
+                                            'load_error' => 0,
+                                        );
+                                    }
                                 } catch (\Throwable $ex) {
                                     // Load error.
                                     $error = [
@@ -313,7 +325,8 @@ class PluginManager extends \CApplicationComponent
                             $result[$pluginName] = [
                                 'pluginName' => $pluginName,
                                 'load_error' => 1,
-                                'isCompatible' => false
+                                'isCompatible' => false,
+                                'pluginType' => $plugin->plugin_type,
                             ];
                         } else {
                         }
@@ -345,11 +358,6 @@ class PluginManager extends \CApplicationComponent
 
         if (!class_exists($class, false)) {
             $found = false;
-            if (!is_null($pluginDir)) {
-                $dirs = array($pluginDir);
-            } else {
-                $dirs = $this->pluginDirs;
-            }
 
             foreach ($this->pluginDirs as $type => $pluginDir) {
                 $file = Yii::getPathOfAlias($pluginDir.".$pluginClass.{$pluginClass}").".php";
@@ -359,7 +367,7 @@ class PluginManager extends \CApplicationComponent
                     $configFile = Yii::getPathOfAlias($pluginDir)
                         . DIRECTORY_SEPARATOR . $pluginClass
                         . DIRECTORY_SEPARATOR .'config.xml';
-                    $extensionConfig = \ExtensionConfig::loadConfigFromFile($configFile);
+                    $extensionConfig = \ExtensionConfig::loadFromFile($configFile);
                     if ($extensionConfig) {
                         $pluginType = $type;
                         $found = true;
@@ -550,7 +558,7 @@ class PluginManager extends \CApplicationComponent
      * @param string $guid
      * @param int $questionId,
      * @param int $responseId
-     * @return iQuestion
+     * @return \Question
      */
     public function constructQuestionFromGUID($guid, $questionId = null, $responseId = null)
     {

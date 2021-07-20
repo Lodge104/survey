@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    exit('No direct script access allowed');
-}
+<?php
+
 /*
  * LimeSurvey
  * Copyright (C) 2007-2017 The LimeSurvey Project Team / Carsten Schmitz
@@ -19,14 +18,13 @@
  * @property integer $aid PK
  * @property integer $qid Question id
  * @property string $code Answer code
- * @property string $answer Answer text
  * @property integer $sortorder Answer sort order
  * @property integer $assessment_value
  * @property integer $scale_id
  *
  * @property Question $questions
  * @property Question $groups
- * @property AnswerL10n[] $answerL10ns
+ * @property AnswerL10n[] $answerl10ns
  */
 class Answer extends LSActiveRecord
 {
@@ -36,7 +34,7 @@ class Answer extends LSActiveRecord
     
     /**
      * @inheritdoc
-     * @return Answer
+     * @return static
      */
     public static function model($class = __CLASS__)
     {
@@ -66,10 +64,10 @@ class Answer extends LSActiveRecord
                 'on' => "$alias.qid = question.qid",
             ),
             'group' => array(self::BELONGS_TO, 'QuestionGroup', '', 'through' => 'question',
-                'on' => 'question.gid = group.gid'
+                'on' => 'question.gid = ' . Yii::app()->db->quoteTableName('group') . '.gid'
             ),
-            'answerL10ns' => array(self::HAS_MANY, 'AnswerL10n', 'aid', 'together' => true),
-            'questionL10ns' => array(self::HAS_MANY, 'QuestionL10n', 'qid', 'together' => true)
+            'answerl10ns' => array(self::HAS_MANY, 'AnswerL10n', 'aid', 'together' => true),
+            'questionl10ns' => array(self::HAS_MANY, 'QuestionL10n', 'qid', 'together' => true)
             
         );
     }
@@ -78,17 +76,17 @@ class Answer extends LSActiveRecord
     public function rules()
     {
         return array(
-            array('qid', 'numerical', 'integerOnly'=>true),
-            array('code', 'length', 'min' => 1, 'max'=>5),
+            array('qid', 'numerical', 'integerOnly' => true),
+            array('code', 'length', 'min' => 1, 'max' => 5),
             // Unicity of key
             array(
                 'code',
                 'checkUniqueness',
                 'message' => gT('Answer codes must be unique by question.')
             ),
-            array('sortorder', 'numerical', 'integerOnly'=>true, 'allowEmpty'=>true),
-            array('assessment_value', 'numerical', 'integerOnly'=>true, 'allowEmpty'=>true),
-            array('scale_id', 'numerical', 'integerOnly'=>true, 'allowEmpty'=>true),
+            array('sortorder', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
+            array('assessment_value', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
+            array('scale_id', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
         );
     }
 
@@ -102,19 +100,19 @@ class Answer extends LSActiveRecord
         return Yii::app()->db->createCommand()
             ->select()
             ->from(self::tableName())
-            ->where(array('and', 'qid='.$qid))
+            ->where(array('and', 'qid=' . $qid))
             ->order('code asc')
             ->query();
     }
 
-    public function checkUniqueness($attribute, $params)
+    public function checkUniqueness()
     {
-        if($this->code !== $this->oldCode || $this->qid !== $this->oldQid || $this->scale_id !== $this->oldScaleId)
-        {
+        if ($this->code !== $this->oldCode || $this->qid != $this->oldQid || $this->scale_id != $this->oldScaleId) {
             $model = self::model()->find('code = ? AND qid = ? AND scale_id = ?', array($this->code, $this->qid, $this->scale_id));
-            if($model != null)
-                $this->addError('code','Answer codes must be unique by question');
-        }   
+            if ($model != null) {
+                $this->addError('code', 'Answer codes must be unique by question');
+            }
+        }
     }
 
     protected function afterFind()
@@ -139,18 +137,20 @@ class Answer extends LSActiveRecord
     {
         static $answerCache = array();
 
-        if (array_key_exists($qid, $answerCache)
+        if (
+            array_key_exists($qid, $answerCache)
                 && array_key_exists($code, $answerCache[$qid])
                 && array_key_exists($sLanguage, $answerCache[$qid][$code])
-                && array_key_exists($iScaleID, $answerCache[$qid][$code][$sLanguage])) {
+                && array_key_exists($iScaleID, $answerCache[$qid][$code][$sLanguage])
+        ) {
             // We have a hit :)
             return $answerCache[$qid][$code][$sLanguage][$iScaleID];
         } else {
-            $aAnswer = Answer::model()->findByAttributes(array('qid'=>$qid, 'code'=>$code, 'scale_id'=>$iScaleID));
+            $aAnswer = Answer::model()->findByAttributes(array('qid' => $qid, 'code' => $code, 'scale_id' => $iScaleID));
             if (is_null($aAnswer)) {
                 return null;
             }
-            $answerCache[$qid][$code][$sLanguage][$iScaleID] = $aAnswer->answerL10ns[$sLanguage]->answer;
+            $answerCache[$qid][$code][$sLanguage][$iScaleID] = $aAnswer->answerl10ns[$sLanguage]->answer;
             return $answerCache[$qid][$code][$sLanguage][$iScaleID];
         }
     }
@@ -162,9 +162,9 @@ class Answer extends LSActiveRecord
      */
     public function oldNewInsertansTags($newsid, $oldsid)
     {
-        $criteria = new CDbCriteria;
+        $criteria = new CDbCriteria();
         $criteria->compare('question.sid', $newsid);
-        $criteria->with = ['answerL10ns'=>array('condition'=>"answer like '%{INSERTANS::{$oldsid}X%'"), 'question'];
+        $criteria->with = ['answerl10ns' => array('condition' => "answer like '%{INSERTANS::{$oldsid}X%'"), 'question'];
         return $this->findAll($criteria);
     }
 
@@ -186,7 +186,7 @@ class Answer extends LSActiveRecord
      */
     public function insertRecords($data)
     {
-        $oRecord = new self;
+        $oRecord = new self();
         foreach ($data as $k => $v) {
             $oRecord->$k = $v;
         }
@@ -217,25 +217,6 @@ class Answer extends LSActiveRecord
     }
 
     /**
-     * @param integer $surveyid
-     * @param string $lang
-     * @param bool $return_query
-     * @return array|CDbCommand
-     * @deprecated since 2018-02-05 its not working also (the language change)
-     */
-    public function getAnswerQuery($surveyid, $lang, $return_query = true)
-    {
-        $query = Yii::app()->db->createCommand();
-        $query->select("{{answers}}.*, {{questions}}.gid");
-        $query->from("{{answers}}, {{questions}}");
-        $query->where("{{questions}}.sid = :surveyid AND {{questions}}.qid = {{answers}}.qid AND {{questions}}.language = {{answers}}.language AND {{questions}}.language = :lang");
-        $query->order('qid, code, sortorder');
-        $query->bindParams(":surveyid", $surveyid, PDO::PARAM_INT);
-        $query->bindParams(":lang", $lang, PDO::PARAM_STR);
-        return ($return_query) ? $query->queryAll() : $query;
-    }
-
-    /**
      * @param string $fields
      * @param string $orderby
      * @param mixed $condition
@@ -254,15 +235,11 @@ class Answer extends LSActiveRecord
      */
     public function getQuestionsForStatistics($fields, $condition, $orderby)
     {
-
-        $oAnswers = Answer::model()->with('answerL10ns')->findAll($condition);
+        $oAnswers = Answer::model()->with('answerl10ns')->findAll($condition);
         $arr = array();
-        foreach($oAnswers as $key => $answer)
-        {
-            $arr[$key] = array_merge($answer->attributes, current($answer->answerL10ns)->attributes);
+        foreach ($oAnswers as $key => $answer) {
+            $arr[$key] = array_merge($answer->attributes, current($answer->answerl10ns)->attributes);
         }
         return $arr;
     }
-    
-    
 }
