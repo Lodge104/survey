@@ -33,7 +33,8 @@
 	"require": {
         "paragonie/sodium_compat": "^1.14",
 		"twig/twig": "1.44.2",
-        "yiiext/twig-renderer":"dev-master"
+        "yiiext/twig-renderer":"dev-master",
+		"ext-mbstring": "*"
 	},
     "config": {
         "vendor-dir": "third_party",
