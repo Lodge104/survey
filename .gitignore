@@ -73,6 +73,7 @@ third_party/**/less/
 third_party/**/*.sh
 third_party/**/*.md
 third_party/**/gulpfile.js
+third_party/*
 
 # Test stuff
 chromedriver
@@ -95,6 +96,7 @@ Thumbs.db
 *.un~
 launch.json
 enabletests
+composer.phar
 
 ## Ignore test tmp files
 /tests/data/tmp/**
