@@ -102,7 +102,6 @@ composer.phar
 /tests/data/tmp/**
 
 ## Ignore files and dependencies for testing
-composer.lock
 third_party/facebook/**/*
 third_party/symfony/**/*
 third_party/composer/installed\.json

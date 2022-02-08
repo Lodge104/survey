@@ -5,7 +5,7 @@
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'reference' => '8b80de93d6c5923db332c20a884482172703ac23',
+        'reference' => '82ad378ce55dbc4202411f92106a28d217141faf',
         'name' => 'limesurvey/limesurvey',
         'dev' => true,
     ),
@@ -112,7 +112,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
-            'reference' => '8b80de93d6c5923db332c20a884482172703ac23',
+            'reference' => '82ad378ce55dbc4202411f92106a28d217141faf',
             'dev_requirement' => false,
         ),
         'misantron/dbunit' => array(
