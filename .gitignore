@@ -1,6 +1,5 @@
 
 # Never include config.php
-/application/config/config.php
 /application/config/config.*.php
 
 ## Ignore any hidden folder/files (except explicitly defined)
