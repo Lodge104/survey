@@ -67,8 +67,6 @@
 
 # ignore plugins directory by default except LS plugin
 # if you want to add a new distributed plugin : add the directory here
-/plugins/*
-!/plugins/index.html
 
 #ignore old styles
 /styles/
