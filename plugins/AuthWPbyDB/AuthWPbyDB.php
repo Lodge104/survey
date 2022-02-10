@@ -242,14 +242,12 @@ class AuthWPbyDB extends AuthPluginBase
         if($bWpFileConfig){
             define('ABSPATH',dirname(__FILE__) . '/'); // Define absolute path to remove inclusion of wp-settings.php
             require_once $sWPdirectory."wp-config.php";
-            $sWpDbHost      = DB_HOST;
             $sWpDbPort      = "3306"; // TODO : fix specific port @link http://codex.wordpress.org/Editing_wp-config.php#MySQL_Alternate_Port
-            $sWpDbName      = DB_NAME;
-            $sWpDbUser      = DB_USER;
-            $sWpDbPassword  = DB_PASSWORD;
+            $sWpDbUser      = getenv('DBUN');
+            $sWpDbPassword  = getenv('DBPW');
             $sWpDbPrefix    = $table_prefix;
-            $sWpDbCharset   = DB_CHARSET;
-            $sConnectionString="mysql:host={$sWpDbHost};port={$sWpDbPort};dbname={$sWpDbName}";
+            $sWpDbCharset   = 'utf8mb4';
+            $sConnectionString=getenv('DBSTRING');
         }else{
             $sWpDbHost      = $this->get('authwp_dbhost');
             $sWpDbPort      = $this->get('authwp_dbport');
