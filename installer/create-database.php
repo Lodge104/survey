@@ -119,7 +119,7 @@ function populateDatabase($oDB)
             'dvid' =>  "integer NOT NULL default '0'",
             'language' =>  "string(20) NOT NULL",
             'defaultvalue' =>  "text",
-        ));
+        ), $options);
         $oDB->createCommand()->createIndex('{{idx1_defaultvalue_ls}}', '{{defaultvalue_l10ns}}', ['dvid', 'language'], false);
 
         // expression_errors
@@ -175,6 +175,7 @@ function populateDatabase($oDB)
         $oDB->createCommand()->createIndex('{{idx1_labels}}', '{{labels}}', 'code', false);
         $oDB->createCommand()->createIndex('{{idx2_labels}}', '{{labels}}', 'sortorder', false);
         $oDB->createCommand()->createIndex('{{idx4_labels}}', '{{labels}}', ['lid','sortorder'], false);
+        $oDB->createCommand()->createIndex('{{idx5_labels}}', '{{labels}}', ['lid','code'], true);
 
         // label_l10ns
         $oDB->createCommand()->createTable('{{label_l10ns}}', array(
@@ -330,7 +331,7 @@ function populateDatabase($oDB)
             'renewed_last' =>  "datetime NULL",
             'created_at' =>  "datetime NOT NULL",
             'created_by' =>  "int NOT NULL"
-        ]);
+        ], $options);
 
         $oDB->createCommand()->createIndex('{{idx1_name}}', '{{permissiontemplates}}', 'name', true);
 
@@ -374,6 +375,7 @@ function populateDatabase($oDB)
             'scale_id' =>  "integer NOT NULL default '0'",
             'same_default' =>  "integer NOT NULL default '0'",
             'relevance' =>  "text",
+            'question_theme_name' => "string(150) NULL",
             'modulename' =>  "string(255) NULL"
         ), $options);
         $oDB->createCommand()->createIndex('{{idx1_questions}}', '{{questions}}', 'sid', false);
@@ -1082,7 +1084,8 @@ function populateDatabase($oDB)
             'created' => "datetime",
             'modified' => "datetime",
             'validation_key' => 'string(38)',
-            'validation_key_expiration' => 'datetime'
+            'validation_key_expiration' => 'datetime',
+            'last_forgot_email_password' => 'datetime'
         ), $options);
 
         $oDB->createCommand()->createIndex('{{idx1_users}}', '{{users}}', 'users_name', true);
@@ -1115,6 +1118,7 @@ function populateDatabase($oDB)
             'tbl_type' => "string(10) NOT NULL",
             'created' => "datetime NOT NULL",
             'properties' => "text NOT NULL",
+            'attributes' => "text NULL",
         ], $options);
 
         // Install default plugins.

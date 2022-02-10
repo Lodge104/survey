@@ -27,8 +27,11 @@ function initKcfinder()
         'flash' => $sAllowedExtensions,
         'images' => $sAllowedExtensions
     );
-    if (Yii::app()->getRequest()->enableCsrfValidation && !empty(Yii::app()->getRequest()->csrfCookie->domain)) {
-        $_SESSION['KCFINDER']['cookieDomain'] = Yii::app()->getRequest()->csrfCookie->domain;
+    if (!empty(App()->getSession()->cookieParams['domain'])) {
+        $_SESSION['KCFINDER']['cookieDomain'] = App()->getSession()->cookieParams['domain'];
+    }
+    if (App()->getRequest()->enableCsrfValidation && !empty(App()->getRequest()->csrfCookie['domain'])) {
+        $_SESSION['KCFINDER']['cookieDomain'] = Yii::app()->getRequest()->csrfCookie['domain'];
     }
 
     if (
@@ -262,7 +265,7 @@ function getInlineEditor($fieldtype, $fieldname, $fieldtext, $surveyID = null, $
     }
 
     /* fieldtype have language at end , set fullpage for email HTML edit */
-    if (substr($fieldtype, 0, 6) === 'email_') {
+    if (substr($fieldtype, 0, 6) === 'email-') {
         $htmlformatoption = ",fullPage:true\n";
         //~ $htmlformatoption = ",allowedContent:true\n"; // seems uneeded
     }

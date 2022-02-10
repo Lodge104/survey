@@ -81,7 +81,7 @@ class QuestionGroupsAdministrationController extends LSBaseController
      *
      * * @return void
      */
-    public function actionView($surveyid, $gid, $landOnSideMenuTab = 'structure', $mode = 'auto')
+    public function actionView(int $surveyid, int $gid, $landOnSideMenuTab = 'structure', $mode = 'auto')
     {
         if ($mode != 'overview' && SettingsUser::getUserSettingValue('noViewMode', App()->user->id)) {
             $this->redirect(
@@ -96,15 +96,16 @@ class QuestionGroupsAdministrationController extends LSBaseController
             );
         }
 
-        //check permissions for view and create groups ...
-        if ($gid === null) { //this is the case when new questiongroup should be created
-            if (!Permission::model()->hasSurveyPermission($surveyid, 'surveycontent', 'create')) {
+        if (!Permission::model()->hasSurveyPermission($surveyid, 'surveycontent', 'read')) {
                 App()->user->setFlash('error', gT("Access denied"));
                 $this->redirect(App()->request->urlReferrer);
-            }
-        } elseif (!Permission::model()->hasSurveyPermission($surveyid, 'surveycontent', 'read')) {
-                App()->user->setFlash('error', gT("Access denied"));
-                $this->redirect(App()->request->urlReferrer);
+        }
+
+        //check if group with the gid exists
+        $questionGroup = QuestionGroup::model()->findByPk($gid);
+        if ($questionGroup === null) { //group does not exists ...
+            App()->user->setFlash('error', gT("Question group does not exists"));
+            $this->redirect(App()->request->urlReferrer);
         }
 
         $aData = array();
@@ -132,7 +133,7 @@ class QuestionGroupsAdministrationController extends LSBaseController
 
         $aData['title_bar']['title'] = $survey->currentLanguageSettings->surveyls_title
             . " (" . gT("ID") . ":" . $iSurveyID . ")";
-        
+
         $aData['topBar']['name'] = 'baseTopbar_view';
         $aData['topBar']['leftSideView'] = 'groupTopbarLeft_view';
         $aData['topBar']['rightSideView'] = 'groupTopbarRight_view';
@@ -221,8 +222,10 @@ class QuestionGroupsAdministrationController extends LSBaseController
 
         $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title
             . " (" . gT("ID") . ":" . $surveyid . ")";
-        
-        $aData['closeBtnUrl'] = $this->createUrl(
+
+        // White Close Button
+        $aData['showWhiteCloseButton'] = true;
+        $aData['closeUrl'] = $this->createUrl(
             'questionGroupsAdministration/view',
             [
                 'surveyid' => $surveyid,
@@ -258,9 +261,9 @@ class QuestionGroupsAdministrationController extends LSBaseController
      * @param int $surveyid
      * @param string $landOnSideMenuTab
      *
-     * * @return void
+     * @return void
      */
-    public function actionAdd($surveyid, $landOnSideMenuTab = 'structure')
+    public function actionAdd(int $surveyid, string $landOnSideMenuTab = 'structure')
     {
         //check permission to create groups ...
         if (!Permission::model()->hasSurveyPermission($surveyid, 'surveycontent', 'create')) {
@@ -283,7 +286,6 @@ class QuestionGroupsAdministrationController extends LSBaseController
 
         App()->getClientScript()->registerScriptFile(App()->getConfig('adminscripts') . 'questiongroup.js');
 
-        //$aData['display']['menu_bars']['surveysummary'] = 'addgroup';
         $aData['action'] = $aData['display']['menu_bars']['gid_action'] = 'addgroup';
         $aData['surveyid'] = $surveyid;
         $aData['grplangs'] = $aSurveyLanguages;
@@ -291,17 +293,17 @@ class QuestionGroupsAdministrationController extends LSBaseController
 
         $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title
             . " (" . gT("ID") . ":" . $surveyid . ")";
-        $aData['closeBtnUrl'] = $this->createUrl(
+
+        $aData['topBar']['name'] = 'baseTopbar_view';
+        $aData['topBar']['leftSideView'] = 'addGroupTopbarLeft_view';
+        $aData['topBar']['rightSideView'] = 'addGroupTopbarRight_view';
+        $aData['backUrl'] = $this->createUrl(
             'questionGroupsAdministration/listquestiongroups',
             [
                 'surveyid' => $surveyid
             ]
         );
-
-        $aData['topBar']['name'] = 'baseTopbar_view';
-        $aData['topBar']['leftSideView'] = 'addGroupTopbarLeft_view';
-        $aData['topBar']['rightSideView'] = 'addGroupTopbarRight_view';
-
+        ;
         ///////////
         // sidemenu
         $aData['sidemenu']['state'] = false;
@@ -501,7 +503,7 @@ class QuestionGroupsAdministrationController extends LSBaseController
             $aData['topBar']['showSaveButton'] = true;*/
             $aData['topBar']['name'] = 'baseTopbar_view';
             $aData['topBar']['rightSideView'] = 'importGroupTopbarRight_view';
-            
+
 
             $aData['title_bar']['title'] = $survey->currentLanguageSettings->surveyls_title
                 . " (" . gT("ID") . ":" . $iSurveyID . ")";

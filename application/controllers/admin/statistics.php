@@ -42,35 +42,32 @@ class statistics extends Survey_Common_Action
 
         /*
          * We need this later:
-         *  1 - Array Dual Scale
-         *  5 - 5 Point Choice
-         *  A - Array (5 Point Choice)
-         *  B - Array (10 Point Choice)
+         *  1 - Array dual scale
+         *  5 - 5 point choice
+         *  A - Array (5 point choice)
+         *  B - Array (10 point choice)
          *  C - Array (Yes/No/Uncertain)
          *  D - Date
          *  E - Array (Increase, Same, Decrease)
-         *  F - Array (Flexible Labels)
+         *  F - Array 
          *  G - Gender
-         *  H - Array (Flexible Labels) by Column
+         *  H - Array by Column
          *  I - Language Switch
-         *  K - Multiple Numerical Input
+         *  K - Multiple numerical input
          *  L - List (Radio)
          *  M - Multiple choice
-         *  N - Numerical Input
+         *  N - Numerical input
          *  O - List With Comment
          *  P - Multiple choice with comments
-         *  Q - Multiple Short Text
+         *  Q - Multiple short text
          *  R - Ranking
-         *  S - Short Free Text
+         *  S - Short free text
          *  T - Long free text
-         *  U - Huge Free Text
+         *  U - Huge free text
          *  X - Boilerplate Question
          *  Y - Yes/No
          *  ! - List (Dropdown)
-         *  : - Array (Flexible Labels) multiple drop down
-         *  ; - Array (Flexible Labels) multiple texts
          *  | - File Upload
-
 
          Debugging help:
          echo '<script language="javascript" type="text/javascript">alert("HI");</script>';
@@ -167,13 +164,7 @@ class statistics extends Survey_Common_Action
          * b) "groups" -> group_name + group_order *
          */
 
-
-        $rows = Question::model()
-            ->with(array('group' => array('alias' => 'g')))
-            ->findAll(array('condition' => 'parent_qid = 0 AND g.sid=' . $surveyid, 'order' => 'group_order,question_order'));
-      
-        //SORT IN NATURAL ORDER!
-        usort($rows, 'groupOrderThenQuestionOrder');
+         $rows = Question::model()->primary()->getQuestionList($surveyid);
 
         //put the question information into the filter array
         $filters = array();
@@ -303,7 +294,7 @@ class statistics extends Survey_Common_Action
              I - Language Switch
              L - List (Radio)
              M - Multiple choice
-             N - Numerical Input
+             N - Numerical input
              | - File Upload
              O - List With Comment
              P - Multiple choice with comments
@@ -318,7 +309,7 @@ class statistics extends Survey_Common_Action
 
             //let's switch through the question type for each question
             switch ($flt[2]) {
-                case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION: // Multiple Numerical
+                case Question::QT_K_MULTIPLE_NUMERICAL: // Multiple Numerical
                     //get answers
                     $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[0] ", 'question_order');
                     $aData['result'][$key1]['key1'] = $result;
@@ -334,7 +325,7 @@ class statistics extends Survey_Common_Action
 
                     //----------------------- ARRAYS --------------------------
 
-                case Question::QT_A_ARRAY_5_CHOICE_QUESTIONS:
+                case Question::QT_A_ARRAY_5_POINT:
                     //get answers
                     $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[0] ", 'question_order');
                     $aData['result'][$key1] = $result;
@@ -343,7 +334,7 @@ class statistics extends Survey_Common_Action
 
 
                     //just like above only a different loop
-                case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS: // ARRAY OF 10 POINT CHOICE QUESTIONS
+                case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS: // Array of 10 point choice questions
                     $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[0]", 'question_order');
                     $aData['result'][$key1] = $result;
                     break;
@@ -359,12 +350,12 @@ class statistics extends Survey_Common_Action
 
 
                     //similiar to the above one
-                case Question::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS: // ARRAY OF Increase/Same/Decrease QUESTIONS
+                case Question::QT_E_ARRAY_INC_SAME_DEC: // Array of Increase/Same/Decrease questions
                     $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[0] ", 'question_order');
                     $aData['result'][$key1] = $result;
                     break;
 
-                case Question::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT:  //ARRAY (Multi Flex) (Text)
+                case Question::QT_SEMICOLON_ARRAY_TEXT:  // Array (Text)
                     $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[0]  AND scale_id = 0", 'question_order');
                     $aData['result'][$key1] = $result;
                     foreach ($result as $key => $row) {
@@ -373,7 +364,7 @@ class statistics extends Survey_Common_Action
                     }
                     break;
 
-                case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS:  //ARRAY (Multi Flex) (Numbers)
+                case Question::QT_COLON_ARRAY_NUMBERS:  // Array (Numbers)
                     $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[0] AND scale_id = 0", 'question_order');
                     $aData['result'][$key1] = $result;
                     foreach ($result as $row) {
@@ -386,8 +377,8 @@ class statistics extends Survey_Common_Action
                      * The only difference is that the labels are applied to column heading
                      * or rows respectively
                      */
-                case Question::QT_F_ARRAY_FLEXIBLE_ROW: // FlEXIBLE ARRAY
-                case Question::QT_H_ARRAY_FLEXIBLE_COLUMN: // ARRAY (By Column)
+                case Question::QT_F_ARRAY: // Array
+                case Question::QT_H_ARRAY_COLUMN: // Array (By Column)
                     //Get answers. We always use the answer code because the label might be too long elsewise
                     $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[0]", 'question_order');
                     $aData['result'][$key1] = $result;
@@ -404,13 +395,13 @@ class statistics extends Survey_Common_Action
 
 
 
-                case Question::QT_R_RANKING_STYLE: //RANKING
+                case Question::QT_R_RANKING: // Ranking
                     //get some answers
-                    $result = Answer::model()->getAnswersForStatistics('code, answer', "qid=$flt[0]", 'sortorder, answer');
+                    $result = Answer::model()->getAnswersForStatistics('code, answer', "qid=$flt[0]", 'sortorder, code');
                     $aData['result'][$key1] = $result;
                     break;
 
-                case Question::QT_1_ARRAY_MULTISCALE:
+                case Question::QT_1_ARRAY_DUAL:
                     //get answers
                     $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[0] ", 'question_order');
                     $aData['result'][$key1] = $result;
@@ -683,8 +674,6 @@ class statistics extends Survey_Common_Action
             $this->getController()->redirect($this->getController()->createUrl("/surveyAdministration/view/surveyid/{$oSurveyid}"));
         }
 
-
-        
         // Set language for questions and answers to base language of this survey
         $language = $oSurvey->language;
         $summary = array();
@@ -695,20 +684,14 @@ class statistics extends Survey_Common_Action
         $summary[4] = "idL";
 
         // 1: Get list of questions from survey
-        $rows = Question::model()->getQuestionList($surveyid);
-
-        //SORT IN NATURAL ORDER!
-        usort($rows, 'groupOrderThenQuestionOrder');
+        $rows = Question::model()->primary()->getQuestionList($surveyid);;
 
         // The questions to display (all question)
         foreach ($rows as $row) {
             $type = $row['type'];
-            if ($type == Question::QT_T_LONG_FREE_TEXT || $type == Question::QT_N_NUMERICAL) {
-                $summary[] = $type . $iSurveyId . 'X' . $row['gid'] . 'X' . $row['qid'];
-            }
             switch ($type) {
-                    // Double scale cases
-                case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS:
+                // Double scale cases
+                case Question::QT_COLON_ARRAY_NUMBERS:
                     $qidattributes = QuestionAttribute::model()->getQuestionAttributes($row['qid']);
                     if (!$qidattributes['input_boxes']) {
                         $qid = $row['qid'];
@@ -722,7 +705,7 @@ class statistics extends Survey_Common_Action
                     }
                     break;
 
-                case Question::QT_1_ARRAY_MULTISCALE:
+                case Question::QT_1_ARRAY_DUAL:
                     $qid = $row['qid'];
                     $results = Question::model()->getQuestionsForStatistics('*', "parent_qid='$qid' ", 'question_order, title');
                     foreach ($results as $row1) {
@@ -732,7 +715,7 @@ class statistics extends Survey_Common_Action
 
                     break;
 
-                case Question::QT_R_RANKING_STYLE: //RANKING
+                case Question::QT_R_RANKING: // Ranking
                     $qid = $row['qid'];
                     $results = Question::model()->getQuestionsForStatistics('title, question', "parent_qid='$qid' ", 'question_order');
                     $count = count($results);
@@ -743,10 +726,10 @@ class statistics extends Survey_Common_Action
                     break;
 
                     // Cases with subquestions
-                case Question::QT_A_ARRAY_5_CHOICE_QUESTIONS:
-                case Question::QT_F_ARRAY_FLEXIBLE_ROW: // FlEXIBLE ARRAY
-                case Question::QT_H_ARRAY_FLEXIBLE_COLUMN: // ARRAY (By Column)
-                case Question::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS:
+                case Question::QT_A_ARRAY_5_POINT:
+                case Question::QT_F_ARRAY: // Array
+                case Question::QT_H_ARRAY_COLUMN: // Array (By Column)
+                case Question::QT_E_ARRAY_INC_SAME_DEC:
                 case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS:
                 case Question::QT_C_ARRAY_YES_UNCERTAIN_NO:
                     //loop through all answers. if there are 3 items to rate there will be 3 statistics
@@ -761,19 +744,19 @@ class statistics extends Survey_Common_Action
                 case Question::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS:  //P - Multiple choice with comments
                 case Question::QT_M_MULTIPLE_CHOICE:  //M - Multiple choice
                 case Question::QT_S_SHORT_FREE_TEXT:
+                case Question::QT_T_LONG_FREE_TEXT: // Long free text
+                case Question::QT_N_NUMERICAL:
                     $summary[] = $type . $iSurveyId . 'X' . $row['gid'] . 'X' . $row['qid'];
                     break;
 
                     // Not shown (else would only show 'no answer' )
-                case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION:
+                case Question::QT_K_MULTIPLE_NUMERICAL:
                 case Question::QT_ASTERISK_EQUATION:
                 case Question::QT_D_DATE:
-                case Question::QT_T_LONG_FREE_TEXT: // Long free text
-                case Question::QT_U_HUGE_FREE_TEXT: // Huge free text
                 case Question::QT_VERTICAL_FILE_UPLOAD: // File Upload, we don't show it
-                case Question::QT_N_NUMERICAL:
+                case Question::QT_U_HUGE_FREE_TEXT: // Huge free text
                 case Question::QT_Q_MULTIPLE_SHORT_TEXT:
-                case Question::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT:
+                case Question::QT_SEMICOLON_ARRAY_TEXT:
                     break;
 
 
@@ -782,7 +765,6 @@ class statistics extends Survey_Common_Action
                     break;
             }
         }
-
 
         // ----------------------------------- END FILTER FORM ---------------------------------------
 
@@ -802,7 +784,6 @@ class statistics extends Survey_Common_Action
         $aData['summary'] = $summary;
         $aData['oStatisticsHelper'] = $helper;
         $aData['expertstats'] = true;
-        
 
         //Call the javascript file
         App()->getClientScript()->registerScriptFile(App()->getConfig('adminscripts') . 'statistics.js', CClientScript::POS_BEGIN);
@@ -844,6 +825,11 @@ class statistics extends Survey_Common_Action
         $aData['topBar']['rightSideView'] = 'statisticsTopbarRight_view';
 
         $aData['sidemenu']['state'] = false;
+
+        // Set the active Sidemenu (for deeper navigation)
+        $aData['sidemenu']['isSideMenuElementActive'] = true;
+        $aData['sidemenu']['activeSideMenuElement']   = 'statistics';
+
         $aData['title_bar']['title'] = gT('Browse responses') . ': ' . $oSurvey->currentLanguageSettings->surveyls_title;
         $aData['subaction'] = gT('Statistics');
         parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);

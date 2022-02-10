@@ -19,6 +19,7 @@
 * @copyright 2011
 * @access public
 */
+
 use LimeSurvey\Models\Services\PermissionManager;
 
 class surveypermission extends Survey_Common_Action
@@ -62,7 +63,7 @@ class surveypermission extends Survey_Common_Action
         $result2 = Permission::model()->getUserDetails($iSurveyID);
         if (count($result2) > 0) {
                 $surveysecurity .= ""
-                . "<table class='surveysecurity table table-striped'><thead>"
+                . "<table class='surveysecurity table table-hover'><thead>"
                 . "<tr>\n"
                 . "<th>" . gT("Action") . "</th>\n"
                 . "<th>" . gT("Username") . "</th>\n"
@@ -111,13 +112,13 @@ class surveypermission extends Survey_Common_Action
                 //                  else {break;} //TODO Commented by lemeur
                 $surveysecurity .= "<tr>\n";
 
-                $surveysecurity .= "<td class='col-xs-1'>\n";
+                $surveysecurity .= "<td class='icon-btn-row'>\n";
 
                 if (Permission::model()->hasSurveyPermission($iSurveyID, 'surveysecurity', 'update')) {
                     if ($PermissionRow['uid'] != Yii::app()->user->getId() || Permission::model()->hasGlobalPermission('superadmin', 'read')) {
                         // Can not update own security
                         $surveysecurity .= CHtml::form(array("admin/surveypermission/sa/set/surveyid/{$iSurveyID}"), 'post', array('style' => "display:inline;"))
-                        . "<button type='submit' class='btn btn-default btn-xs'><span class='fa fa-pencil text-success' data-toggle='tooltip' title='" . gT("Edit permissions") . "'></span></button>";
+                        . "<button type='submit' class='btn btn-default btn-sm' data-toggle='tooltip' title='" . gT("Edit permissions") . "'><span class='fa fa-pencil text-success'></span></button>";
                         $surveysecurity .= \CHtml::hiddenField('action', 'setsurveysecurity');
                         $surveysecurity .= \CHtml::hiddenField('user', $PermissionRow['users_name']);
                         $surveysecurity .= \CHtml::hiddenField('uid', $PermissionRow['uid']);
@@ -127,13 +128,12 @@ class surveypermission extends Survey_Common_Action
                 if (Permission::model()->hasSurveyPermission($iSurveyID, 'surveysecurity', 'delete')) {
                     $deleteUrl = App()->createUrl("admin/surveypermission/sa/delete/surveyid/" . $iSurveyID, array(
                         'action' => 'delsurveysecurity',
-                        'user' => $PermissionRow['users_name'],
                         'uid' => $PermissionRow['uid']
                     ));
                     $deleteConfirmMessage = gT("Are you sure you want to delete this entry?");
-                    $surveysecurity .= "<a data-target='#confirmation-modal' data-toggle='modal' data-message='{$deleteConfirmMessage}' data-href='{$deleteUrl}' type='submit' class='btn-xs btn btn-default'>
-                        <span class='fa fa-trash text-warning' data-toggle='tooltip' title='" . gT("Delete") . "'></span>
-                        </a>";
+                    $surveysecurity .= "<span data-toggle='tooltip' title='" . gT("Delete") . "'><a data-target='#confirmation-modal' data-toggle='modal' data-message='{$deleteConfirmMessage}' data-post-url='{$deleteUrl}' type='submit' class='btn-sm btn btn-default'>
+                        <span class='fa fa-trash text-danger'></span>
+                        </a></span>";
                 }
 
                 $surveysecurity .= "</td>\n";
@@ -162,7 +162,6 @@ class surveypermission extends Survey_Common_Action
                         if (
                             $sPDetailValue
                             && Permission::model()->hasSurveyPermission($iSurveyID, $sPKey, $sPDetailKey, $PermissionRow['uid'])
-                            && !($sPKey == 'survey' && $sPDetailKey == 'read')
                         ) {
                             $iCount++;
                             $sTooltip .= $sPDetailKey . ", ";
@@ -171,11 +170,6 @@ class surveypermission extends Survey_Common_Action
                             $iPermissionCount++;
                         }
                     }
-
-                    if ($sPKey == 'survey') {
-                        $iPermissionCount--;
-                    }
-
                     // Remove last ',' and make first char upper-case
                     $sTooltip = substr($sTooltip, 0, -2);
                     $sTooltip = ucfirst($sTooltip);
@@ -506,6 +500,7 @@ class surveypermission extends Survey_Common_Action
      */
     function delete($surveyid)
     {
+        $this->requirePostRequest();
 
         $aData['surveyid'] = $surveyid = sanitize_int($surveyid);
         $oSurvey = Survey::model()->findByPk($surveyid);
@@ -536,7 +531,10 @@ class surveypermission extends Survey_Common_Action
             if (Permission::model()->hasSurveyPermission($surveyid, 'surveysecurity', 'delete')) {
                 if (isset($postuserid)) {
                     $dbresult = Permission::model()->deleteAll("uid = :uid AND entity_id = :sid AND entity = 'survey'", array(':uid' => $postuserid, ':sid' => $surveyid));
-                    $addsummary .= "<br />" . gT("Username") . ": " . sanitize_xss_string(App()->getRequest()->getParam('user')) . "<br /><br />\n";
+                    $user = User::model()->findByPk($postuserid);
+                    if (!empty($user)) {
+                        $addsummary .= "<br />" . gT("Username") . ": " . sanitize_xss_string($user->users_name) . "<br /><br />\n";
+                    }
                     $addsummary .= "<div class=\"successheader\">" . gT("Success!") . "</div>\n";
                 } else {
                     $addsummary .= "<div class=\"warningheader\">" . gT("Could not delete user. User was not supplied.") . "</div>\n";
@@ -615,7 +613,7 @@ class surveypermission extends Survey_Common_Action
                     )
                 );
             }
-           
+
             $uids = CHtml::listData($oUserInGroups, 'uid', 'uid');
         } else {
             throw new CHttpException(400, gT("Invalid parameters."));
@@ -662,7 +660,7 @@ class surveypermission extends Survey_Common_Action
         $addsummary .= "<br/><input class='btn btn-default' type=\"submit\" onclick=\"window.open('" . $this->getController()->createUrl('admin/surveypermission/sa/view/surveyid/' . $surveyid) . "', '_top')\" value=\"" . gT("Continue") . "\"/>\n";
         $addsummary .= "</div></div></div></div>\n";
         $aViewUrls['output'] = $addsummary;
-        
+
         $aData['sidemenu']['state']  = false;
         $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $surveyid . ")";
 

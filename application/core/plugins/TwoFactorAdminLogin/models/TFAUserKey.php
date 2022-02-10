@@ -40,13 +40,14 @@ class TFAUserKey extends LSActiveRecord {
     }
 
     /** @inheritdoc */
-    public function attributeLabels() {
+    public function attributeLabels() 
+    {
         return [
-            'authType' => 'Type of 2-Factor-Authentication used',
-            'secretKey' => 'Authentication base value',
+            'authType' => gT('Two-factor authentication method'),
+            'secretKey' => gT('Secret base key'),
             'uid' => gT('User ID'),
-            'firstLogin' => 'Logged in with 2FA',
-            'forceNewFirstLogin' => 'Force to set 2FA'
+            'firstLogin' => gT('Logged in with 2FA'),
+            'forceNewFirstLogin' => gT('Force to enable 2FA')
         ];
     }
 
@@ -69,12 +70,14 @@ class TFAUserKey extends LSActiveRecord {
     }
 
     /** @inheritdoc */
-    public function getButtons(){
-        return ''
-        .'<button class="btn btn-icon btn-sm"><i class="fa fa-refresh"></i></button>&nbsp;'
-        .'<button class="btn btn-icon btn-sm"><i class="fa fa-edit"></i></button>&nbsp;'
-        .'<button class="btn btn-icon btn-sm"><i class="fa fa-trash"></i></button>&nbsp;'
-        .'';
+    public function getButtons()
+    {
+        $buttons = "<div class='icon-btn-row'>";
+        $buttons .= '<button class="btn btn-icon btn-sm"><i class="fa fa-refresh"></i></button>'
+            . '<button class="btn btn-icon btn-sm"><i class="fa fa-edit"></i></button>'
+            . '<button class="btn btn-icon btn-sm"><i class="fa fa-trash text-danger"></i></button>';
+        $buttons .= "</div>";
+        return $buttons;
     }
     /**
      * Get the description for the current auth type

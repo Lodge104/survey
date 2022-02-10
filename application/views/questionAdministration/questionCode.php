@@ -2,8 +2,8 @@
 
 /**@var Question $question */
 ?>
-<div class="form-group col-sm-6 scoped-responsive-fix-height">
-    <label for="questionCode"><?= gT('Question code'); ?></label>
+<div class="form-group col-sm-6 col-lg-5 scoped-responsive-fix-height">
+    <label for="questionCode"><?= gT('Code'); ?></label>
     <i class="fa fa-question-circle text-success"
         data-toggle="tooltip"
         title="<?= gT("The question code is used for quick identification of this question and must be unique. It is especially useful if you wish to use the LimeSurvey assessments feature and/or the ExpressionScript."); ?>"
@@ -14,7 +14,7 @@
             class="form-control"
             id="questionCode"
             name="question[title]"
-            value="<?= $question->title; ?>"
+            value="<?= !empty($newTitle) ? $newTitle : $question->title; ?>"
             required="true"
             maxlength="20"
             onfocusout="LS.questionEditor.checkQuestionCodeUniqueness($(this).val(), <?= $question->qid; ?>)"

@@ -24,7 +24,6 @@ class LoadQuestionTypes
         Yii::import('questiontypes.Language.*');
         Yii::import('questiontypes.ListDropdown.*');
         Yii::import('questiontypes.ListRadio.*');
-        Yii::import('questiontypes.ListRadioFlexible.*');
         Yii::import('questiontypes.ListWithComment.*');
         Yii::import('questiontypes.LongFreeText.*');
         Yii::import('questiontypes.MultipleChoice.*');
@@ -40,7 +39,7 @@ class LoadQuestionTypes
     public static function load($type)
     {
         switch ($type) {
-            case Question::QT_X_BOILERPLATE_QUESTION:
+            case Question::QT_X_TEXT_DISPLAY:
                 Yii::import('questiontypes.BoilerplateQuestion.*');
                 break;
             case Question::QT_5_POINT_CHOICE:
@@ -52,10 +51,10 @@ class LoadQuestionTypes
             case Question::QT_D_DATE:
                 Yii::import('questiontypes.Date.*');
                 break;
-            case Question::QT_1_ARRAY_MULTISCALE:
+            case Question::QT_1_ARRAY_DUAL:
                 Yii::import('questiontypes.ArrayMultiscale.*');
                 break;
-            case Question::QT_L_LIST_DROPDOWN:
+            case Question::QT_L_LIST:
                 Yii::import('questiontypes.ListRadio.*');
                 break;
             case Question::QT_EXCLAMATION_LIST_DROPDOWN:
@@ -64,7 +63,7 @@ class LoadQuestionTypes
             case Question::QT_O_LIST_WITH_COMMENT:
                 Yii::import('questiontypes.ListWithComment.*');
                 break;
-            case Question::QT_R_RANKING_STYLE:
+            case Question::QT_R_RANKING:
                 Yii::import('questiontypes.RankingStyle.*');
                 break;
             case Question::QT_M_MULTIPLE_CHOICE:
@@ -85,10 +84,10 @@ class LoadQuestionTypes
             case Question::QT_U_HUGE_FREE_TEXT:
                 Yii::import('questiontypes.HugeFreeText.*');
                 break;
-            case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION:
+            case Question::QT_K_MULTIPLE_NUMERICAL:
                 Yii::import('questiontypes.MultipleNumericalQuestion.*');
                 break;
-            case Question::QT_A_ARRAY_5_CHOICE_QUESTIONS:
+            case Question::QT_A_ARRAY_5_POINT:
                 Yii::import('questiontypes.Array5ChoiceQuestions.*');
                 break;
             case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS:
@@ -97,16 +96,16 @@ class LoadQuestionTypes
             case Question::QT_C_ARRAY_YES_UNCERTAIN_NO:
                 Yii::import('questiontypes.ArrayYesUncertainNo.*');
                 break;
-            case Question::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS:
+            case Question::QT_E_ARRAY_INC_SAME_DEC:
                 Yii::import('questiontypes.ArrayOfIncSameDecQuestions.*');
                 break;
-            case Question::QT_F_ARRAY_FLEXIBLE_ROW:
+            case Question::QT_F_ARRAY:
                 Yii::import('questiontypes.ArrayFlexibleRow.*');
                 break;
-            case Question::QT_G_GENDER_DROPDOWN:
+            case Question::QT_G_GENDER:
                 Yii::import('questiontypes.GenderDropdown.*');
                 break;
-            case Question::QT_H_ARRAY_FLEXIBLE_COLUMN:
+            case Question::QT_H_ARRAY_COLUMN:
                 Yii::import('questiontypes.ArrayFlexibleColumn.*');
                 break;
             case Question::QT_N_NUMERICAL:
@@ -118,13 +117,10 @@ class LoadQuestionTypes
             case Question::QT_Y_YES_NO_RADIO:
                 Yii::import('questiontypes.YesNoRadio.*');
                 break;
-            case Question::QT_Z_LIST_RADIO_FLEXIBLE:
-                Yii::import('questiontypes.ListRadioFlexible.*');
-                break;
-            case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS:
+            case Question::QT_COLON_ARRAY_NUMBERS:
                 Yii::import('questiontypes.ArrayMultiFlexNumbers.*');
                 break;
-            case Question::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT:
+            case Question::QT_SEMICOLON_ARRAY_TEXT:
                 Yii::import('questiontypes.ArrayMultiFlexText.*');
                 break;
             case Question::QT_VERTICAL_FILE_UPLOAD:

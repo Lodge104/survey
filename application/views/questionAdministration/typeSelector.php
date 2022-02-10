@@ -1,8 +1,7 @@
 <?php
 
-/**@var Question $question */
-/**@var string $questionThemeTitle */
-/**@var string $questionThemeClass */
+/** @var Question $question */
+/** @var QuestionTheme $questionTheme */
 
 $generalSettingsUrl = $this->createUrl(
     'questionAdministration/getGeneralSettingsHTML',
@@ -25,21 +24,22 @@ $oQuestionSelector = $this->beginWidget(
         'groupTitleKey' => "questionGroupName",
         'groupItemsKey' => "questionTypes",
         'debugKeyCheck' => gT("Type:") . " ",
-        'previewWindowTitle' => gT("Preview question type"),
+        'previewWindowTitle' => "",
         'groupStructureArray' => $aQuestionTypeGroups,
         'survey_active' => $question->survey->active=='Y',
         'value' => $question->type,
-        'theme' => $questionThemeName,
+        'theme' => $questionTheme->name,
         'debug' => YII_DEBUG,
-        'currentSelected' => $questionThemeTitle, //todo: use questiontheme instead ...
+        'buttonClasses' => ['btn-primary'],
+        'currentSelected' => gT($questionTheme->title), //todo: use questiontheme instead ...
         'optionArray' => [
-            'selectedClass' => $questionThemeClass,//Question::getQuestionClass($question->type),
+            'selectedClass' => $questionTheme->getDecodedSettings()->class,//Question::getQuestionClass($question->type),
             'onUpdate' => [
                 'value',
                 'theme',
                 // NB: updateQuestionAttributes is defined in assets/scripts/admin/questionEditor.js"
                 "$('#question_type').val(value);
-                 $('#question_template').val(theme); 
+                 $('#question_theme_name').val(theme);
                 LS.questionEditor.updateQuestionAttributes(value, theme, '$generalSettingsUrl', '$advancedSettingsUrl', '$extraOptionsUrl');"
             ]
         ]
@@ -48,13 +48,13 @@ $oQuestionSelector = $this->beginWidget(
 ?>
 <?= $oQuestionSelector->getModal(); ?>
 
-<div class="form-group col-sm-12 contains-question-selector">
-    <label for="questionCode"><?= gT('Question type'); ?></label>
+<div class="form-group col-sm-12 col-lg-8 contains-question-selector">
+    <label for="questionCode"><?= gT('Switch question type'); ?></label>
     <div class="btn-group" style="width: 100%;">
         <?= $oQuestionSelector->getButtonOrSelect(); ?>
         <?php $this->endWidget('ext.admin.PreviewModalWidget.PreviewModalWidget'); ?>
     </div>
     <input type="hidden" id="questionTypeVisual" name="questionTypeVisual" />
     <input type="hidden" id="question_type" name="question[type]" value="<?= $question->type; ?>" />
-    <input type="hidden" id="question_template" name="question[question_template]" value="<?= $questionThemeName; ?>" />
+    <input type="hidden" id="question_theme_name" name="question[question_theme_name]" value="<?= $questionTheme->name; ?>" />
 </div>

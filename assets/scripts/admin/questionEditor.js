@@ -58,10 +58,16 @@ $(document).on('ready pjax:scriptcomplete', function () {
     return;
   }
 
-  $('.ace:not(.none)').ace({
-    'mode': 'javascript',
-    'highlightActiveLine': false
-  });
+  const isCopyMode = $('#form_copy_question').length > 0;
+
+  // Initialice Ace editors if needed
+  const aceInputs = $('.ace:not(.none)');
+  if (aceInputs.length) {
+    aceInputs.ace({
+      'mode': 'javascript',
+      'highlightActiveLine': false
+    });
+  }
 
   // TODO: Remove this when Vue topbar is removed.
   $('#vue-topbar-container').hide();
@@ -95,8 +101,8 @@ $(document).on('ready pjax:scriptcomplete', function () {
    */
   function updateRowProperties() {
     var sID = $('input[name=sid]').val();
-    var gID = $('input[name=gid]').val();
-    var qID = $('input[name=qid]').val();
+    var gID = $('[name=question\\[gid\\]]').val();
+    var qID = $('[name=question\\[qid\\]]').val();
     sID = $.isNumeric(sID) ? sID : '';
     gID = $.isNumeric(gID) ? gID : '';
     qID = $.isNumeric(qID) ? qID : '';
@@ -763,11 +769,7 @@ $(document).on('ready pjax:scriptcomplete', function () {
       arr.forEach(function(entry) {
         const lang = entry[0];
         const row = entry[1];
-        if (lang.length !== 2) {
-          alert('Internal error: lang must have exactly two characters, but is ' + lang);
-          throw 'abort';
-        }
-          /*
+        /*
         if (!(row instanceof HTMLElement)) {
           alert('Internal error: row is not an HTMLElement but a ' + (typeof row));
           throw 'abort';
@@ -782,11 +784,20 @@ $(document).on('ready pjax:scriptcomplete', function () {
           throw 'abort';
         }
 
+        var currentIds = [];
         if (type === 'replace') {
           $table.find('tbody').find('tr').each((i, tableRow) => {
             $(tableRow).remove();
           });
+        } else {
+          $table.find('tbody').find('tr').each((i, tableRow) => {
+            currentIds.push($(tableRow).data('common-id').split('_').shift());
+          });
         }
+
+        // Answer option IDs are generated randomly, so they repeat sometimes.
+        // We keep track of the generated numbers to make sure they don't repeat.
+        var generatedIds = currentIds;
 
         // Loop the preview table and copy rows to destination (subquestions or answer options).
         $('#labelsetpreview').find(`#language_${lang}`).find('.selector_label-list').find('.selector_label-list-row')
@@ -810,7 +821,17 @@ $(document).on('ready pjax:scriptcomplete', function () {
             // Only define random ids the FIRST language we loop for.
             // Different translations still use the same question code in the input name.
             if (langIds[i] === undefined) {
-              langIds[i] = `new${Math.floor(Math.random() * 10000)}`;
+              var randId = `new${Math.floor(Math.random() * 99999)}`;
+              var tries = 1;
+              while (generatedIds.includes(randId)) {
+                if (tries > 100) {
+                  throw 'Couldn\'t generate a unique ID';
+                }
+                randId = `new${Math.floor(Math.random() * 99999)}`;
+                tries++;
+              }
+              generatedIds.push(randId);
+              langIds[i] = randId;
             }
 
             $tr.attr('data-common-id', $tr.attr('data-common-id').replace('/new[0-9]{3,6}/', langIds[i]));
@@ -908,6 +929,7 @@ $(document).on('ready pjax:scriptcomplete', function () {
     }
     */
 
+    var currentIds = [];
     if ($closestTable.find('.code').length < 0) {
       $closestTable.find('.code-title').each(function () {
         codes.push($(this).text());
@@ -915,6 +937,7 @@ $(document).on('ready pjax:scriptcomplete', function () {
     } else {
       $closestTable.find('.code').each(function () {
         codes.push($(this).val());
+        currentIds.push($(this).closest('tr').data('common-id').split('_').shift());
       });
     }
 
@@ -923,7 +946,7 @@ $(document).on('ready pjax:scriptcomplete', function () {
     // TODO: Doc answers
     const answers = {};
     const lsrows = $('#quickaddarea').val().split('\n');
-    const allrows = $closestTable.find('tr').length;
+    const allrows = $closestTable.find('tbody tr').length;
     const separatorchar = getSeparatorChar(lsrows);
 
     let numericSuffix = '';
@@ -946,24 +969,40 @@ $(document).on('ready pjax:scriptcomplete', function () {
       codeSigil.push(currentCharacter);
     }
 
+    // Answer option IDs are generated randomly, so they repeat sometimes.
+    // We keep track of the generated numbers to make sure they don't repeat.
+    var generatedIds = currentIds;
+
     // TODO: Document value
     // NB: splitCSV is added to string prototype in adminbasics.
     lsrows.forEach((value /*: string & {splitCSV: string => Array<string>} */, k /*: number */) => {
       const thisrow = value.splitCSV(separatorchar);
 
       if (thisrow.length <= languages.length) {
-        let qCode = (parseInt(k) + 1).toString();
+        let numericCode = (parseInt(k) + 1);
         if (lsreplace === false) {
-          qCode += (parseInt(allrows));
+          numericCode += (parseInt(allrows));
         }
-        while (qCode.toString().length < numericSuffix.length) {
+        let qCode = numericCode.toString();
+        while (qCode.length < numericSuffix.length) {
           qCode = `0${qCode}`;
         }
-        thisrow.unshift(codeSigil.join('') + qCode);
+        let prefix = codeSigil.slice(0, Math.max(0, 5 - qCode.length)).join('');
+        thisrow.unshift(prefix + qCode);
       } else {
         thisrow[0] = thisrow[0].replace(/[^A-Za-z0-9]/g, '').substr(0, 20);
       }
-      const quid = `new${Math.floor(Math.random() * 10000)}`;
+
+      var quid = `new${Math.floor(Math.random() * 99999)}`;
+      var tries = 1;
+      while (generatedIds.includes(quid)) {
+        if (tries > 100) {
+          throw 'Couldn\'t generate a unique ID';
+        }
+        quid = `new${Math.floor(Math.random() * 99999)}`;
+        tries++;
+      }
+      generatedIds.push(quid);
 
       // TODO: What's happening here?
       languages.forEach((language, x) => {
@@ -1477,6 +1516,20 @@ $(document).on('ready pjax:scriptcomplete', function () {
     };
   }
 
+  /**
+   * Makes the answer's table sortable
+   */
+  function makeAnswersTableSortable() /*: void */ {
+    $('.answertable tbody').sortable({
+      containment: 'parent',
+      start: startmove,
+      stop: endmove,
+      update: aftermove,
+      handle: '.move-icon',
+      distance: 3,
+    });
+  }
+
   // Public functions for LS.questionEditor module.
   LS.questionEditor = {
     /**
@@ -1500,7 +1553,7 @@ $(document).on('ready pjax:scriptcomplete', function () {
         $.ajax({
           url: generalSettingsUrl,
           method: 'GET',
-          data: { questionType, questionTheme }, //todo add question_template (e.g. 'bootstrap_buttons' it's the theme) here
+          data: { questionType, questionTheme },
           dataType: 'html',
           success: (data) => {
             resolve(data);
@@ -1546,6 +1599,7 @@ $(document).on('ready pjax:scriptcomplete', function () {
         // TODO: Double check HTML injected here. Extra div?
         $('#advanced-options-container').replaceWith(advancedSettingsHtml);
         $('#extra-options-container').replaceWith(extraOptionsHtml);
+        makeAnswersTableSortable();
         $('.question-option-help').hide();
         $('#ls-loading').hide();
 
@@ -1850,14 +1904,7 @@ $(document).on('ready pjax:scriptcomplete', function () {
 
   // Below, things run on pjax:scriptcomplete.
 
-    $('.answertable tbody').sortable({
-      containment: 'parent',
-      start: startmove,
-      stop: endmove,
-      update: aftermove,
-      handle: '.move-icon',
-      distance: 3,
-    });
+    makeAnswersTableSortable();
 
     $('.btnaddsubquestion').on('click.subquestions', addSubquestionInput);
     $('.btndelsubquestion').on('click.subquestions', deleteSubquestionInput);
@@ -1898,9 +1945,9 @@ $(document).on('ready pjax:scriptcomplete', function () {
     });
 
     // Init Ace script editor.
-    $('.ace:not(.none)').ace({
+    /*$('.ace:not(.none)').ace({
       mode: 'javascript',
-    });
+    });*/
 
     // Hide help tips by default.
     $('.question-option-help').hide();
@@ -1933,26 +1980,28 @@ $(document).on('ready pjax:scriptcomplete', function () {
     // Land on summary page if qid != 0 (not new question).
     // TODO: Fix
 
-    const qidInput = document.querySelector('input[name="question[qid]"]');
-    if (qidInput === null) {
-      alert('Internal error: Could not find qidInput');
-      throw 'abort';
-    }
-    if (qidInput instanceof HTMLInputElement) {
-      if (parseInt(qidInput.value) === 0) {
-        $('#question-create-edit-topbar').show();
-      } else {
-        if($('#tab-overview-editor-input').val() === 'editor'){
-            $('#question-create-edit-topbar').show();
-            $('#question-summary-topbar').hide();
-        }else{
-            $('#question-summary-topbar').show();
-            $('#question-create-edit-topbar').hide();
-        }
+    if (!isCopyMode) {
+      const qidInput = document.querySelector('input[name="question[qid]"]');
+      if (qidInput === null) {
+        alert('Internal error: Could not find qidInput');
+        throw 'abort';
       }
-    } else {
-      alert('Internal error: qidInput is not an HTMLInputElement');
-      throw 'abort';
+      if (qidInput instanceof HTMLInputElement) {
+        if (parseInt(qidInput.value) === 0) {
+          $('#question-create-edit-topbar').show();
+        } else {
+          if($('#tab-overview-editor-input').val() === 'editor'){
+              $('#question-create-edit-topbar').show();
+              $('#question-summary-topbar').hide();
+          }else{
+              $('#question-summary-topbar').show();
+              $('#question-create-edit-topbar').hide();
+          }
+        }
+      } else {
+        alert('Internal error: qidInput is not an HTMLInputElement');
+        throw 'abort';
+      }
     }
 
     // Fix ace editor size for script fields
@@ -1965,23 +2014,4 @@ $(document).on('ready pjax:scriptcomplete', function () {
     });
     
     $('#relevance').on('keyup', showConditionsWarning);
-
-  function makeTopbarSticky() {
-    const topbar = $('#pjax-content > .menubar');
-    const editor = $('#in_survey_common');
-    const topbarOffset = topbar.offset().top;
-
-    $(window).on('scroll', () => {
-      if (window.pageYOffset >= topbarOffset) {
-        topbar.addClass('sticky');
-        topbar.css('width', topbar.parent().width());
-        editor.css('padding-top', topbar.outerHeight(true));
-      } else {
-        topbar.removeClass('sticky');
-        topbar.css('width', '');
-        editor.css('padding-top', '');
-      }
-    });
-  }
-  makeTopbarSticky();
 });

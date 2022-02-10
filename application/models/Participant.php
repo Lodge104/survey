@@ -19,7 +19,7 @@
  */
 class CPDBException extends Exception
 {
- 
+
 }
 
 /**
@@ -108,6 +108,7 @@ class Participant extends LSActiveRecord
         );
     }
 
+    // @todo do we need this?
     // public function getCountActiveSurveys(){
 
     //     $count =  count($this->surveylinks);
@@ -116,25 +117,54 @@ class Participant extends LSActiveRecord
     // }
 
     /**
+     * Returns buttons for grid view
      * @return string
      */
     public function getButtons()
     {
-        $buttons = "<div style='white-space: nowrap'>";
+        $buttons = "<div class='icon-btn-row'>";
         $raw_button_template = ""
-            . "<button class='btn btn-default btn-xs %s %s' role='button' data-toggle='tooltip' title='%s' onclick='return false;'>" //extra class //title
+            . "<button class='btn btn-default btn-sm %s %s' role='button' data-toggle='tooltip' title='%s' onclick='return false;'>" //extra class //title
             . "<i class='fa fa-%s' ></i>" //icon class
             . "</button>";
 
         if ($this->userHasPermissionToEdit()) {
             // Edit button
             $editData = array(
-                'action_participant_editModal',
+                'green-border action_participant_editModal',
                 '',
                 gT("Edit this participant"),
-                'edit'
+                'pencil'
             );
             $buttons .= vsprintf($raw_button_template, $editData);
+
+            // Add participant to survey
+            $addParticipantData = array(
+                'action_participant_addToSurvey',
+                '',
+                gT("Add participant to survey"),
+                'user-plus'
+            );
+
+            $buttons .= vsprintf($raw_button_template, $addParticipantData);
+
+            // Survey information
+            $listActiveSurveysData = array(
+                'action_participant_infoModal',
+                '',
+                gT("List active surveys"),
+                'search'
+            );
+            $buttons .= vsprintf($raw_button_template, $listActiveSurveysData);
+
+            // Share this participant
+            $shareParticipantData = array(
+                'action_participant_shareParticipant',
+                '',
+                gT("Share this participant"),
+                'share'
+            );
+            $buttons .= vsprintf($raw_button_template, $shareParticipantData);
 
             // Only owner or superadmin can delete
             $userId = Yii::app()->user->id;
@@ -143,30 +173,21 @@ class Participant extends LSActiveRecord
             if ($this->owner_uid == $userId || $isSuperAdmin || $deletePermission) {
                 // Delete button
                 $deleteData = array(
-                    'action_participant_deleteModal',
-                    'text-danger',
+                    'red-border action_participant_deleteModal',
+                    '',
                     gT("Delete this participant"),
                     'trash text-danger'
                 );
-                $buttons .= vsprintf($raw_button_template, $deleteData);
             } else {
                 // Invisible button
                 $deleteData = array(
-                    'action_participant_deleteModal invisible',
-                    'text-danger',
+                    'red-border action_participant_deleteModal invisible',
+                    '',
                     gT("Delete this participant"),
                     'trash text-danger'
                 );
-                $buttons .= vsprintf($raw_button_template, $deleteData);
             }
-            // Share this participant
-            $infoData = array(
-                'action_participant_shareParticipant',
-                '',
-                gT("Share this participant"),
-                'share'
-            );
-            $buttons .= vsprintf($raw_button_template, $infoData);
+            $buttons .= vsprintf($raw_button_template, $deleteData);
         } else {
             // Three empty buttons for correct alignment
             // TODO: For some reason, the delete button is smaller than the others
@@ -193,7 +214,17 @@ class Participant extends LSActiveRecord
                     'trash text-danger'
                 );
             }
-            $buttons .= vsprintf($raw_button_template, $deleteData);
+
+            // Share this participant
+            $infoData = array(
+                'action_participant_shareParticipant',
+                '',
+                gT("Share this participant"),
+                'share'
+            );
+            $buttons .= vsprintf($raw_button_template, $infoData);
+
+
             $infoData = array(
                 'action_participant_shareParticipant invisible',
                 '',
@@ -202,24 +233,6 @@ class Participant extends LSActiveRecord
             );
             $buttons .= vsprintf($raw_button_template, $infoData);
         }
-
-        // Survey information
-        $infoData = array(
-            'action_participant_infoModal',
-            '',
-            gT("List active surveys"),
-            'search'
-        );
-        $buttons .= vsprintf($raw_button_template, $infoData);
-
-        // Add participant to survey
-        $infoData = array(
-            'action_participant_addToSurvey',
-            '',
-            gT("Add participant to survey"),
-            'user-plus'
-        );
-        $buttons .= vsprintf($raw_button_template, $infoData);
 
         $buttons .= "</div>";
         return $buttons;
@@ -597,6 +610,10 @@ class Participant extends LSActiveRecord
         return TbHtml::dropDownList('Participant[owner_uid]', $selected, $ownerList);
     }
 
+    /**
+     * Add Survey Filter
+     * @param $conditions
+     */
     public function addSurveyFilter($conditions)
     {
         $this->extraCondition = $this->getParticipantsSearchMultipleCondition($conditions);
@@ -1096,7 +1113,9 @@ class Participant extends LSActiveRecord
                         if (!empty($tokenAndId['participant_id']) && $surveyTableExists) {
                             /** @var Token $token */
                             $token = Token::model($aSurveyID)->find('participant_id = :pid', [':pid' => $tokenAndId['participant_id']]);
-                            $token->delete();
+                            if (!is_null($token)) {
+                                $token->delete();
+                            }
                         }
                         $iDeletedParticipants = $this->deleteParticipants($sParticipantsIDs, false);
                     }
@@ -1474,7 +1493,6 @@ class Participant extends LSActiveRecord
         }
     }
 
-
     /**
      * This function is responsible for showing all the participant's shared by a particular user based on the user id
      * @param int $userid
@@ -1484,7 +1502,6 @@ class Participant extends LSActiveRecord
     {
         return Yii::app()->db->createCommand()->select('{{participants}}.*, {{participant_shares}}.*')->from('{{participants}}')->join('{{participant_shares}}', '{{participant_shares}}.participant_id = {{participants}}.participant_id')->where('owner_uid = :userid')->bindParam(":userid", $userid, PDO::PARAM_INT)->queryAll();
     }
-
 
     /**
      * This function is responsible for showing all the participant's shared to the superadmin
@@ -1946,7 +1963,7 @@ class Participant extends LSActiveRecord
         $attid = []; //Will store the CPDB attribute_id of new or existing attributes keyed by CPDB at
 
         $aTokenAttributes = decodeTokenAttributes($survey->attributedescriptions);
-        $aAutoMapped=$survey->getCPDBMappings();
+        $aAutoMapped = $survey->getCPDBMappings();
 
         /* Create CPDB attributes */
         if (!empty($aAttributesToBeCreated)) {
@@ -2195,6 +2212,9 @@ class Participant extends LSActiveRecord
         }
     }
 
+    /**
+     * Get Language Options.
+     **/
     public function getLanguageOptions()
     {
         $allLanguages = getLanguageData();
@@ -2211,6 +2231,10 @@ class Participant extends LSActiveRecord
         });
         return $returner;
     }
+
+    /**
+     * Get Owner Options
+     **/
     public function getOwnerOptions()
     {
         return CHtml::listData(User::model()->findAll(), 'uid', 'full_name');
@@ -2244,6 +2268,10 @@ class Participant extends LSActiveRecord
         return $aOptionReturn;
     }
 
+    /**
+     * Return Default Encryption Options
+     * @return array
+     */
     public static function getDefaultEncryptionOptions()
     {
         return array(
@@ -2264,7 +2292,7 @@ class Participant extends LSActiveRecord
      *
      * @return array
      */
-    public function permissionCheckedActionsArray($aActions, $permissions)
+    public function permissionCheckedActionsArray(array $aActions, array $permissions): array
     {
         $checkedActions = [];
         foreach ($aActions as $aAction) {
@@ -2313,5 +2341,22 @@ class Participant extends LSActiveRecord
             }
         }
         return $checkedActions;
+    }
+
+    /**
+     * Returns the list of blacklisted participant IDs
+     * @return string[]
+     */
+    public function getBlacklistedParticipantIds()
+    {
+        $command = new CDbCriteria();
+        $command->condition = '';
+        $command->addCondition("blacklisted = 'Y'");
+
+        $oResult = $this->getCommandBuilder()
+            ->createFindCommand($this->getTableSchema(), $command)
+            ->select('participant_id')
+            ->queryColumn();
+        return $oResult;
     }
 }

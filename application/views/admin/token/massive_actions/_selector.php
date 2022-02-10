@@ -27,7 +27,7 @@
                     'grid-reload' => 'yes',
                     // modal
                     'actionType'    => 'modal',
-                    'modalType'     => 'cancel-apply',
+                    'modalType'     => 'cancel-save',
                     'keepopen'      => 'yes',
                     'sModalTitle'   => gT('Batch-edit participants'),
                     'htmlModalBody' => $this->renderPartial('./token/massive_actions/_update', array('dateformatdetails' => getDateFormatData(Yii::app()->session['dateformat']), 'aLanguages' => $aLanguages), true),
@@ -40,7 +40,7 @@
                     'action'      => 'delete',
                     'disabled'     => !Permission::model()->hasSurveyPermission($surveyid, 'tokens', 'delete'),
                     'url'         =>  App()->createUrl('/admin/tokens/sa/deleteMultiple/'),
-                    'iconClasses' => 'text-danger fa fa-trash',
+                    'iconClasses' => 'fa fa-trash text-danger',
                     'text'        =>  gT('Delete'),
                     'grid-reload' => 'yes',
 

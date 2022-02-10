@@ -87,7 +87,7 @@ $config['customassetversionnumber']  = 1;        // Used to generate the path of
 
 // Please be very careful if you want to allow SVG files - there are several XSS dangerous security issues
 $config['allowedthemeimageformats'] = 'gif,ico,jpg,png'; // Image file types allowed to be uploaded in the themes section.
-$config['allowedthemeuploads'] = 'css,js,map,json,eot,ttf,woff,txt,md,xml,woff2,twig'; // Other file types allowed to be uploaded in the themes section.
+$config['allowedthemeuploads'] = 'css,js,map,json,eot,otf,ttf,woff,txt,md,xml,woff2,twig'; // Other file types allowed to be uploaded in the themes section.
 $config['allowedfileuploads'] = [
     //Documents
     'xls', 'doc', 'xlsx', 'docx', 'odt', 'ods', 'pdf',
@@ -100,8 +100,9 @@ $config['allowedfileuploads'] = [
     //videos
     'mp4', 'avi', 'mkv', 'mpeg', 'mpg', 'wmv', 'h264', 'h265', 'mov', 'webm', 'divx', 'xvid',
 ];
-$config['allowedresourcesuploads'] = '7z,aiff,asf,avi,bmp,csv,doc,docx,fla,flv,gif,gz,gzip,ico,jpeg,jpg,mid,mov,mp3,mp4,mpc,mpeg,mpg,ods,odt,pdf,png,ppt,pxd,qt,ram,rar,rm,rmi,rmvb,rtf,sdc,sitd,swf,sxc,sxw,tar,tgz,tif,tiff,txt,vsd,wav,wma,wmv,xls,xlsx,xml,zip,css,js'; // File types allowed to be uploaded in the resources sections, and with the HTML Editor
-$config['allowedpluginuploads'] = 'gif,ico,jpg,png,css,js,map,json,eot,ttf,woff,txt,md,xml,woff2,twig,php,html';
+// NB: Allowing XML enables XSS, since XML can be an HTML page.
+$config['allowedresourcesuploads'] = '7z,aiff,asf,avi,bmp,csv,doc,docx,fla,flv,gif,gz,gzip,ico,jpeg,jpg,mid,mov,mp3,mp4,mpc,mpeg,mpg,ods,odt,pdf,png,ppt,pxd,qt,ram,rar,rm,rmi,rmvb,rtf,sdc,sitd,swf,sxc,sxw,tar,tgz,tif,tiff,txt,vsd,wav,wma,wmv,xls,xlsx,zip,css,js'; // File types allowed to be uploaded in the resources sections, and with the HTML Editor
+$config['allowedpluginuploads'] = 'gif,ico,jpg,png,css,js,map,json,eot,otf,ttf,woff,txt,md,xml,woff2,twig,php,html';
 
 $config['memory_limit'] = '256'; // This sets how much memory LimeSurvey can access in megabytes. 256 MB is the minimum recommended - if you are using PDF functions up to 512 MB may be needed
 
@@ -253,8 +254,8 @@ $config['disablescriptwithxss'] = true;
 $config['usercontrolSameGroupPolicy'] = true;
 
 // ownerManageAllSurveysInGroup
-// If this option is set to true, then oner of a group
-// have all rights on surveys in is group
+// If this option is set to true, then owner of a group
+// has all permissions on surveys in that group
 $config['ownerManageAllSurveysInGroup'] = true;
 
 // demoMode
@@ -656,8 +657,9 @@ $config['InsertansUnsupportedtypes'] = array();
 $config['proxy_host_name'] = '';
 $config['proxy_host_port'] = 80;
 
-/** Forced superadmin rights, users in this array can not have superadmin total right disable.
- * Default use the user created at the installation.
+/** Forced superadmin permissions
+ * Users in this array can not have their superadmin permissions disabled
+ * Default is set to user ID 1, which is the user created at installation (site admin)
  * @var integer[]
  */
 $config['forcedsuperadmin'] = array(1);
@@ -763,7 +765,7 @@ $config['defaultquestionselectormode'] = 'default';
 
 // Preselected Question Type
 $config['preselectquestiontype'] = 'T';
-$config['preselectquestiontheme'] = 'core';
+$config['preselectquestiontheme'] = 'longfreetext';
 
 // theme editor mode
 $config['defaultthemeteeditormode'] = 'default';
@@ -786,25 +788,25 @@ $config['max_execution_time'] = 1200;
 // This is useful when developing a theme, so changes to XML files are immediately applied without the need to uninstall and reinstall the theme.
 $config['force_xmlsettings_for_survey_rendering'] = false;
 
+/**
+ * When this setting is true, plugins that are not in the white list (see 'pluginWhitelist') cannot be installed nor loaded. This may disable
+ * already installed plugins.
+ * Core plugins are not affected by this setting.
+ */
 $config['usePluginWhitelist'] = false;
 
-$config['pluginCoreList'] = [
-    'AuditLog',
-    'ExportR',
-    'ExportSTATAxml',
-    'extendedStartPage',
-    'oldUrlCompat',
-    'AuthLDAP',
-    'Authdb',
-    'Authwebserver'
-];
-
+// List of plugin names allowed to be installed and loaded when 'usePluginWhitelist' is true. Core plugins are implicitly whitelisted.
 $config['pluginWhitelist'] = [];
+
+// When this setting is true, the "Plugin Upload" feature is disabled.
+$config['disablePluginUpload'] = false;
 
 /* replaced in generated application/config/security.php if exist */
 $config['encryptionkeypair'] = '';
 $config['encryptionpublickey'] = '';
 $config['encryptionsecretkey'] = '';
+$config['encryptionnonce'] = '';
+$config['encryptionsecretboxkey'] = '';
 
 $config['passwordValidationRules'] = array(
     'min' => 4,

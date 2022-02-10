@@ -14,7 +14,7 @@ $this->widget('ext.admin.grid.MassiveActionsWidget.MassiveActionsWidget', array(
                 'type' => 'action',
                 'action' => 'delete',
                 'url' => App()->createUrl('/admin/participants/sa/deleteParticipant/'),
-                'iconClasses' => 'text-danger fa fa-trash',
+                'iconClasses' => 'fa fa-trash text-danger',
                 'text' => gT('Delete'),
                 'grid-reload' => 'yes',
                 'on-success' => "(function(result) { LS.AjaxHelper.onSuccess(result); })",
@@ -51,10 +51,9 @@ $this->widget('ext.admin.grid.MassiveActionsWidget.MassiveActionsWidget', array(
                 'grid-reload' => 'yes',
                 //modal
                 'actionType' => 'modal',
-                'modalType' => 'cancel-apply',
+                'modalType' => 'cancel-save',
                 'keepopen' => 'yes',
-                'yes' => gT('Apply'),
-                'no' => gT('Cancel'),
+        
                 'sModalTitle' => gT('Batch edit the participants'),
                 'htmlModalBody' => $this->renderPartial('./participants/massive_actions/_update', [], true)
             ],

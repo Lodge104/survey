@@ -84,9 +84,9 @@ class ExportSurveyResultsService
         if ($oOptions->output == 'display') {
             header("Cache-Control: must-revalidate, no-store, no-cache");
         }
-        
+
         $exports = $this->getExports();
-        
+
         if (array_key_exists($sExportPlugin, $exports) && !empty($exports[$sExportPlugin])) {
             // This must be a plugin, now use plugin to load the right class
             $event = new PluginEvent('newExport');
@@ -95,7 +95,7 @@ class ExportSurveyResultsService
             $oPluginManager->dispatchEvent($event, $exports[$sExportPlugin]);
             $writer = $event->get('writer');
         }
-        
+
         if (!($writer instanceof IWriter)) {
             throw new Exception(sprintf('Writer for %s should implement IWriter', $sExportPlugin));
         }
@@ -103,23 +103,35 @@ class ExportSurveyResultsService
         $surveyDao = new SurveyDao();
         $survey = $surveyDao->loadSurveyById($iSurveyId, $sLanguageCode, $oOptions);
         $writer->init($survey, $sLanguageCode, $oOptions);
-        
-        $surveyDao->loadSurveyResults($survey, $oOptions->responseMinRecord, $oOptions->responseMaxRecord, $sFilter, $oOptions->responseCompletionState, $oOptions->selectedColumns, $oOptions->aResponses);
-        $writer->write($survey, $sLanguageCode, $oOptions, true);
+
+        $countResponsesCommand = $surveyDao->loadSurveyResults($survey, $oOptions->responseMinRecord, $oOptions->responseMaxRecord, $sFilter, $oOptions->responseCompletionState, $oOptions->selectedColumns, $oOptions->aResponses);
+        $countResponsesCommand->order = null;
+        $countResponsesCommand->select('count(*)');
+        $responseCount = $countResponsesCommand->queryScalar();
+        $maxRows = 100;
+        $maxPages = ceil($responseCount / $maxRows);
+        for ($i = 0; $i < $maxPages; $i++) {
+            $offset = $i * $maxRows;
+            $responsesQuery = $surveyDao->loadSurveyResults($survey, $oOptions->responseMinRecord, $oOptions->responseMaxRecord, $sFilter, $oOptions->responseCompletionState, $oOptions->selectedColumns, $oOptions->aResponses);
+            $responsesQuery->offset($offset);
+            $responsesQuery->limit($maxRows);
+            $survey->responses = $responsesQuery->query();
+            $writer->write($survey, $sLanguageCode, $oOptions, true);
+        }
         $result = $writer->close();
-        
+
         // Close resultset if needed
         if ($survey->responses instanceof CDbDataReader) {
             $survey->responses->close();
         }
-        
+
         if ($oOptions->output == 'file') {
             return $writer->filename;
         } else {
             return $result;
         }
     }
-    
+
     /**
      * Get an array of available export types
      *
@@ -133,10 +145,10 @@ class ExportSurveyResultsService
             $oPluginManager->dispatchEvent($event);
 
             $exports = $event->get('exportplugins', array());
-            
+
             $this->_exports = $exports;
         }
-        
+
         return $this->_exports;
     }
 }

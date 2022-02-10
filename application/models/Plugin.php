@@ -67,7 +67,7 @@ class Plugin extends LSActiveRecord
     /**
      * Set this plugin as load error in database, and saves the error message.
      * @param array $error Array with 'message' and 'file' keys (as get from error_get_last).
-     * @return boolean Update result.
+     * @return int Rows affected
      */
     public function setLoadError(array $error)
     {
@@ -163,6 +163,7 @@ class Plugin extends LSActiveRecord
     /**
      * Description as shown in plugin list.
      * @return string
+     * @throws Exception
      */
     public function getDescription()
     {
@@ -170,6 +171,20 @@ class Plugin extends LSActiveRecord
         // Harden for XSS
         $filter = LSYii_HtmlPurifier::getXssPurifier();
         return $filter->purify($config->getDescription());
+    }
+
+    /**
+     * As getDescription, but catches the exception (to be used in plugin gridview)
+     *
+     * @return string
+     */
+    public function getPossibleDescription()
+    {
+        try {
+            return $this->getDescription();
+        } catch (\Throwable $ex) {
+            return sprintf(gT('Error: Could not get plugin description: %s'), $ex->getMessage());
+        }
     }
 
 
@@ -181,6 +196,7 @@ class Plugin extends LSActiveRecord
     {
         $output = '';
         if (Permission::model()->hasGlobalPermission('settings', 'update')) {
+            $output .= "<div class='icon-btn-row'>";
             if ($this->load_error == 1) {
                 $reloadUrl = Yii::app()->createUrl(
                     'admin/pluginmanager',
@@ -189,16 +205,17 @@ class Plugin extends LSActiveRecord
                         'pluginId' => $this->id
                     ]
                 );
-                $output = "<a href='" . $reloadUrl . "' data-toggle='tooltip' title='" . gT('Attempt plugin reload') . "' class='btn btn-default btn-xs btntooltip'><span class='fa fa-refresh'></span></a>";
+                $output .= "<a href='" . $reloadUrl . "' data-toggle='tooltip' title='" . gT('Attempt plugin reload') . "' class='btn btn-default btn-sm btntooltip'><span class='fa fa-refresh'></span></a>";
             } elseif ($this->active == 0) {
-                $output = $this->getActivateButton();
+                $output .= $this->getActivateButton();
             } else {
-                $output = $this->getDeactivateButton();
+                $output .= $this->getDeactivateButton();
             }
 
             if ($this->active == 0) {
                 $output .= $this->getUninstallButton();
             }
+            $output .= "</div>";
         }
 
         return $output;
@@ -215,7 +232,7 @@ class Plugin extends LSActiveRecord
                 'sa' => 'activate'
             ]
         );
-        $output = '&nbsp;' . CHtml::beginForm(
+        $output = CHtml::beginForm(
             $activateUrl,
             'post',
             [
@@ -224,7 +241,7 @@ class Plugin extends LSActiveRecord
         );
         $output .= "
                 <input type='hidden' name='pluginId' value='" . $this->id . "' />
-                <button data-toggle='tooltip' title='" . gT('Activate plugin') . "' class='btntooltip btn btn-default btn-xs'>
+                <button data-toggle='tooltip' title='" . gT('Activate plugin') . "' class='btntooltip btn btn-default btn-sm'>
                     <i class='fa fa-power-off'></i>
                 </button>
             </form>
@@ -243,7 +260,7 @@ class Plugin extends LSActiveRecord
                 'sa' => 'deactivate'
             ]
         );
-        $output = '&nbsp;' . CHtml::beginForm(
+        $output = CHtml::beginForm(
             $deactivateUrl,
             'post',
             [
@@ -252,7 +269,7 @@ class Plugin extends LSActiveRecord
         );
         $output .= "
                 <input type='hidden' name='pluginId' value='" . $this->id . "' />
-                <button data-toggle='tooltip' onclick='return confirm(\"" . gT('Are you sure you want to deactivate this plugin?') . "\");' title='" . gT('Deactivate plugin') . "' class='btntooltip btn btn-warning btn-xs'>
+                <button data-toggle='tooltip' onclick='return confirm(\"" . gT('Are you sure you want to deactivate this plugin?') . "\");' title='" . gT('Deactivate plugin') . "' class='btntooltip btn btn-warning btn-sm'>
                     <i class='fa fa-power-off'></i>
                 </button>
             </form>
@@ -272,7 +289,7 @@ class Plugin extends LSActiveRecord
                 'sa' => 'uninstallPlugin'
             ]
         );
-        $output = '&nbsp;' . CHtml::beginForm(
+        $output = CHtml::beginForm(
             $uninstallUrl,
             'post',
             [
@@ -281,7 +298,7 @@ class Plugin extends LSActiveRecord
         );
         $output .= "
                 <input type='hidden' name='pluginId' value='" . $this->id . "' />
-                <button data-toggle='tooltip' onclick='return confirm(\"" . gT('Are you sure you want to uninstall this plugin?') . "\");' title='" . gT('Uninstall plugin') . "' class='btntooltip btn btn-danger btn-xs'>
+                <button data-toggle='tooltip' onclick='return confirm(\"" . gT('Are you sure you want to uninstall this plugin?') . "\");' title='" . gT('Uninstall plugin') . "' class='btntooltip btn btn-danger btn-sm'>
                     <i class='fa fa-times-circle'></i>
                 </button>
             </form>
@@ -293,20 +310,23 @@ class Plugin extends LSActiveRecord
      * @param Plugin|null $plugin
      * @param string $pluginName
      * @param array $error Array with 'message' and 'file' keys (as get from error_get_last).
-     * @return boolean
+     * @return int Rows affected
      */
     public static function setPluginLoadError($plugin, $pluginName, array $error)
     {
         if ($plugin) {
             $result = $plugin->setLoadError($error);
         } else {
-            // TODO: Use raw SQL insteadl of active records.
-            $plugin = new \Plugin();
-            $plugin->name = $pluginName;
-            $plugin->active = 0;
-            $result1 = $plugin->save();
-            $result2 = $plugin->setLoadError($error);
-            $result = $result1 && $result2;
+            $result = Yii::app()->db->createCommand()
+                ->insert(
+                    '{{plugins}}',
+                    [
+                        'name' => $pluginName,
+                        'active' => 0,
+                        'load_error' => 1,
+                        'load_error_message' => addslashes($error['message'] . ' ' . $error['file'])
+                    ]
+                );
         }
         return $result;
     }

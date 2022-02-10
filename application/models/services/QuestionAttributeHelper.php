@@ -146,32 +146,6 @@ class QuestionAttributeHelper
     }
 
     /**
-     * Returns the question attributes added by plugins ('newQuestionAttributes' event) for
-     * the specified question type.
-     *
-     * @param string $questionType     the question type to retrieve the attributes for.
-     *
-     * @return array    the question attributes added by plugins
-     */
-    public function getAttributesFromPlugin($questionType)
-    {
-        $allPluginAttributes = \QuestionAttribute::getOwnQuestionAttributesViaPlugin();
-        if (empty($allPluginAttributes)) {
-            return [];
-        }
-
-        // Filter to get this question type setting
-        $questionTypeAttributes = $this->filterAttributesByQuestionType($allPluginAttributes, $questionType);
-
-        // Complete category if missing
-        $questionTypeAttributes = $this->fillMissingCategory($questionTypeAttributes, gT('Plugin'));
-
-        $questionTypeAttributes = $this->sanitizeQuestionAttributes($questionTypeAttributes);
-
-        return $questionTypeAttributes;
-    }
-
-    /**
      * Filters an array of question attribute definitions by question type
      *
      * @param array $attributes    array of question attribute definitions to filter
@@ -232,74 +206,75 @@ class QuestionAttributeHelper
      */
     public function getQuestionAttributesWithValues($question, $language = null, $questionThemeOverride = null, $advancedOnly = false)
     {
-        $survey = $question->survey;
-        if (empty($survey)) {
-            throw new \Exception('This question has no survey - qid = ' . json_encode($question->qid));
+        $questionAttributeFetcher = new \LimeSurvey\Models\Services\QuestionAttributeFetcher();
+        $questionAttributeFetcher->setQuestion($question);
+        $questionAttributeFetcher->setAdvancedOnly($advancedOnly);
+        if (!empty($questionThemeOverride)) {
+            $questionAttributeFetcher->setTheme($questionThemeOverride);
         }
 
-        // Get attribute values
-        $attributeValues = $this->getAttributeValuesFromDB($question->qid);
+        $questionAttributeDefinitions = $questionAttributeFetcher->fetch();
+        $questionAttributesWithValues = $questionAttributeFetcher->populateValues($questionAttributeDefinitions, $language);
 
-        // Get question theme name if not specified
-        $questionTheme = !empty($attributeValues['question_template']['']) ? $attributeValues['question_template'][''] : 'core';
-        $questionTheme = !empty($questionThemeOverride) ? $questionThemeOverride : $questionTheme;
-
-        // Get advanced attribute definitions for the question type
-        $questionTypeAttributes = $this->getAttributesFromQuestionType($question->type, $advancedOnly);
-
-        // Get question theme attribute definitions
-        $questionThemeAttributes = $this->getAttributesFromQuestionTheme($questionTheme, $question->type);
-
-        // Merge the attributes with the question theme ones
-        $attributes = $this->mergeQuestionAttributes($questionTypeAttributes, $questionThemeAttributes);
-
-        // Get question attributes from plugins ('newQuestionAttributes' event)
-        $pluginAttributes = $this->getAttributesFromPlugin($question->type);
-        $attributes = $this->mergeQuestionAttributes($attributes, $pluginAttributes);
-
-        uasort($attributes, 'categorySort');
-
-        // Fill attributes with values
-        $languages = is_null($language) ? $survey->allLanguages : [$language];
-        $attributes = $this->fillAttributesWithValues($attributes, $attributeValues, $languages);
-
-        return $attributes;
+        return $questionAttributesWithValues;
     }
 
     /**
-     * Get all saved attribute values for one question as array
+     * Comparison function for sorting question attributes by category with uasort().
      *
-     * @param int $questionId  the question id
-     * @return array the returning array structure will be like
-     *               array(attributeName => array(languageCode => value, ...), ...)
-     *               where languageCode is '' if no language is specified.
+     * @param array<string,mixed> $a    First question attribute to compare
+     * @param array<string,mixed> $b    Second question attribute to compare
+     * @return int
+     * @todo No state used, so no OOP needed, move to function at some point.
      */
-    public function getAttributeValuesFromDB($questionId)
+    protected function categorySort($a, $b)
     {
-        return \QuestionAttribute::model()->getAttributesAsArrayFromDB($questionId);
+        $categoryOrders = $this->getCategoryOrders();
+        $orderA = isset($categoryOrders[$a['category']]) ? $categoryOrders[$a['category']] : PHP_INT_MAX;
+        $orderB = isset($categoryOrders[$b['category']]) ? $categoryOrders[$b['category']] : PHP_INT_MAX;
+        if ($orderA == $orderB) {
+            $result = strnatcasecmp($a['category'], $b['category']);
+            if ($result == 0) {
+                $result = $a['sortorder'] - $b['sortorder'];
+            }
+        } else {
+            $result = $orderA - $orderB;
+        }
+        return $result;
     }
 
     /**
-     * Get the definitions of question attributes from Question Theme
+     * Returns the array of categories with their assigned order.
+     * The array doesn't contain all the posible categories, only those with an order assigned.
      *
-     * @param string $questionTheme    the name of the question theme
-     * @param string $questionType     the base question type
-     * @return array    all question attribute definitions provided by the question theme
+     * @return array<string,int>
      */
-    public function getAttributesFromQuestionTheme($questionTheme, $questionType)
+    public function getCategoryOrders()
     {
-        return \QuestionTheme::getAdditionalAttrFromExtendedTheme($questionTheme, $questionType);
+        $orders = [
+            'Logic' => 1,
+            'Display' => 2,
+            'Input' => 3,
+            'Other' => 4,
+            'Timer' => 5,
+            'Statistics' => 6,
+        ];
+        return $orders;
     }
 
     /**
-     * Get the definitions of question attributes from base question type
+     * Sorts an array of question attributes by category.
+     * Sorting is based on a predefined list of orders (see QuestionAtributeHelper::getCategoryOrders()).
+     * Categories without a predefined order are considered less relevant.
+     * Categories with the same order are sorted alphabetically.
      *
-     * @param string $questionType     the base question type
-     * @param boolean $advancedOnly     if true, general attributes ('question_template', 'gid', ...) are excluded
-     * @return array    all question attribute definitions provided by the question type
+     * @param array<string,array> $attributes
+     * @return array<string,array>
      */
-    public function getAttributesFromQuestionType($questionType, $advancedOnly = false)
+    public function sortAttributesByCategory($attributes)
     {
-        return \QuestionAttribute::getQuestionAttributesSettings($questionType, $advancedOnly);
+        $attributesCopy = $attributes;
+        uasort($attributesCopy, [$this, 'categorySort']);
+        return $attributesCopy;
     }
 }

@@ -19,6 +19,9 @@
  */
 class LSActiveRecord extends CActiveRecord
 {
+    /** @var string[] Array of attributes that should be XSS filtered on mass updates */
+    protected $xssFilterAttributes = [];
+
     public $bEncryption = false;
 
     /**
@@ -212,6 +215,32 @@ class LSActiveRecord extends CActiveRecord
     }
 
     /**
+     * Updates records with the specified condition.
+     * XSS filtering is enforced for attributes listed in model's $xssFilterAttributes property.
+     * See {@link find()} for detailed explanation about $condition and $params.
+     * Note, the attributes are not checked for safety and no validation is done.
+     * @param array $attributes list of attributes (name=>$value) to be updated
+     * @param mixed $condition query condition or criteria.
+     * @param array $params parameters to be bound to an SQL statement.
+     * @return integer the number of rows being updated
+     */
+    public function updateAll($attributes, $condition = '', $params = array())
+    {
+        if (!empty($this->xssFilterAttributes)) {
+            $validator = new LSYii_Validators;
+            if ($validator->xssfilter) {
+                $attributeNames = array_keys($attributes);
+                $attributesToFilter = array_intersect($attributeNames, $this->xssFilterAttributes);
+                foreach ($attributesToFilter as $attribute) {
+                    $attributes[$attribute] = $validator->xssFilter($attributes[$attribute]);
+                }
+            }
+        }
+
+        return parent::updateAll($attributes, $condition, $params);
+    }
+
+    /**
      * Overriding of Yii's findByAttributes method to provide encrypted attribute value search
      * @param array $attributes list of attribute values (indexed by attribute names) that the active records should match.
      * An attribute value can be an array which will be used to generate an IN condition.
@@ -344,8 +373,9 @@ class LSActiveRecord extends CActiveRecord
     /**
      * Decrypt single value
      * @param string $value String value which needs to be decrypted
+     * @return string the decrypted string
      */
-    public static function decryptSingle($value = '')
+    public static function decryptSingle($value = ''): string
     {
         // if $value is provided, it would decrypt
         if (!empty($value)) {
@@ -353,6 +383,37 @@ class LSActiveRecord extends CActiveRecord
             $sodium = Yii::app()->sodium;
             return $sodium->decrypt($value);
         }
+        return '';
+    }
+
+    /**
+     * Decrypt single value
+     * @param string $value String value which needs to be decrypted
+     * @return string the decrypted string
+     */
+    public static function decryptSingleOld($value = ''): string
+    {
+        static $sodium = null;
+        if (!isset($sodium)) {
+            // load sodium library
+            $sodium = Yii::app()->sodiumOld;
+        }
+        // if $value is provided, it would decrypt
+        if ($value) {
+            try {
+                return $sodium->decrypt($value);
+            } catch (throwable $e) {
+                // if decryption with oldDecrypt fails try it with new decryption
+                try {
+                    return LSActiveRecord::decryptSingle($value);
+                } catch (throwable $e) {
+                    // if decryption with new decryption fails just return the current value
+                    // this should not happen
+                    return $value;
+                }
+            }
+        }
+        return '';
     }
 
 
@@ -414,10 +475,8 @@ class LSActiveRecord extends CActiveRecord
         // TODO: Use OOP polymorphism instead of switching on class names.
         if ($class === 'ParticipantAttribute') {
             $aParticipantAttributes = CHtml::listData(ParticipantAttributeName::model()->findAll(["select" => "attribute_id", "condition" => "encrypted = 'Y' and core_attribute <> 'Y'"]), 'attribute_id', '');
-            foreach ($aParticipantAttributes as $attribute => $value) {
-                if (array_key_exists($this->attribute_id, $aParticipantAttributes)) {
-                    $this->value = $sodium->$action($this->value);
-                }
+            if (array_key_exists($this->attribute_id, $aParticipantAttributes)) {
+                $this->value = $sodium->$action($this->value);
             }
         } else {
             $attributes = $this->encryptAttributeValues($this->attributes, true, false);

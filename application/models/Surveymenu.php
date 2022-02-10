@@ -175,8 +175,12 @@ class Surveymenu extends LSActiveRecord
                 $oDataAttribute->apply($menuEntry, ($oSurvey ? $oSurvey->sid : null));
 
                 if ($oDataAttribute->isActive !== null && $oSurvey != null) {
-                    if (($oDataAttribute->isActive == true && $oSurvey->active == 'N') || ($oDataAttribute->isActive == false && $oSurvey->active == 'Y')) {
-                        continue;
+                    if ($oDataAttribute->isActive == true && $oSurvey->active == 'N') {
+                        $aEntry['disabled'] = true;
+                        $aEntry['disabled_tooltip'] = sprintf(gT("The '%s' section is not available yet. Please activate your survey to enable this section."), gT($aEntry['menu_title']));
+                    } elseif ($oDataAttribute->isActive == false && $oSurvey->active == 'Y') {
+                        $aEntry['disabled'] = true;
+                        $aEntry['disabled_tooltip'] = sprintf(gT("The '%s' section is not available while the survey is active."), gT($aEntry['menu_title']));
                     }
                 }
 
@@ -344,45 +348,48 @@ class Surveymenu extends LSActiveRecord
         );
     }
 
+    /**
+     * Returns the buttons for gridview.
+     **/
     public function getButtons()
     {
-        $buttons = "<div style='white-space: nowrap'>";
+        $buttons = "<div class='icon-btn-row'>";
         $raw_button_template = ""
-            . "<button class='btn btn-default btn-xs %s %s' role='button' data-toggle='tooltip' title='%s' onclick='return false;'>" //extra class //title
-            . "<i class='fa fa-%s' ></i>" //icon class
+            . "<button class='btn btn-default btn-sm %s %s' role='button' data-toggle='tooltip' title='%s' onclick='return false;'>" //extra class //title
+            . "<i class='fa fa-%s' ></i>"
             . "</button>";
 
         if (Permission::model()->hasGlobalPermission('settings', 'update')) {
             $editData = array(
                 'action_surveymenu_editModal',
-                'text-danger',
+                'green-border',
                 gT("Edit this survey menu"),
-                'edit'
+                'pencil'
             );
             $deleteData = array(
                 'action_surveymenu_deleteModal',
-                'text-danger',
+                'red-border',
                 gT("Delete this survey menu"),
                 'trash text-danger'
             );
 
-            $buttons .= vsprintf($raw_button_template, $deleteData);
-
             $buttons .= vsprintf($raw_button_template, $editData);
+            $buttons .= vsprintf($raw_button_template, $deleteData);
         }
 
         $buttons .= '</div>';
 
         return $buttons;
     }
+
     /**
+     * Returns the columns for gridview.
      * @return array
      */
     public function getColumns()
     {
         $cols = array(
             array(
-            'name' => 'id',
             'value' => '\'<input type="checkbox" name="id[]" class="action_selectthismenu" value="\'.$data->id.\'" />\'',
             'type' => 'raw'
             ),

@@ -327,6 +327,8 @@ class SurveyRuntimeHelper
                 $this->aSurveyInfo['progress']['currentstep'] = $_SESSION[$this->LEMsessid]['step'];
                 $this->aSurveyInfo['progress']['total']       = isset($_SESSION[$this->LEMsessid]['totalsteps']) ? $_SESSION[$this->LEMsessid]['totalsteps'] : 1;
             }
+            /* String used in vanilla/views/subviews/header/progress_bar.twig : for autotranslation */
+            $this->aSurveyInfo['progress']['string'] = gT('You have completed %s%% of this survey');
         }
 
         /**
@@ -384,6 +386,8 @@ class SurveyRuntimeHelper
         $this->aSurveyInfo['jPopup'] = json_encode($aPopup);
         $this->aSurveyInfo['mandSoft'] = array_key_exists('mandSoft', $this->aMoveResult) ? $this->aMoveResult['mandSoft'] : false;
         $this->aSurveyInfo['mandNonSoft'] = array_key_exists('mandNonSoft', $this->aMoveResult) ? $this->aMoveResult['mandNonSoft'] : false;
+        $this->aSurveyInfo['mandViolation'] = $this->aStepInfo['mandViolation'] && $this->okToShowErrors;
+        $this->aSurveyInfo['showPopups'] = $this->oTemplate != null ? $this->oTemplate->showpopups : false;
 
         $aErrorHtmlMessage                             = $this->getErrorHtmlMessage();
         $this->aSurveyInfo['errorHtml']['show']        = !empty($aErrorHtmlMessage) && $this->oTemplate->showpopups == 0;
@@ -536,7 +540,8 @@ class SurveyRuntimeHelper
             $this->aSurveyInfo['hiddenInputs']         .= \CHtml::hiddenField('start_time', time(), array('id' => 'start_time'));
             $_SESSION[$this->LEMsessid]['LEMpostKey'] =  isset($_POST['LEMpostKeyPreset']) ? $_POST['LEMpostKeyPreset'] : mt_rand();
             $this->aSurveyInfo['hiddenInputs']         .= \CHtml::hiddenField('LEMpostKey', $_SESSION[$this->LEMsessid]['LEMpostKey'], array('id' => 'LEMpostKey'));
-            if (!empty($_SESSION[$this->LEMsessid]['token'])) {
+            /* Reset session with multiple tabs (show Token mismatch issue) , but only for not anonymous survey */
+            if (!empty($_SESSION[$this->LEMsessid]['token']) and $this->aSurveyInfo['anonymized'] != 'Y') {
                 $this->aSurveyInfo['hiddenInputs']     .= \CHtml::hiddenField('token', $_SESSION[$this->LEMsessid]['token'], array('id' => 'token'));
             }
         }
@@ -1438,7 +1443,11 @@ class SurveyRuntimeHelper
 
         //Mandatory question(s) with unanswered answer
         if ($this->aStepInfo['mandViolation'] && $this->okToShowErrors) {
-            $aErrorsMandatory[] = gT("One or more mandatory questions have not been answered. You cannot proceed until these have been completed.");
+            if ($this->aStepInfo['mandNonSoft']) {
+                $aErrorsMandatory[] = gT("One or more mandatory questions have not been answered. You cannot proceed until these have been completed.");
+            } else {
+                $aErrorsMandatory[] = gT("One or more mandatory questions have not been answered. If possible, please complete them before continuing to the next page.");
+            }
         }
 
         // Question(s) with not valid answer(s)

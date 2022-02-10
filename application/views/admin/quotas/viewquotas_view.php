@@ -38,6 +38,9 @@ echo viewHelper::getViewTestTag('surveyQuotas');
                     <?php $this->widget('bootstrap.widgets.TbGridView', array(
                         'dataProvider'  => $oDataProvider,
                         'id'            => 'quota-grid',
+                        'htmlOptions'   => ['class' => 'table-responsive grid-view-ls'],
+                        'itemsCssClass' => 'table-quotas table-striped table-condensed',
+                        'ajaxUpdate'    => 'quota-grid',
                         'emptyText'     => gT('No quotas'),
                         'summaryText'   => gT('Displaying {start}-{end} of {count} result(s).') . ' ' . sprintf(gT('%s rows per page'),
                                 CHtml::dropDownList(
@@ -78,12 +81,6 @@ echo viewHelper::getViewTestTag('surveyQuotas');
                                 'header'      => gT('Completed'),
                                 'type'        => 'raw',
                                 'htmlOptions' => array('style' => 'vertical-align:top'),
-                                // 'value'=>function($oQuota)use($oSurvey){
-                                //     $completerCount =getQuotaCompletedCount($oSurvey->sid, $oQuota->id);
-                                //     $class = ($completerCount <= $oQuota->qlimit ? 'text-warning':null);
-                                //     $span = CHtml::tag('span',array('class'=>$class),$completerCount);
-                                //     return $span;
-                                // },
                                 'footer'      => $totalcompleted,
                             ),
                             array(
@@ -115,8 +112,6 @@ echo viewHelper::getViewTestTag('surveyQuotas');
                             ),
 
                         ),
-                        'itemsCssClass' => 'table-quotas table-striped table-condensed',
-                        'ajaxUpdate'    => 'quota-grid',
                     ));
                     ?>
                 </div>
@@ -138,11 +133,6 @@ echo viewHelper::getViewTestTag('surveyQuotas');
                         <?php echo CHtml::hiddenField('sid',$oSurvey->getPrimaryKey());?>
                         <?php echo CHtml::hiddenField('action','quotas');?>
                         <?php echo CHtml::hiddenField('subaction','new_quota');?>
-                        <input type="button" class="btn btn-default" value="<?php eT("Quick CSV report");?>" onClick="window.open('<?php echo $this->createUrl("admin/quotas/sa/index/surveyid/$surveyid/quickreport/y") ?>', '_top')" />                                                
-                        <?php echo CHtml::submitButton(gT("Add new quota"),array(
-                            'name'=>'submit',
-                            'class'=>'quota_new btn btn-default',
-                        ));?>
                         <?php echo CHtml::endForm();?>
                     </div>
                 <?php endif; ?>

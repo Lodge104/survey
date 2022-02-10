@@ -120,7 +120,8 @@ class export extends Survey_Common_Action
 
     public function exportresults()
     {
-        $iSurveyID = sanitize_int(Yii::app()->request->getParam('surveyid'));
+        $iSurveyID = sanitize_int(Yii::app()->request->getParam('surveyid')) ??
+            sanitize_int(Yii::app()->request->getParam('surveyId'));
         $survey = Survey::model()->findByPk($iSurveyID);
 
 
@@ -149,6 +150,12 @@ class export extends Survey_Common_Action
         if (!Permission::model()->hasSurveyPermission($iSurveyID, 'responses', 'export')) {
             $this->getController()->error('Access denied!');
         }
+
+        if (!$survey->isActive) {
+            Yii::app()->session['flashmessage'] = gT('This survey is not active - no responses are available.');
+            $this->getController()->redirect($this->getController()->createUrl("surveyAdministration/view/surveyid/{$iSurveyID}"));
+        }
+
 
         Yii::app()->loadHelper("admin/exportresults");
 
@@ -487,35 +494,35 @@ class export extends Survey_Common_Action
 
             /* Python code to locate the PATH of current syntax */
             if ($spssver == 3) {
-            echo "\n";			
-	    echo "begin program.\n";
-	    echo "import spss,SpssClient,os\n";
-	    echo "SpssClient.StartClient()\n";
-	    echo "PATH = os.path.dirname(SpssClient.GetDesignatedSyntaxDoc().GetDocumentPath())\n";
-	    echo "SpssClient.StopClient()\n";
-	    echo "spss.Submit('''FILE HANDLE PATHdatfile /NAME='{0}'.'''.format(PATH))\n";
-	    echo "end program.\n";
-	    echo "\n";	
-	    }
+                echo "\n";
+                echo "begin program.\n";
+                echo "import spss,SpssClient,os\n";
+                echo "SpssClient.StartClient()\n";
+                echo "PATH = os.path.dirname(SpssClient.GetDesignatedSyntaxDoc().GetDocumentPath())\n";
+                echo "SpssClient.StopClient()\n";
+                echo "spss.Submit('''FILE HANDLE PATHdatfile /NAME='{0}'.'''.format(PATH))\n";
+                echo "end program.\n";
+                echo "\n";
+            }
 
             echo "GET DATA\n"
-            ." /TYPE=TXT\n";
+            . " /TYPE=TXT\n";
 
-	    /* Use PATH of syntax for the location of the DATA file (only possible with Python extension) */
-	    if ($spssver == 3) {
-	    echo " /FILE='PATHdatfile/survey_".$iSurveyID."_SPSS_data_file.dat'\n";
-	    /* or use the regular line where the location must completed by hand for SPSS versions without Python */
-	    } else {
-	    echo " /FILE='survey_".$iSurveyID."_SPSS_data_file.dat'\n";
-	    }
-	    
-	    echo " /DELCASE=LINE\n"
-            ." /DELIMITERS=\",\"\n"
-            ." /QUALIFIER=\"'\"\n"
-            ." /ARRANGEMENT=DELIMITED\n"
-            ." /FIRSTCASE=1\n"
-            ." /IMPORTCASE=ALL\n"
-            ." /VARIABLES=";
+        /* Use PATH of syntax for the location of the DATA file (only possible with Python extension) */
+            if ($spssver == 3) {
+                echo " /FILE='PATHdatfile/survey_" . $iSurveyID . "_SPSS_data_file.dat'\n";
+            /* or use the regular line where the location must completed by hand for SPSS versions without Python */
+            } else {
+                echo " /FILE='survey_" . $iSurveyID . "_SPSS_data_file.dat'\n";
+            }
+
+            echo " /DELCASE=LINE\n"
+            . " /DELIMITERS=\",\"\n"
+            . " /QUALIFIER=\"'\"\n"
+            . " /ARRANGEMENT=DELIMITED\n"
+            . " /FIRSTCASE=1\n"
+            . " /IMPORTCASE=ALL\n"
+            . " /VARIABLES=";
 
             foreach ($fields as $field) {
                 if ($field['SPSStype'] == 'DATETIME23.2') {
@@ -658,7 +665,7 @@ class export extends Survey_Common_Action
             $aData['subaction'] = gT('Export a VV survey file');
 
             $aData['sidemenu']['state'] = false;
-            
+
             $aData['topBar']['name'] = 'baseTopbar_view';
             $aData['topBar']['showExportButton'] = true;
             $aData['topBar']['showCloseButton'] = true;
@@ -708,7 +715,7 @@ class export extends Survey_Common_Action
             if (incompleteAnsFilterState() == "incomplete") {
                 $query .= " WHERE submitdate IS NULL ";
             } elseif (incompleteAnsFilterState() == "complete") {
-                $query .= " WHERE submitdate >= '01/01/1980' ";
+                $query  .= " WHERE submitdate >= '1980-01-01' ";
             }
             $result = Yii::app()->db->createCommand($query)->query();
 
@@ -718,7 +725,7 @@ class export extends Survey_Common_Action
             foreach ($result as $row) {
                 $oResponse = Response::model($iSurveyId);
                 $oResponse->setAttributes($row, false);
-                $oResponse->decrypt();
+                $row = $oResponse->decrypt();
 
                 foreach ($fieldnames as $field) {
                     if (is_null($row[$field])) {
@@ -901,7 +908,7 @@ class export extends Survey_Common_Action
     {
         $aSurveys = json_decode($sSurveys);
         $aResults = array();
-        Yii::import('application.libraries.admin.pclzip', true);
+        Yii::app()->loadLibrary('admin.pclzip');
         $bArchiveIsEmpty = true;
         $sTempDir        = Yii::app()->getConfig("tempdir");
         $sZip            = randomChars(30);
@@ -1019,7 +1026,7 @@ class export extends Survey_Common_Action
         $sLSTFileName = $sTempDir . DIRECTORY_SEPARATOR . randomChars(30);
         $sLSIFileName = $sTempDir . DIRECTORY_SEPARATOR . randomChars(30);
 
-        Yii::import('application.libraries.admin.pclzip', true);
+        Yii::app()->loadLibrary('admin.pclzip');
         $zip = new PclZip($aZIPFileName);
 
         file_put_contents($sLSSFileName, surveyGetXMLData($iSurveyID));

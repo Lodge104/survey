@@ -469,6 +469,22 @@ class ThemeOptionsController extends LSBaseController
         $aData['importErrorMessage']  = $importErrorMessage;
         $aData['pageSize'] = App()->user->getState('pageSizeTemplateView', App()->params['defaultPageSize']); // Page size
 
+        // Green Bar Page Title
+        $aData['pageTitle'] = gT('Themes');
+
+        // White Bar with Buttons
+        $aData['fullpagebar']['returnbutton'] = [
+            'url' => 'admin/index',
+            'text' => gT('Back'),
+        ];
+
+        // Upload and install button
+        $aData['fullpagebar']['themes']['canImport'] = true;
+        $aData['fullpagebar']['themes']['buttons']['uploadAndInstall']['modalSurvey'] = 'importSurveyModal';
+        $aData['fullpagebar']['themes']['buttons']['uploadAndInstall']['modalQuestion'] = 'importQuestionModal';
+        $aData['fullpagebar']['importErrorMessage'] = $importErrorMessage;
+        $this->aData = $aData;
+
         $this->render('index', $aData);
     }
 
@@ -677,7 +693,7 @@ class ThemeOptionsController extends LSBaseController
         $oTemplate = $oModelWithInheritReplacement->prepareTemplateRendering($oModelWithInheritReplacement->template->name); // Fix empty file lists
         $aTemplateConfiguration = $oTemplate->getOptionPageAttributes();
         App()->clientScript->registerPackage('bootstrap-switch', LSYii_ClientScript::POS_BEGIN);
-        
+
         if ($aOptionAttributes['optionsPage'] == 'core') {
             App()->clientScript->registerPackage('themeoptions-core');
             $templateOptionPage = '';

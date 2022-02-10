@@ -678,7 +678,7 @@ class Permission extends LSActiveRecord
     /**
      * Returns true if a role has permission for crud
      * @param integer $roleId
-     * @param string $sPermission 
+     * @param string $sPermission
      * @param string $sCRUD The permission detailsyou want to check on: 'create','read','update','delete','import' or 'export'
      * @return bool allowed permssion
      */
@@ -813,8 +813,8 @@ class Permission extends LSActiveRecord
                 'img' => ' fa fa-users',
             ),
             'templates' => array(
-                'title' => gT("Templates"),
-                'description' => gT("Permission to create, view, update, delete, export and import templates"),
+                'title' => gT("Themes"),
+                'description' => gT("Permission to create, view, update, delete, export and import themes"),
                 'img' => ' fa fa-paint-brush',
             ),
             'labelsets' => array(

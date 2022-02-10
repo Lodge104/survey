@@ -16,7 +16,7 @@
             'type'        => 'action',
             'action'      => 'delete',
             'url'         =>  App()->createUrl('/admin/menus/sa/massDelete/'),
-            'iconClasses' => 'text-danger fa fa-trash',
+            'iconClasses' => 'fa fa-trash text-danger',
             'text'        =>  gT('Delete'),
             'grid-reload' => 'yes',
 
@@ -41,9 +41,9 @@
             'grid-reload' => 'yes',
             //modal
             'actionType' => 'modal',
-            'modalType'     => 'cancel-apply',
+            'modalType'     => 'cancel-save',
             'keepopen'      => 'yes',
-            'yes'           => gT('Apply'),
+            'yes'           => gT('Save'),
             'no'            => gT('Cancel'),
             'sModalTitle'   => gT('Batch edit the menus'),
             'htmlModalBody' => $this->renderPartial('./surveymenu/massive_action/_update', [], true)

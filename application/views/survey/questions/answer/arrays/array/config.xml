@@ -7,8 +7,8 @@
         <type>question_theme</type>
         <title>Array</title>
         <creationDate>09/08/2018</creationDate>
-        <author>Dominik Vitt</author>
-        <authorEmail>dominik.vitt@limesurvey.org</authorEmail>
+        <author>LimeSurvey GmbH</author>
+        <authorEmail>info@limesurvey.org</authorEmail>
         <authorUrl>http://www.limesurvey.org</authorUrl>
         <copyright>Copyright (C) 2005 - 2018 LimeSurvey Gmbh, Inc. All rights reserved.</copyright>
         <license>GNU General Public License version 2 or later</license>
@@ -161,9 +161,7 @@
             <sortorder>102</sortorder>
             <inputtype>text</inputtype>
             <expression>1</expression>
-            <help>Add additional CSS class(es) for this question. Use a space between multiple CSS class names. You
-                may use expressions - remember this part is static.
-            </help>
+            <help>Add additional CSS class(es) for this question. Use a space between multiple CSS class names. You may use expressions - remember this part is static.</help>
             <caption>CSS class(es)</caption>
             <i18n></i18n>
             <readonly></readonly>
@@ -295,9 +293,7 @@
             <category>Logic</category>
             <sortorder>180</sortorder>
             <inputtype>text</inputtype>
-            <help>Place questions into a specified randomization group, all questions included in the specified
-                group will appear in a random order
-            </help>
+            <help>Place questions into a specified randomization group, all questions included in the specified group will appear in a random order</help>
             <caption>Randomization group name</caption>
             <i18n></i18n>
             <readonly></readonly>
@@ -310,6 +306,7 @@
             <sortorder>200</sortorder>
             <inputtype>textarea</inputtype>
             <expression>2</expression>
+            <xssfilter>0</xssfilter>
             <help>Enter a boolean equation to validate the whole question.</help>
             <caption>Question validation equation</caption>
             <i18n></i18n>
@@ -323,9 +320,7 @@
             <inputtype>textarea</inputtype>
             <expression>1</expression>
             <i18n>1</i18n>
-            <help>This is a hint text that will be shown to the participant describing the question validation
-                equation.
-            </help>
+            <help>This is a hint text that will be shown to the participant describing the question validation equation.</help>
             <caption>Question validation tip</caption>
             <readonly></readonly>
             <readonly_when_active></readonly_when_active>
@@ -348,7 +343,7 @@
                 </option>
             </options>
             <default>0</default>
-            <help>Insert a page break before this question in printable view by setting this to Yes.</help>
+            <help>Insert a page break before this question in printable view.</help>
             <caption>Insert page break in printable view</caption>
             <i18n></i18n>
             <readonly></readonly>

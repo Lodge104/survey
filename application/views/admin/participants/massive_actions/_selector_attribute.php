@@ -14,7 +14,7 @@ $this->widget('ext.admin.grid.MassiveActionsWidget.MassiveActionsWidget', array(
             'type'        => 'action',
             'action'      => 'delete',
             'url'         =>  App()->createUrl('/admin/participants/sa/deleteAttributes'),
-            'iconClasses' => 'text-danger fa fa-trash',
+            'iconClasses' => 'fa fa-trash text-danger',
             'text'        =>  gT('Delete'),
             'grid-reload' => 'yes',
             'on-success'  => "(function(result) { LS.AjaxHelper.onSuccess(result); })",
@@ -23,8 +23,8 @@ $this->widget('ext.admin.grid.MassiveActionsWidget.MassiveActionsWidget', array(
             'actionType'    => 'modal',
             'modalType'     => 'cancel-delete',
             'keepopen'      => 'no',
-            'sModalTitle'   => gT('Confirm'),
-            'htmlModalBody' => gT('Are you sure?'),
+            'sModalTitle'   => gT('Delete'),
+            'htmlModalBody' => gT('Do you really want to delete this attribute?'),
             'aCustomDatas'  => array()
         ),
     )

@@ -56,7 +56,7 @@ class QuestionThemeTest extends TestBaseClassWeb
         $button = $web->findByLinkText('Question themes');
         $button->click();
 
-        $button = $web->findByLinkText('Upload theme');
+        $button = $web->findById('uploadandinstall');
         $button->click();
 
         sleep(1);
@@ -198,7 +198,7 @@ class QuestionThemeTest extends TestBaseClassWeb
         );
         self::$webDriver->get($url);
 
-        // Execute survey
+        // Run survey
         $button = self::$webDriver->findById('execute_survey_button') ;
         $button->click();
         sleep(1);

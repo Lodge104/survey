@@ -292,7 +292,7 @@ class database extends Survey_Common_Action
 //        $iScaleCount = $aQuestionTypeList[$sQuestionType]['answerscales'];
 //        /* for already activated survey and rank question type : fix the maxDbAnswer before deleting answers */
 //        /* @todo : add it to upgrage DB system, and see for the lsa */
-//        if ($sQuestionType == Question::QT_R_RANKING_STYLE && $survey->isActive) {
+//        if ($sQuestionType == Question::QT_R_RANKING && $survey->isActive) {
 //            QuestionAttribute::model()->find(
 //                "qid = :qid AND attribute = 'max_subquestions'",
 //                array(':qid' => $this->iQuestionID)
@@ -628,10 +628,10 @@ class database extends Survey_Common_Action
                         $data['surveyls_policy_notice_label'] = $dataseclabel;
                     }
                     if ($sURL !== null) {
-                        $data['surveyls_url'] = htmlspecialchars($sURL);
+                        $data['surveyls_url'] = $sURL;
                     }
                     if ($sURLDescription !== null) {
-                        $data['surveyls_urldescription'] = htmlspecialchars($sURLDescription);
+                        $data['surveyls_urldescription'] = $sURLDescription;
                     }
                     if ($dateformat !== null) {
                         $data['surveyls_dateformat'] = $dateformat;
