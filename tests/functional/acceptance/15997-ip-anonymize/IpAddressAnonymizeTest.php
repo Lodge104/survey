@@ -45,6 +45,8 @@ class IpAddressAnonymizeTest extends TestBaseClassWeb
         self::$webDriver->get($url);
         sleep(1);
 
+        self::$webDriver->dismissModal();
+
         // Click "Activate survey".
         $overview = self::$webDriver->findElement(WebDriverBy::id('ls-activate-survey'));
         $overview->click();
@@ -57,7 +59,13 @@ class IpAddressAnonymizeTest extends TestBaseClassWeb
 
         sleep(1);
 
-        // Click "Execute survey".
+        // Click "No, thanks"
+        $overview = self::$webDriver->findElement(WebDriverBy::id('activateTokenTable__selector--no'));
+        $overview->click();
+
+        sleep(1);
+
+        // Click "Run survey".
         $exceuteBtn = self::$webDriver->findById('execute_survey_button') ;
         $exceuteBtn->click();
 
@@ -99,6 +107,7 @@ class IpAddressAnonymizeTest extends TestBaseClassWeb
         self::$webDriver->get($url);
         sleep(1);
 
+        self::$webDriver->dismissModal();
 
         //set ipanonymize to off ...
         $survey = \Survey::model()->findByPk(self::$surveyId);
@@ -117,7 +126,13 @@ class IpAddressAnonymizeTest extends TestBaseClassWeb
 
         sleep(3);
 
-        // Click "Execute survey".
+        // Click "No, thanks"
+        $overview = self::$webDriver->findElement(WebDriverBy::id('activateTokenTable__selector--no'));
+        $overview->click();
+
+        sleep(1);
+
+        // Click "Run survey".
         $exceuteBtn = self::$webDriver->findById('execute_survey_button') ;
         $exceuteBtn->click();
 

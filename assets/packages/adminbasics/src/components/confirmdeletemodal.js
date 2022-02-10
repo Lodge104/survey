@@ -3,7 +3,7 @@ const ConfirmDeleteModal = function (options) {
 
     options.fnOnShown = options.fnOnShown || function () {};
     options.fnOnHide = options.fnOnHide || function () {};
-    options.removeOnClose = options.removeOnClose || function () {};
+    options.removeOnClose = options.removeOnClose || true;
     options.fnOnHidden = options.fnOnHidden || function () {};
     options.fnOnLoaded = options.fnOnLoaded || function () {};
 
@@ -88,7 +88,7 @@ const ConfirmDeleteModal = function (options) {
 
         },
         runAjaxRequest = function () {
-            return LS.ajax({
+            return LS.AjaxHelper.ajax({
                 url: postUrl,
                 type: 'POST',
                 data: modalObject.find('form').serialize(),
@@ -137,7 +137,7 @@ const ConfirmDeleteModal = function (options) {
             });
             modalObject.on('shown.bs.modal', function () {
                 var self = this;
-                modalObject.find('.selector--button-confirm').on('click', function (e) {
+                modalObject.find('.selector--button-confirm').off('click.confirmdeletesubmit').on('click.confirmdeletesubmit', function (e) {
                     e.preventDefault();
 
                     if (!useAjax) {
@@ -191,6 +191,9 @@ export default function confirmDeletemodal() {
     $(document).off('click.confirmModalSelector', 'a.selector--ConfirmModal');
     $(document).on('click.confirmModalSelector', 'a.selector--ConfirmModal', function (e) {
         e.preventDefault();
+        if ($(this).data('confirm-modal-appended') == 'yes') {
+            return;
+        }
         $(this).confirmModal({});
         $(this).trigger('click.confirmmodal');
     });

@@ -8,6 +8,8 @@ use LimeSurvey\PluginManager\PluginEvent;
 
 class remotecontrol_handle
 {
+    const INVALID_SESSION_KEY = 'Invalid session key';
+
     /**
      * @var AdminController
      */
@@ -106,7 +108,7 @@ class remotecontrol_handle
                 return array('status' => 'Invalid setting');
             }
         } else {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -179,7 +181,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -204,7 +206,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -250,7 +252,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -267,7 +269,7 @@ class remotecontrol_handle
     {
         $iSurveyID = (int) $iSurveyID_org;
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
         $aData['bFailed'] = false; // Put a var for continue
         if (!$iSurveyID) {
@@ -350,7 +352,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid Session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -435,7 +437,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid Session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -473,7 +475,7 @@ class remotecontrol_handle
 
             $surveyActivator = new SurveyActivator($oSurvey);
 
-            
+
             if (Permission::model()->hasSurveyPermission($iSurveyID, 'surveyactivation', 'update')) {
                 $aActivateResults = $surveyActivator->activate();
 
@@ -486,7 +488,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -509,7 +511,7 @@ class remotecontrol_handle
         Yii::app()->loadHelper('admin/statistics');
 
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
         $iSurveyID = (int) $iSurveyID;
         $oSurvey = Survey::model()->findByPk($iSurveyID);
@@ -609,7 +611,7 @@ class remotecontrol_handle
         $survey = Survey::model()->findByPk($iSurveyID);
 
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
         $iSurveyID = (int) $iSurveyID;
         if (is_null($survey)) {
@@ -731,7 +733,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -894,7 +896,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid Session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -970,7 +972,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid Session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1025,7 +1027,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid Session Key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1077,7 +1079,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid Session Key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1167,7 +1169,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1190,7 +1192,7 @@ class remotecontrol_handle
             }
             return $result;
         } else {
-            return array('status' => 'Invalid Session Key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1254,7 +1256,7 @@ class remotecontrol_handle
                 return array('status' => 'No permission');
             }
         } else {
-            return array('status' => 'Invalid Session Key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1287,7 +1289,7 @@ class remotecontrol_handle
                 // Remove fields that may not be modified
                 unset($aGroupData['sid']);
                 unset($aGroupData['gid']);
-                
+
                 // Backwards compatibility for L10n data
                 if (!empty($aGroupData['language'])) {
                     $language = $aGroupData['language'];
@@ -1387,7 +1389,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid Session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1458,7 +1460,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1578,7 +1580,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1652,7 +1654,7 @@ class remotecontrol_handle
                                 array(':parent_qid' => $iQuestionID, ':language' => $sLanguage),
                                 array('order' => 'title')
                             );
-                
+
                         if (count($oSubQuestions) > 0) {
                             $aData = array();
                             foreach ($oSubQuestions as $oSubQuestion) {
@@ -1743,7 +1745,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1789,7 +1791,7 @@ class remotecontrol_handle
                                     return array('status' => 'Error: Invalid language');
                 }
 
-                $oQuestion = Question::model()->findByAttributes(array('qid' => $iQuestionID, 'language' => $sLanguage));
+                $oQuestion = Question::model()->findByAttributes(array('qid' => $iQuestionID));
                 if (!isset($oQuestion)) {
                                     return array('status' => 'Error: Invalid questionid');
                 }
@@ -1841,7 +1843,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid Session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -1871,7 +1873,7 @@ class remotecontrol_handle
     public function add_participants($sSessionKey, $iSurveyID, $aParticipantData, $bCreateToken = true)
     {
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
         $iSurveyID = (int) $iSurveyID;
         $oSurvey = Survey::model()->findByPk($iSurveyID);
@@ -1947,7 +1949,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid Session Key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -2008,7 +2010,7 @@ class remotecontrol_handle
                             return array('status' => 'No permission');
             }
         } else {
-                    return array('status' => 'Invalid Session Key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -2067,7 +2069,7 @@ class remotecontrol_handle
                 if (empty($aTokenData)) {
                     return array('status' => 'No valid Data');
                 }
-                
+
                 $oToken->setAttributes($aTokenData, false);
                 if ($oToken->encryptSave(true)) {
                     return $oToken->attributes;
@@ -2078,7 +2080,7 @@ class remotecontrol_handle
                 return array('status' => 'No permission');
             }
         } else {
-            return array('status' => 'Invalid Session Key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -2257,7 +2259,7 @@ class remotecontrol_handle
                 return array('status' => 'No permission');
             }
         } else {
-            return array('status' => 'Invalid Session Key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -2331,7 +2333,7 @@ class remotecontrol_handle
                 return ['status' => 'No permission'];
             }
         } else {
-            return ['status' => 'Invalid session key'];
+            return ['status' => self::INVALID_SESSION_KEY];
         }
     }
 
@@ -2381,7 +2383,7 @@ class remotecontrol_handle
                 return ['success' => false, 'message' => 'Denied!'];
             }
         } else {
-            return ['success' => false, 'message' => 'Invalid session key'];
+            return ['success' => false, 'message' => self::INVALID_SESSION_KEY];
         }
     }
 
@@ -2435,7 +2437,7 @@ class remotecontrol_handle
             }
             return $aData;
         } else {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -2455,7 +2457,7 @@ class remotecontrol_handle
     public function list_survey_groups($sSessionKey, $sUsername = null)
     {
         if ($this->_checkSessionKey($sSessionKey)) {
-            $oSurveyGroup = new SurveysGroups;
+            $oSurveyGroup = new SurveysGroups();
             if (!Permission::model()->hasGlobalPermission('superadmin', 'read')) {
                 $sOwner = Yii::app()->user->getId();
             } elseif ($sUsername != null) {
@@ -2481,7 +2483,7 @@ class remotecontrol_handle
             }
             return $aData;
         } else {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -2537,7 +2539,7 @@ class remotecontrol_handle
                 return array('status' => 'Permission denied.');
             }
         } else {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
     }
 
@@ -2555,7 +2557,7 @@ class remotecontrol_handle
     public function activate_tokens($sSessionKey, $iSurveyID, $aAttributeFields = array())
     {
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
         if (Permission::model()->hasGlobalPermission('surveys', 'create')) {
             $iSurveyID = (int) $iSurveyID;
@@ -2605,7 +2607,7 @@ class remotecontrol_handle
     {
         Yii::app()->loadHelper('admin/token');
         if (!$this->_checkSessionKey($sSessionKey)) {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
         $iSurveyID = (int) $iSurveyID;
         $oSurvey = Survey::model()->findByPk($iSurveyID);
@@ -2653,24 +2655,31 @@ class remotecontrol_handle
                 //pattern taken from php_filter_validate_email PHP_5_4/ext/filter/logical_filters.c
                 $pattern = '/^(?!(?:(?:\\x22?\\x5C[\\x00-\\x7E]\\x22?)|(?:\\x22?[^\\x5C\\x22]\\x22?)){255,})(?!(?:(?:\\x22?\\x5C[\\x00-\\x7E]\\x22?)|(?:\\x22?[^\\x5C\\x22]\\x22?)){65,}@)(?:(?:[\\x21\\x23-\\x27\\x2A\\x2B\\x2D\\x2F-\\x39\\x3D\\x3F\\x5E-\\x7E]+)|(?:\\x22(?:[\\x01-\\x08\\x0B\\x0C\\x0E-\\x1F\\x21\\x23-\\x5B\\x5D-\\x7F]|(?:\\x5C[\\x00-\\x7F]))*\\x22))(?:\\.(?:(?:[\\x21\\x23-\\x27\\x2A\\x2B\\x2D\\x2F-\\x39\\x3D\\x3F\\x5E-\\x7E]+)|(?:\\x22(?:[\\x01-\\x08\\x0B\\x0C\\x0E-\\x1F\\x21\\x23-\\x5B\\x5D-\\x7F]|(?:\\x5C[\\x00-\\x7F]))*\\x22)))*@(?:(?:(?!.*[^.]{64,})(?:(?:(?:xn--)?[a-z0-9]+(?:-+[a-z0-9]+)*\\.){1,126}){1,}(?:(?:[a-z][a-z0-9]*)|(?:(?:xn--)[a-z0-9]+))(?:-+[a-z0-9]+)*)|(?:\\[(?:(?:IPv6:(?:(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){7})|(?:(?!(?:.*[a-f0-9][:\\]]){7,})(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,5})?::(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,5})?)))|(?:(?:IPv6:(?:(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){5}:)|(?:(?!(?:.*[a-f0-9]:){5,})(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,3})?::(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,3}:)?)))?(?:(?:25[0-5])|(?:2[0-4][0-9])|(?:1[0-9]{2})|(?:[1-9]?[0-9]))(?:\\.(?:(?:25[0-5])|(?:2[0-4][0-9])|(?:1[0-9]{2})|(?:[1-9]?[0-9]))){3}))\\]))$/iD';
 
-                //if(!filter_var($emailaddress, FILTER_VALIDATE_EMAIL))
-                if (preg_match($pattern, $oToken['email']) !== 1) {
-                    unset($aResultTokens[$key]);
-                    //subtract from 'left to send'
-                    $iAllTokensCount--;
+                //pattern to split in case of multiple emails for a participant
+                $emailsToCheck = preg_split("/(,|;)/", $oToken['email']);
+
+                //Loop through each email and validate it
+                foreach ($emailsToCheck as $emailToCheck) {
+                    if (preg_match($pattern, $emailToCheck) !== 1) {
+                        unset($aResultTokens[$key]);
+                        //subtract from 'left to send'
+                        $iAllTokensCount--;
+                        break;
+                    }
                 }
             }
 
             if (empty($aResultTokens)) {
-                            return array('status' => 'Error: No candidate tokens');
+                return array('status' => 'Error: No candidate tokens');
             }
+
             $aResult = emailTokens($iSurveyID, $aResultTokens, 'register');
             $iLeft = $iAllTokensCount - count($aResultTokens);
             $aResult['status'] = $iLeft . " left to send";
 
             return $aResult;
         } else {
-                    return array('status' => 'No permission');
+            return array('status' => 'No permission');
         }
     }
 
@@ -2690,7 +2699,7 @@ class remotecontrol_handle
     {
         Yii::app()->loadHelper('admin/token');
         if (!$this->_checkSessionKey($sSessionKey)) {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
         $iSurveyID = (int) $iSurveyID;
         $oSurvey = Survey::model()->findByPk($iSurveyID);
@@ -2719,9 +2728,15 @@ class remotecontrol_handle
                 //pattern taken from php_filter_validate_email PHP_5_4/ext/filter/logical_filters.c
                 $pattern = '/^(?!(?:(?:\\x22?\\x5C[\\x00-\\x7E]\\x22?)|(?:\\x22?[^\\x5C\\x22]\\x22?)){255,})(?!(?:(?:\\x22?\\x5C[\\x00-\\x7E]\\x22?)|(?:\\x22?[^\\x5C\\x22]\\x22?)){65,}@)(?:(?:[\\x21\\x23-\\x27\\x2A\\x2B\\x2D\\x2F-\\x39\\x3D\\x3F\\x5E-\\x7E]+)|(?:\\x22(?:[\\x01-\\x08\\x0B\\x0C\\x0E-\\x1F\\x21\\x23-\\x5B\\x5D-\\x7F]|(?:\\x5C[\\x00-\\x7F]))*\\x22))(?:\\.(?:(?:[\\x21\\x23-\\x27\\x2A\\x2B\\x2D\\x2F-\\x39\\x3D\\x3F\\x5E-\\x7E]+)|(?:\\x22(?:[\\x01-\\x08\\x0B\\x0C\\x0E-\\x1F\\x21\\x23-\\x5B\\x5D-\\x7F]|(?:\\x5C[\\x00-\\x7F]))*\\x22)))*@(?:(?:(?!.*[^.]{64,})(?:(?:(?:xn--)?[a-z0-9]+(?:-+[a-z0-9]+)*\\.){1,126}){1,}(?:(?:[a-z][a-z0-9]*)|(?:(?:xn--)[a-z0-9]+))(?:-+[a-z0-9]+)*)|(?:\\[(?:(?:IPv6:(?:(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){7})|(?:(?!(?:.*[a-f0-9][:\\]]){7,})(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,5})?::(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,5})?)))|(?:(?:IPv6:(?:(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){5}:)|(?:(?!(?:.*[a-f0-9]:){5,})(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,3})?::(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,3}:)?)))?(?:(?:25[0-5])|(?:2[0-4][0-9])|(?:1[0-9]{2})|(?:[1-9]?[0-9]))(?:\\.(?:(?:25[0-5])|(?:2[0-4][0-9])|(?:1[0-9]{2})|(?:[1-9]?[0-9]))){3}))\\]))$/iD';
 
-                //if(!filter_var($emailaddress, FILTER_VALIDATE_EMAIL))
-                if (preg_match($pattern, $oToken['email']) !== 1) {
-                    unset($aResultTokens[$key]);
+                //pattern to split in case of multiple emails for a participant
+                $emailsToCheck = preg_split("/(,|;)/", $oToken['email']);
+
+                //Loop through each email and validate it
+                foreach ($emailsToCheck as $emailToCheck) {
+                    if (preg_match($pattern, $emailToCheck) !== 1) {
+                        unset($aResultTokens[$key]);
+                        break;
+                    }
                 }
             }
 
@@ -2756,7 +2771,7 @@ class remotecontrol_handle
     {
         Yii::app()->loadHelper('admin/token');
         if (!$this->_checkSessionKey($sSessionKey)) {
-                    return array('status' => 'Invalid session key');
+                    return array('status' => self::INVALID_SESSION_KEY);
         }
         $iSurveyID = (int) $iSurveyID;
         $oSurvey = Survey::model()->findByPk($iSurveyID);
@@ -2828,7 +2843,7 @@ class remotecontrol_handle
     public function add_response($sSessionKey, $iSurveyID, $aResponseData)
     {
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
         $iSurveyID = (int) $iSurveyID;
         $oSurvey = Survey::model()->findByPk($iSurveyID);
@@ -2873,7 +2888,7 @@ class remotecontrol_handle
             $aResponseData = array_intersect_key($aResponseData, array_flip($aBasicDestinationFields));
             $survey_dynamic->setAttributes($aResponseData, false);
             $survey_dynamic->encryptSave();
-            
+
             if ($survey_dynamic->id) {
                 $result_id = $survey_dynamic->id;
                 $oResponse = Response::model($iSurveyID)->findByAttributes(array('id' => $result_id))->decrypt();
@@ -2921,7 +2936,7 @@ class remotecontrol_handle
     public function update_response($sSessionKey, $iSurveyID, $aResponseData)
     {
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return 'Invalid session key';
+            return self::INVALID_SESSION_KEY;
         }
         $iSurveyID = (int) $iSurveyID;
         $oSurvey = Survey::model()->findByPk($iSurveyID);
@@ -2989,6 +3004,47 @@ class remotecontrol_handle
     }
 
     /**
+     * Delete a response in a given survey using its Id
+     *
+     * RPC Routine to delete responses of particular id in a survey.
+     * Returns array
+     *
+     * @access public
+     * @param string $sSessionKey Auth credentials
+     * @param int $iSurveyID Id of the survey that participants belong
+     * @param int $iResponseID Id of the response to delete
+     * @return array Result of the change action
+     */
+    public function delete_response($sSessionKey, $iSurveyID, $iResponseID)
+    {
+         // check sessionKey is valid or not
+        if ($this->_checkSessionKey($sSessionKey)) {
+                $oSurvey = Survey::model()->findByPk($iSurveyID);
+            if (!isset($oSurvey)) {
+                  return array('status' => 'Error: Invalid survey ID');
+            }
+
+            if (Permission::model()->hasSurveyPermission($iSurveyID, 'responses', 'delete')) {
+                // get response id from response table using ID
+                $Response = Response::model($iSurveyID)->findByPk($iResponseID);
+                if ($Response) {
+                    // delete the files and timings and row
+                    if ($Response->delete()) {
+                        return array($iResponseID => 'deleted');
+                    }
+                    return array('status' => 'Response not deleted for unknow reason');
+                } else {
+                    return array('status' => 'Response Id not found');
+                }
+            } else {
+                return array('status' => 'No permission');
+            }
+        } else {
+            return array('status' => self::INVALID_SESSION_KEY);
+        }
+    }
+
+    /**
      * Uploads one file to be used later.
      *
      * Returns the metadata on success.
@@ -3004,7 +3060,7 @@ class remotecontrol_handle
     public function upload_file($sSessionKey, $iSurveyID, $sFieldName, $sFileName, $sFileContent)
     {
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
         $iSurveyID = (int) $iSurveyID;
         $oSurvey = Survey::model()->findByPk($iSurveyID);
@@ -3104,7 +3160,7 @@ class remotecontrol_handle
         $survey = Survey::model()->findByPk($iSurveyID);
 
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
         if (!Permission::model()->hasSurveyPermission($iSurveyID, 'responses', 'export')) {
             return array('status' => 'No permission');
@@ -3179,7 +3235,7 @@ class remotecontrol_handle
         $survey = Survey::model()->findByPk($iSurveyID);
 
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
         Yii::app()->loadHelper('admin/exportresults');
         if (!tableExists($survey->responsesTableName)) {
@@ -3239,7 +3295,7 @@ class remotecontrol_handle
     public function get_uploaded_files($sSessionKey, $iSurveyID, $sToken)
     {
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
 
         $iSurveyID = (int) $iSurveyID;
@@ -3378,7 +3434,7 @@ class remotecontrol_handle
     public function cpd_importParticipants($sSessionKey, $participants, $update = false)
     {
         if (!$this->_checkSessionKey($sSessionKey)) {
-            return array('status' => 'Invalid session key');
+            return array('status' => self::INVALID_SESSION_KEY);
         }
 
         $aDefaultFields = array('participant_id', 'firstname', 'lastname', 'email', 'language', 'blacklisted');

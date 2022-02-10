@@ -29,7 +29,7 @@ class tokens extends Survey_Common_Action
      * @param int $surveyid  The survey ID
      * @return void
      */
-    public function index($surveyid)
+    public function index(int $surveyid)
     {
         App()->getClientScript()->registerScriptFile(App()->getConfig('adminscripts') . 'tokens.js', LSYii_ClientScript::POS_BEGIN);
         $iSurveyId = $surveyid;
@@ -248,20 +248,26 @@ class tokens extends Survey_Common_Action
     }
 
     /**
-     * @return boolean
+     * Deletes a participant from survey.
+     *
+     * The parameter 'sItem' can either be an array of ids or just a single id (int)
+     *
+     * @todo separate this function in two: one for single delete and one for multiple delete
+     *
+     * @return bool
+     * @throws CHttpException
      */
     public function deleteToken()
     {
+        $this->requirePostRequest();
+
         $aTokenId = Yii::app()->getRequest()->getParam('sItem');
-        $iSid = Yii::app()->getRequest()->getParam('sid');
+        $iSid = (int) Yii::app()->getRequest()->getParam('sid');
         if (!Permission::model()->hasSurveyPermission($iSid, 'tokens', 'delete')) {
             throw new CHttpException(403, gT("You do not have permission to access this page."));
         }
-        if (!Yii::app()->getRequest()->isPostRequest) {
-            throw new CHttpException(405, gT("Invalid action"));
-        }
         TokenDynamic::model($iSid)->deleteRecords(array($aTokenId));
-        return true;
+        $this->getController()->redirect(array("admin/tokens", "sa" => "browse", "surveyid" => $iSid));
     }
 
     /**
@@ -355,7 +361,6 @@ class tokens extends Survey_Common_Action
         $aData['title_bar']['title']            = $survey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $iSurveyId . ")";
         $aData['sidemenu']["token_menu"]        = true;
         $aData['sidemenu']['state'] = false;
-        $aData['token_bar']['buttons']['view']  = true;
 
         /// FOR GRID View
         $model = TokenDynamic::model($iSurveyId);
@@ -491,7 +496,7 @@ class tokens extends Survey_Common_Action
      * @return void
      * @throws CException
      */
-    public function addnew($iSurveyId)
+    public function addnew(int $iSurveyId)
     {
         $aData = array();
         App()->getClientScript()->registerScriptFile(App()
@@ -516,7 +521,6 @@ class tokens extends Survey_Common_Action
         $aData['title_bar']['title'] = $survey->currentLanguageSettings->surveyls_title . " ("
             . gT("ID") . ":" . $iSurveyId . ")";
         $aData['sidemenu']["token_menu"] = true;
-        $aData['token_bar']['buttons']['view'] = true;
         App()->getClientScript()->registerScriptFile(App()
                 ->getConfig('adminscripts') . 'tokens.js', LSYii_ClientScript::POS_BEGIN);
         $request = App()->request;
@@ -605,6 +609,14 @@ class tokens extends Survey_Common_Action
 
             $aData['topBar']['name'] = 'tokensTopbar_view';
 
+            if ($aData['success']) {
+                if ($request->getPost('close-after-save')) {
+                    $redirectUrl = Yii::app()->createUrl('admin/tokens/sa/browse/surveyid/' . $iSurveyId);
+                } else {
+                    $redirectUrl = Yii::app()->createUrl("/admin/tokens/sa/edit", ["iSurveyId" => $iSurveyId, "iTokenId" => $token->tid]);
+                }
+                $this->getController()->redirect($redirectUrl);
+            }
             $this->_renderWrappedTemplate('token', array('addtokenpost'), $aData);
         } else {
             $this->_handletokenform($iSurveyId, "addnew");
@@ -679,14 +691,14 @@ class tokens extends Survey_Common_Action
             if (trim($request->getPost('sent')) === 'N') {
                 $_POST['sent'] = 'N';
             } else {
-                $_POST['completed'] = 'Y';
+                 $_POST['sent'] = 'Y';
             }
 
             // remindersent
             if (trim($request->getPost('remindersent')) === 'N') {
                 $_POST['remindersent'] = 'N';
             } else {
-                $_POST['completed'] = 'Y';
+                $_POST['remindersent'] = 'Y';
             }
 
             $aTokenData['firstname'] = $request->getPost('firstname');
@@ -717,6 +729,10 @@ class tokens extends Survey_Common_Action
                     $aTokenData[$attr_name] = $request->getPost($attr_name);
                 }
 
+                if (!empty($sOutput)) {
+                    \ls\ajax\AjaxHelper::outputError($sOutput);
+                }
+
                 $token = Token::model($iSurveyId)->findByPk($iTokenId);
                 $token->decrypt();
                 foreach ($aTokenData as $k => $v) {
@@ -726,7 +742,7 @@ class tokens extends Survey_Common_Action
                 $result = $token->encryptSave(true);
 
                 if ($result) {
-                    \ls\ajax\AjaxHelper::outputSuccess($sOutput . gT('The survey participant was successfully updated.'));
+                    \ls\ajax\AjaxHelper::outputSuccess(gT('The survey participant was successfully updated.'));
                 } else {
                     $errors = $token->getErrors();
                     $firstError = reset($errors);
@@ -784,7 +800,7 @@ class tokens extends Survey_Common_Action
      * @return void
      * @throws Exception
      */
-    public function addDummies($iSurveyId, $subaction = '')
+    public function addDummies(int $iSurveyId, string $subaction = '')
     {
         $iSurveyId = (int) $iSurveyId;
         $survey = Survey::model()->findByPk($iSurveyId);
@@ -804,10 +820,14 @@ class tokens extends Survey_Common_Action
         $aData['sidemenu']['state'] = false;
         $aData['title_bar']['title'] = $survey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $iSurveyId . ")";
         $aData['sidemenu']["token_menu"] = true;
-        $aData['token_bar']['savebutton']['form'] = true;
-        $aData['token_bar']['closebutton']['url'] = 'admin/tokens/sa/index/surveyid/' . $iSurveyId; // Close button
+
+        // Save Button
         $aData['topBar']['showSaveButton'] = true;
-        $aData['topBar']['closeButtonUrl'] = Yii::app()->createUrl('admin/tokens/sa/index/surveyid/' . $iSurveyId);
+        // Save And Close Button
+        $aData['topBar']['showSaveAndCloseButton'] = true;
+        // White Close Button
+        $aData['topBar']['showWhiteCloseButton'] = true;
+        $aData['topBar']['closeUrl'] = Yii::app()->createUrl('admin/tokens/sa/index/surveyid/' . $iSurveyId);
 
         if (!empty($subaction) && $subaction == 'add') {
             $message = '';
@@ -891,7 +911,6 @@ class tokens extends Survey_Common_Action
                 $aData['aAttributeFields'] = getParticipantAttributes($iSurveyId);
 
                 $aData['showSaveButton'] = true;
-                $aData['showCloseButton'] = true;
                 $aData['topBar']['name'] = 'tokensTopbar_view';
                 $aData['topBar']['rightSideView'] = 'tokensTopbarRight_view';
 
@@ -939,7 +958,6 @@ class tokens extends Survey_Common_Action
             $aData['aAttributeFields'] = getParticipantAttributes($iSurveyId);
 
             $aData['showSaveButton'] = true;
-            $aData['showCloseButton'] = true;
             $aData['topBar']['name'] = 'tokensTopbar_view';
             $aData['topBar']['rightSideView'] = 'tokensTopbarRight_view';
 
@@ -973,7 +991,6 @@ class tokens extends Survey_Common_Action
         $aData['sidemenu']['state'] = false;
         $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $iSurveyId . ")";
         $aData['sidemenu']["token_menu"] = true;
-        $aData['token_bar']['closebutton']['url'] = 'admin/tokens/sa/index/surveyid/' . $iSurveyId; // Close button
 
         $aData['thissurvey'] = $oSurvey->attributes;
         $aData['surveyid'] = $iSurveyId;
@@ -1024,7 +1041,7 @@ class tokens extends Survey_Common_Action
             $aData['aCPDBAttributes'][$aCPDBAttribute['attribute_id']] = $aCPDBAttribute['attribute_name'];
         }
         // load sodium library
-        $aData['showCloseButton'] = true;
+        $aData['showBackButton'] = true;
         $aData['topBar']['name'] = 'tokensTopbar_view';
         $aData['topBar']['rightSideView'] = 'tokensTopbarRight_view';
 
@@ -1138,11 +1155,11 @@ class tokens extends Survey_Common_Action
      */
     public function updatetokenattributedescriptions($iSurveyId)
     {
-        $iSurveyId = (int) $iSurveyId;
+        $iSurveyId = (int)$iSurveyId;
         $oSurvey = Survey::model()->findByPk($iSurveyId);
         if (!Permission::model()->hasSurveyPermission($iSurveyId, 'tokens', 'update') && !Permission::model()->hasSurveyPermission($iSurveyId, 'surveysettings', 'update')) {
             Yii::app()->session['flashmessage'] = gT("You do not have permission to access this page.");
-            $this->getController()->redirect(array("/surveyAdministration/view/surveyid/{$iSurveyId}"));
+            $this->getController()->redirect(["/surveyAdministration/view/surveyid/{$iSurveyId}"]);
         }
 
         $languages = array_merge((array)$oSurvey->language, $oSurvey->additionalLanguages);
@@ -1156,9 +1173,9 @@ class tokens extends Survey_Common_Action
         foreach ($aMandatoryAttributes['columns'] as $column => $fieldname) {
             $aOptionsBeforeChange[$column]['encrypted'] = $aMandatoryAttributes['columns'][$column];
 
-                $fieldcontents[$column] = [
-                    'encrypted' => Yii::app()->request->getPost('encrypted_' . $column) == '1' ? 'Y' : 'N',
-                ];
+            $fieldcontents[$column] = [
+                'encrypted' => Yii::app()->request->getPost('encrypted_' . $column) == '1' ? 'Y' : 'N',
+            ];
 
             $aOptionsAfterChange[$column]['encrypted'] = $fieldcontents[$column]['encrypted'];
             $aTokenencryptionoptions['columns'][$column] = $fieldcontents[$column]['encrypted'];
@@ -1173,13 +1190,13 @@ class tokens extends Survey_Common_Action
             } else {
                 $aOptionsBeforeChange[$fieldname]['encrypted'] = 'N';
             }
-                $fieldcontents[$fieldname] = [
-                    'description'   => strip_tags(Yii::app()->request->getPost('description_' . $fieldname)),
-                    'mandatory'     => Yii::app()->request->getPost('mandatory_' . $fieldname) == '1' ? 'Y' : 'N',
-                    'encrypted'     => Yii::app()->request->getPost('encrypted_' . $fieldname) == '1' ? 'Y' : 'N',
-                    'show_register' => Yii::app()->request->getPost('show_register_' . $fieldname) == '1' ? 'Y' : 'N',
-                    'cpdbmap'       => Yii::app()->request->getPost('cpdbmap_' . $fieldname)
-                ];
+            $fieldcontents[$fieldname] = [
+                'description'   => strip_tags(Yii::app()->request->getPost('description_' . $fieldname)),
+                'mandatory'     => Yii::app()->request->getPost('mandatory_' . $fieldname) == '1' ? 'Y' : 'N',
+                'encrypted'     => Yii::app()->request->getPost('encrypted_' . $fieldname) == '1' ? 'Y' : 'N',
+                'show_register' => Yii::app()->request->getPost('show_register_' . $fieldname) == '1' ? 'Y' : 'N',
+                'cpdbmap'       => Yii::app()->request->getPost('cpdbmap_' . $fieldname)
+            ];
             $aOptionsAfterChange[$fieldname]['encrypted'] = $fieldcontents[$fieldname]['encrypted'];
             foreach ($languages as $language) {
                 $fieldNameValue = Yii::app()->request->getPost("caption_" . $fieldname . "_" . $language);
@@ -1196,10 +1213,10 @@ class tokens extends Survey_Common_Action
             $this->updateEncryption($iSurveyId, $aOptionsAfterChange);
 
             // save token encryption options if everything was ok
-            Survey::model()->updateByPk($iSurveyId, array('attributedescriptions' => json_encode($fieldcontents)));
+            Survey::model()->updateByPk($iSurveyId, ['attributedescriptions' => json_encode($fieldcontents)]);
 
             foreach ($languages as $language) {
-                $ls = SurveyLanguageSetting::model()->findByAttributes(array('surveyls_survey_id' => $iSurveyId, 'surveyls_language' => $language));
+                $ls = SurveyLanguageSetting::model()->findByAttributes(['surveyls_survey_id' => $iSurveyId, 'surveyls_language' => $language]);
                 $ls->surveyls_attributecaptions = !empty($captions[$language]) ? json_encode($captions[$language]) : '';
                 $ls->save();
             }
@@ -1213,13 +1230,13 @@ class tokens extends Survey_Common_Action
 
 
         //admin/tokens/sa/browse/surveyid/652779//
-        $this->getController()->redirect(array("/admin/tokens/sa/managetokenattributes/surveyid/{$iSurveyId}"));
+        $this->getController()->redirect(["/admin/tokens/sa/managetokenattributes/surveyid/{$iSurveyId}"]);
     }
 
     /**
      * Updates Token encryption settings based on $iSurveyId and configuration $aEncryptionSettings
-     * @param $iSurveyId
-     * @param $aEncryptionSettings
+     * @param string|int $iSurveyId
+     * @param array $aEncryptionSettings The new attribute encryption status
      */
     public function updateEncryption($iSurveyId, $aEncryptionSettings)
     {
@@ -1242,22 +1259,22 @@ class tokens extends Survey_Common_Action
             $aEncryptionSettings[$column] = [
                 'encrypted' => $aEncryptionSettings[$column]['encrypted'] === 'Y' ? 'Y' : 'N',
             ];
-
             $aTokenencryptionoptions['columns'][$column] = $aEncryptionSettings[$column]['encrypted'];
         }
 
-        // find custom attribute column names
-        $aCustomAttributes = getAttributeFieldNames($iSurveyId);
         // custom attributes
+        $aCustomAttributes = $oSurvey->getTokenAttributes();
         foreach ($aCustomAttributes as $column => $attributeName) {
-            if (isset(json_decode($oSurvey->attributedescriptions)->$attributeName->encrypted)) {
-                $aEncryptionSettingsOld[$attributeName]['encrypted'] = json_decode($oSurvey->attributedescriptions)->$attributeName->encrypted;
+            if (isset($attributeName['encrypted'])) {
+                $aEncryptionSettingsOld[$column]['encrypted'] = $attributeName['encrypted'];
             } else {
-                $aEncryptionSettingsOld[$attributeName]['encrypted'] = 'N';
+                $aEncryptionSettingsOld[$column]['encrypted'] = 'N';
             }
-            $aEncryptionSettings[$attributeName] = [
-                'encrypted'     => $aEncryptionSettings[$attributeName]['encrypted'] === 'Y' ? 'Y' : 'N',
-            ];
+            if (isset($aEncryptionSettings[$column])) {
+                $aEncryptionSettings[$column] = [
+                    'encrypted' => $aEncryptionSettings[$column]['encrypted'] === 'Y' ? 'Y' : 'N',
+                ];
+            }
         }
 
         foreach ($oTokens as $token) {
@@ -1280,10 +1297,9 @@ class tokens extends Survey_Common_Action
     /**
      * Handle email action
      * @param int $iSurveyId
-     * @param string $tokenids Int list separated with |?
      * @return void
      */
-    public function email($iSurveyId)
+    public function email(int $iSurveyId)
     {
         $iSurveyId = (int) $iSurveyId;
         $aData = array();
@@ -1302,7 +1318,6 @@ class tokens extends Survey_Common_Action
         $aData['sidemenu']['state'] = false;
         $aData['title_bar']['title'] = $survey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $iSurveyId . ")";
         $aData['sidemenu']["token_menu"] = true;
-        $aData['token_bar']['closebutton']['url'] = 'admin/tokens/sa/index/surveyid/' . $iSurveyId; // Close button
 
         $aTokenIds = $this->getTokenIds();
         $sSubAction = $this->getSubAction();
@@ -1345,6 +1360,8 @@ class tokens extends Survey_Common_Action
             $this->clearEmailSessionCache($iSurveyId);
             $this->showInviteOrReminderEmailForm($iSurveyId, $aSurveyLangs, $aData);
         } else {
+            $aData['topBar']['hide'] = true;
+
             $SQLemailstatuscondition   = $this->getSQLemailstatuscondition();
             $SQLremindercountcondition = $this->getSQLremindercountcondition();
             $SQLreminderdelaycondition = $this->getSQLreminderdelaycondition($bIsInvitation);
@@ -1372,6 +1389,9 @@ class tokens extends Survey_Common_Action
                 $mail->emailType = $sSubAction;
                 $mail->replaceTokenAttributes = true;
                 foreach ($emresult as $emrow) {
+                    if (empty($emrow['language'])) {
+                        $emrow['language'] = $sBaseLanguage;
+                    }
                     $mail = \LimeMailer::getInstance();
                     if ($this->tokenIsSetInEmailCache($iSurveyId, $emrow['tid'], $bIsInvitation)) {
                         // The email has already been send this session, skip.
@@ -1506,7 +1526,7 @@ class tokens extends Survey_Common_Action
      * @param int $iSurveyId
      * @return void
      */
-    public function exportdialog($iSurveyId)
+    public function exportdialog(int $iSurveyId)
     {
         $iSurveyId = (int)$iSurveyId;
         $survey = Survey::model()->findByPk($iSurveyId);
@@ -1532,8 +1552,6 @@ class tokens extends Survey_Common_Action
             Yii::app()->loadHelper("export");
             tokensExport($iSurveyId);
         } else {
-            //$aData['resultr'] = Token::model($iSurveyId)->findAll(array('select' => 'language', 'group' => 'language'));
-
             $aData['surveyid'] = $iSurveyId;
             $aData['thissurvey'] = getSurveyInfo($iSurveyId); // For tokenbar view
             $aData['sAction'] = App()->createUrl("admin/tokens", array("sa" => "exportdialog", "surveyid" => $iSurveyId));
@@ -1604,7 +1622,10 @@ class tokens extends Survey_Common_Action
                 ),
             );
 
-            $aData['showCloseButton'] = true;
+            // White Close Button
+            $aData['showWhiteCloseButton'] = true;
+            $aData['closeUrl'] = Yii::app()->createUrl('admin/tokens/sa/browse/surveyid/' . $iSurveyId);
+
             $aData['topBar']['name'] = 'tokensTopbar_view';
             $aData['topBar']['rightSideView'] = 'tokensTopbarRight_view';
 
@@ -2133,9 +2154,8 @@ class tokens extends Survey_Common_Action
                             foreach ($aWriteArray as $key => $value) {
                                     $oToken->$key = $value;
                             }
-                            if (!$oToken->encryptSave()) {
-                                $errors = ($oToken->getErrors());
-                                $aModelErrorList[] = sprintf(gT("Line %s : %s"), $iRecordCount, print_r($errors, true));
+                            if (!$oToken->encryptSave(true)) {
+                                $aModelErrorList[] = array('line' => $iRecordCount, 'errors' => CHtml::errorSummary($oToken, '', '', ['class' => 'text-left']));
                             } else {
                                 $bImportDone = true;
                             }
@@ -2198,6 +2218,7 @@ class tokens extends Survey_Common_Action
         $aData['thischaracterset'] = $thischaracterset;
 
         $aData['showCloseButton'] = true;
+        $aData['closeUrl'] = Yii::app()->createUrl('admin/tokens/sa/browse/surveyid/' . $iSurveyId);
         $aData['topBar']['name'] = 'tokensTopbar_view';
         $aData['topBar']['rightSideView'] = 'tokensTopbarRight_view';
 
@@ -2228,7 +2249,7 @@ class tokens extends Survey_Common_Action
         $aData['sidemenu']['state'] = false;
         $aData['title_bar']['title'] = $survey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $iSurveyId . ")";
         $aData['sidemenu']["token_menu"] = true;
-        $aData['topBar']['name'] = 'tokensTopbar_view';
+        $aData['topBar']['hide'] = true;
 
         if (!Yii::app()->request->getParam('ok')) {
             $aData['sidemenu']['state'] = false;
@@ -2268,7 +2289,7 @@ class tokens extends Survey_Common_Action
      * @param int $iSurveyId
      * @return void
      */
-    public function kill($iSurveyId)
+    public function kill(int $iSurveyId)
     {
         $iSurveyId = (int) $iSurveyId;
         $survey = Survey::model()->findByPk($iSurveyId);
@@ -2295,19 +2316,12 @@ class tokens extends Survey_Common_Action
         $newtable = "old_tokens_{$iSurveyId}_$date";
         $newtableDisplay = Yii::app()->db->tablePrefix . $newtable;
 
-        $aData['topBar']['name'] = 'tokensTopbar_view';
+        $aData['topBar']['hide'] = true;
 
         if (!Yii::app()->request->getQuery('ok')) {
             $aData['sidemenu']['state'] = false;
-            $this->_renderWrappedTemplate('token', array('message' => array(
-            'title' => gT("Delete survey participants table"),
-            'message' => gT("If you delete this table access codes will no longer be required to access this survey.") . "<br />" . gT("A backup of this table will be made if you proceed. Your system administrator will be able to access this table.") . "<br />\n"
-            . sprintf('("%s")<br /><br />', $newtableDisplay)
-            . "<input class='btn btn-danger' type='submit' value='"
-            . gT("Delete table") . "' onclick=\"window.open('" . $this->getController()->createUrl("admin/tokens/sa/kill/surveyid/{$iSurveyId}/ok/Y") . "', '_top')\" />\n"
-            . "<input class='btn btn-default' type='submit' value='"
-            . gT("Cancel") . "' onclick=\"window.open('" . $this->getController()->createUrl("admin/tokens/sa/index/surveyid/{$iSurveyId}") . "', '_top')\" />\n"
-            )), $aData);
+            $aData['backupTableName']   = $newtableDisplay;
+            $this->_renderWrappedTemplate('token', 'deleteParticipantsTable', $aData);
         } else /* The user has confirmed they want to delete the tokens table */
         {
             Yii::app()->db->createCommand()->renameTable("{{{$oldtable}}}", "{{{$newtable}}}");
@@ -2319,29 +2333,25 @@ class tokens extends Survey_Common_Action
             $archivedTokenSettings->tbl_type = 'token';
             $archivedTokenSettings->created = $DBDate;
             $archivedTokenSettings->properties = $aData['thissurvey']['tokenencryptionoptions'];
+            $archivedTokenSettings->attributes = json_encode($aData['thissurvey']['attributedescriptions']);
             $archivedTokenSettings->save();
 
             //Remove any survey_links to the CPDB
             SurveyLink::model()->deleteLinksBySurvey($iSurveyId);
 
             $aData['sidemenu']['state'] = false;
-            $this->_renderWrappedTemplate('token', array('message' => array(
-            'title' => gT("Delete survey participants table"),
-            'message' => '<br />' . gT("The participant table has now been removed and access codes are no longer required to access this survey.") . "<br /> " . gT("A backup of this table has been made and can be accessed by your system administrator.") . "<br />\n"
-            . sprintf('("%s")<br /><br />', $newtableDisplay)
-            . "<input type='submit' class='btn btn-default' value='"
-            . gT("Main Admin Screen") . "' onclick=\"window.open('" . Yii::app()->getController()->createUrl("surveyAdministration/view/surveyid/" . $iSurveyId) . "', '_top')\" />"
-            )), $aData);
-
+            $aData['backupTableName'] = $newtableDisplay;
+            $this->_renderWrappedTemplate('token', 'afterDeleteParticipantsTable', $aData);
             LimeExpressionManager::SetDirtyFlag(); // so that knows that survey participants tables have changed
         }
     }
 
     /**
+     * Bounce Settings Action.
      * @param int $iSurveyId
      * @return void
      */
-    public function bouncesettings($iSurveyId)
+    public function bouncesettings(int $iSurveyId)
     {
         $iSurveyId = (int) $iSurveyId;
         $survey = Survey::model()->findByPk($iSurveyId);
@@ -2386,8 +2396,12 @@ class tokens extends Survey_Common_Action
 
         $aData['sidemenu']['state'] = false;
         $aData['title_bar']['title'] = $survey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $iSurveyId . ")";
-        $aData['showSaveButton'] = true;
-        $aData['showCloseButton'] = true;
+
+        // Save Button
+        $aData['topBar']['showSaveButton'] = true;
+        // Back Button
+        $aData['topBar']['showBackButton'] = true;
+        $aData['topBar']['returnUrl'] = Yii::app()->createUrl('admin/tokens/sa/index/surveyid/' . $iSurveyId);
         $aData['topBar']['name'] = 'tokensTopbar_view';
         $aData['topBar']['rightSideView'] = 'tokensTopbarRight_view';
 
@@ -2461,8 +2475,14 @@ class tokens extends Survey_Common_Action
         $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $iSurveyId . ")";
         $aData['sidemenu']["token_menu"] = true;
 
-        $aData['showSaveButton'] = true;
-        $aData['showCloseButton'] = true;
+        // Save Button
+        $aData['showSaveButton'] = false;
+        // Save and Close Button
+        $aData['showGreenSaveAndCloseButton'] = true;
+        // White Close Button
+        $aData['showWhiteCloseButton'] = true;
+        $aData['closeUrl'] = Yii::app()->createUrl('admin/tokens/sa/browse/surveyid/' . $iSurveyId);
+
         $aData['topBar']['name'] = 'tokensTopbar_view';
         $aData['topBar']['rightSideView'] = 'tokensTopbarRight_view';
 
@@ -2507,7 +2527,7 @@ class tokens extends Survey_Common_Action
         $aTokenencryptionoptions = $survey->getTokenEncryptionOptions();
         $aTokenencryptionoptions['enabled'] = 'Y';
 
-        $aData['topBar']['name'] = 'tokensTopbar_view';
+        $aData['topBar']['hide'] = true;
 
         // Update table, must be CRSF controlled
         if (Yii::app()->request->getPost('createtable') === "Y") {
@@ -2522,82 +2542,84 @@ class tokens extends Survey_Common_Action
             )), $aData);
         } elseif (returnGlobal('restoretable') === "Y" && Yii::app()->request->getPost('oldtable')) {
             /* Restore a previously deleted tokens table */
-            //Rebuild attributedescription value for the surveys table
             $archivedTable = Yii::app()->request->getPost('oldtable');
-            $table = Yii::app()->db->schema->getTable("{{" . $archivedTable . "}}");
-            $fields = array_filter(array_keys($table->columns), 'filterForAttributes');
-            $fieldcontents = $aSurveyInfo['attributedescriptions'];
-            if (!is_array($fieldcontents)) {
-                $fieldcontents = [];
-            }
-            foreach ($fields as $fieldname) {
-                $name = $fieldname;
-                if ($fieldname[10] === 'c') {
-                    //This belongs to a cpdb attribute
-                    $cpdbattid = substr($fieldname, 15);
-                    $data = ParticipantAttributeName::model()->getAttributeName($cpdbattid, Yii::app()->session['adminlang']);
-                    $name = $data['attribute_name'];
-                }
-                if (!isset($fieldcontents[$fieldname])) {
-                    $fieldcontents[$fieldname] = [
-                        'description'   => $name,
-                        'mandatory'     => 'N',
-                        'encrypted'     => 'N',
-                        'show_register' => 'N'
-                    ];
-                }
-            }
-
-            // Set the $tokenencryptionoptions from the encryption column in ArchivedTableSettings                                                  tokens_282267_20210422115937
             $archivedTableSettings = ArchivedTableSettings::model()->findByAttributes(['tbl_name' => $archivedTable]);
-            $tokenencryptionoptions = $tokenencryptionoptionsOld = ls_json_encode($aTokenencryptionoptions);
-            if ($archivedTableSettings->properties) {
+
+            // Set the $tokenencryptionoptions from the encryption column in ArchivedTableSettings
+            if (isset($archivedTableSettings)) {
                 $tokenencryptionoptions = $archivedTableSettings->properties;
-            }
-            // if the encryption status is unknown
-            $archivedTableSettingsArray = json_decode($archivedTableSettings->properties, true);
-            foreach ($archivedTableSettingsArray as $archivedTableSetting) {
-                if ($archivedTableSetting === 'unknown') {
-                    $tokenencryptionoptions = $tokenencryptionoptionsOld;
+                $tokenencryptionoptionsOld = $aTokenencryptionoptions;
+                $tokenencryptionoptionsArray = json_decode($tokenencryptionoptions, true);
+                foreach ($tokenencryptionoptionsArray as $tokenencryptionoption) {
+                    // if the encryption status is unknown
+                    if ($tokenencryptionoption === 'unknown') {
+                        // for later use in refactoring
+                        // $tokenencryptionoptions = json_encode($tokenencryptionoptionsOld);
+                        $tokenencryptionoptionsArray = $tokenencryptionoptionsOld;
+                    }
                 }
-            }
-
-            $oDB = Yii::app()->db;
-            $oTransaction = $oDB->beginTransaction();
-            try {
-                Survey::model()->updateByPk($iSurveyId, ['attributedescriptions' => json_encode($fieldcontents), 'tokenencryptionoptions' => $tokenencryptionoptions]);
-                Yii::app()->db->createCommand()->renameTable("{{{$archivedTable}}}", "{{tokens_" . (int)$iSurveyId . "}}");
-                $archivedTableSettings->delete();
-                // Refresh schema cache just in case the table existed in the past
-                Yii::app()->db->schema->getTable("{{tokens_" . (int)$iSurveyId . "}}", true);
-
-                foreach ($aTokenencryptionoptions['columns'] as $column => $fieldname) {
-                    $aEncryptionSettings[$column]['encrypted'] = $fieldname;
+                $attributedescriptions = $archivedTableSettings->attributes;
+                $attributedescriptionsOld = $aSurveyInfo['attributedescriptions'];
+                $attributedescriptionsArray = json_decode($attributedescriptions, true);
+                foreach ($attributedescriptionsArray as $attributedescription) {
+                    // if the encryption status is unknown
+                    if ($attributedescription === 'unknown') {
+                        $attributedescriptions =  json_encode($attributedescriptionsOld);
+                        $attributedescriptionsArray = $attributedescriptionsOld;
+                    }
                 }
-                $this->updateEncryption($iSurveyId, $aEncryptionSettings);
 
-                //Add any survey_links from the renamed table
-                SurveyLink::model()->rebuildLinksFromTokenTable($iSurveyId);
-                $oTransaction->commit();
+                $oDB = Yii::app()->db;
+                $oTransaction = $oDB->beginTransaction();
+                try {
+                    $aEncryptionSettings = [];
+                    foreach ($tokenencryptionoptionsArray['columns'] as $column => $encrypted) {
+                        $aEncryptionSettings[$column]['encrypted'] = $encrypted;
+                    }
+                    foreach ($attributedescriptionsArray as $attribute => $description) {
+                        $aEncryptionSettings[$attribute]['encrypted'] = $description['encrypted'];
+                    }
+                    Yii::app()->db->createCommand()->renameTable("{{{$archivedTable}}}", "{{tokens_" . (int)$iSurveyId . "}}");
+                    $archivedTableSettings->delete();
+                    $this->updateEncryption($iSurveyId, $aEncryptionSettings);
+                    Survey::model()->updateByPk($iSurveyId, ['attributedescriptions' => $attributedescriptions]);
+                    // Refresh schema cache just in case the table existed in the past
+                    Yii::app()->db->schema->getTable("{{tokens_" . (int)$iSurveyId . "}}", true);
+                    //Add any survey_links from the renamed table
+                    SurveyLink::model()->rebuildLinksFromTokenTable($iSurveyId);
+                    $oTransaction->commit();
 
+                    $this->_renderWrappedTemplate(
+                        'token',
+                        [
+                            'message' => [
+                                'title'   => gT("Import old participant table"),
+                                'message' => gT("A survey participants table has been created for this survey and the old participants were imported.") . " (\"" . Yii::app()->db->tablePrefix . "tokens_$iSurveyId" . "\")<br /><br />\n"
+                                    . "<input type='submit' class='btn btn-default' value='"
+                                    . gT("Continue") . "' onclick=\"window.open('" . $this->getController()->createUrl("admin/tokens/sa/index/surveyid/$iSurveyId") . "', '_top')\" />\n"
+                            ]
+                        ],
+                        $aData
+                    );
+                } catch (\Exception $e) {
+                    $oTransaction->rollback();
+                    return;
+                }
+
+                LimeExpressionManager::SetDirtyFlag(); // so that knows that survey participants tables have changed
+            } else {
                 $this->_renderWrappedTemplate(
                     'token',
                     [
                         'message' => [
-                            'title'   => gT("Import old participant table"),
-                            'message' => gT("A survey participants table has been created for this survey and the old participants were imported.") . " (\"" . Yii::app()->db->tablePrefix . "tokens_$iSurveyId" . "\")<br /><br />\n"
-                                . "<input type='submit' class='btn btn-default' value='"
-                                . gT("Continue") . "' onclick=\"window.open('" . $this->getController()->createUrl("admin/tokens/sa/index/surveyid/$iSurveyId") . "', '_top')\" />\n"
+                            'class' => 'message-box-error',
+                            'title'   => gT("Import failed"),
+                            'message' => gT("There are no matching settings to start the restoration of the participant table.")
                         ]
                     ],
                     $aData
                 );
-            } catch (\Exception $e) {
-                $oTransaction->rollback();
-                return;
             }
-
-            LimeExpressionManager::SetDirtyFlag(); // so that knows that survey participants tables have changed
         } else {
             Yii::app()->loadHelper('database');
             Survey::model()->updateByPk($iSurveyId, array('tokenencryptionoptions' => ls_json_encode($aTokenencryptionoptions)));
@@ -2613,7 +2635,7 @@ class tokens extends Survey_Common_Action
             $aData['tcount'] = $tcount;
             $aData['databasetype'] = Yii::app()->db->getDriverName();
             $aData['sidemenu']["token_menu"] = true;
-            $aData['topBar']['name'] = 'tokensTopbar_view';
+            $aData['topBar']['hide'] = true;
 
             $this->_renderWrappedTemplate('token', 'tokenwarning', $aData);
         }
@@ -2637,7 +2659,7 @@ class tokens extends Survey_Common_Action
         $aData['subaction'] = gT('Survey participants');
 
         if (!empty($aData['surveyid'])) {
-            $aData['closeUrl'] = Yii::app()->createUrl('admin/tokens/sa/index/surveyid/' . $aData['surveyid']);
+            $aData['returnUrl'] = Yii::app()->createUrl('admin/tokens/sa/index/surveyid/' . $aData['surveyid']);
         }
 
         parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
@@ -2735,9 +2757,12 @@ class tokens extends Survey_Common_Action
 
     /**
      * This method echos HTML and ends.
+     * @param int   $iSurveyId
+     * @param array $aSurveyLangs
+     * @param array $aData
      * @return void
      */
-    protected function showInviteOrReminderEmailForm($iSurveyId, $aSurveyLangs, $aData)
+    protected function showInviteOrReminderEmailForm(int $iSurveyId, array $aSurveyLangs, array $aData)
     {
         $SQLemailstatuscondition = $this->getSQLemailstatuscondition();
         $sSubAction = $this->getSubAction();
@@ -2768,10 +2793,15 @@ class tokens extends Survey_Common_Action
             }
         }
 
-        $aData['showCloseButton'] = true;
+        // Back Button
+        $aData['showBackButton'] = true;
+        $aData['returnUrl'] = Yii::app()->createUrl('admin/tokens/sa/index/surveyid/' . $iSurveyId);
+
         if (Yii::app()->request->getParam('action') == "remind") {
+            // Send Reminders Button
             $aData['showSendReminderButton'] = true;
         } else {
+            // Send Invitation Button
             $aData['showSendInvitationButton'] = true;
         }
         $aData['topBar']['name'] = 'tokensTopbar_view';

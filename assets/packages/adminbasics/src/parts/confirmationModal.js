@@ -18,9 +18,11 @@ const ConfirmationModal = function(e){
         keepopen    : null,
         postDatas   : null,
         gridid      : null,
+        title       : null,
         btnclass    : 'btn-primary',
         btntext     : actionBtn.dataset.actionbtntext,
         "ajax-url"  : null,
+        postUrl     : null,
     };
 
     //////METHODS
@@ -66,7 +68,7 @@ const ConfirmationModal = function(e){
 
                 success : function(html, statut)
                 {
-                    $.fn.yiiGridView.update(options.gridid);                   // Update the surveys list
+                    $.fn.yiiGridView.update(options.gridid);                   // Update the list
                     $('#confirmation-modal').modal('hide');
                 },
                 error :  function(html, statut){
@@ -74,6 +76,12 @@ const ConfirmationModal = function(e){
                 }
 
             });
+        });
+    },
+    _sendPost = () => {
+        LOG.log('Binding post handler on confirmation dialog');
+        $(_this).find('.btn-ok').on('click', function (ev) {
+            window.LS.sendPost(options.postUrl, '',options.postDatas);
         });
     },
     _setTarget = () => {
@@ -92,6 +100,11 @@ const ConfirmationModal = function(e){
             _ajaxHandler();
             return;
         }
+        //Set up a handler to send a POST request
+        if (!!options.postUrl) {
+            _sendPost();
+            return;
+        }
         LOG.error("Confirmation modal: Found neither data-href or data-onclick, nor ajax data.");
     };
 
@@ -106,6 +119,11 @@ const ConfirmationModal = function(e){
         $(this).find('.btn-ok').addClass(options.btnclass);
     }
     $(this).find('.btn-ok').html(options.btntext);
+    //change titel
+
+    if (options.title !== null) {
+        $(this).find('.modal-title').html(options.title);
+    }
     //Run setTarget to determine loading target
     _setTarget();
 };

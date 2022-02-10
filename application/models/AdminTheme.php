@@ -101,7 +101,7 @@ class AdminTheme extends CFormModel
         // Config file loading
 
         if (\PHP_VERSION_ID < 80000) {
-        	$bOldEntityLoaderState = libxml_disable_entity_loader(true); // @see: http://phpsecurity.readthedocs.io/en/latest/Injection-Attacks.html#xml-external-entity-injection
+            $bOldEntityLoaderState = libxml_disable_entity_loader(true); // @see: http://phpsecurity.readthedocs.io/en/latest/Injection-Attacks.html#xml-external-entity-injection
         }
         $sXMLConfigFile        = file_get_contents(realpath($this->path . '/config.xml')); // Now that entity loader is disabled, we can't use simplexml_load_file; so we must read the file with file_get_contents and convert it as a string
 
@@ -268,7 +268,6 @@ class AdminTheme extends CFormModel
             'application/extensions/yiiwheels/widgets/maskinput/assets',
             'application/extensions/yiiwheels/widgets/redactor/assets',
             'application/extensions/yiiwheels/widgets/switch/assets',
-            'application/extensions/yiiwheels/widgets/fineuploader/assets',
             'application/extensions/yiiwheels/widgets/datetimepicker/assets',
             'application/extensions/yiiwheels/widgets/timeago/assets',
             'application/extensions/yiiwheels/widgets/sparklines/assets',

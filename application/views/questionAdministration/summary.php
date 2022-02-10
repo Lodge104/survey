@@ -1,4 +1,4 @@
-<?php /**@var array $questionTheme */ ?>
+<?php /** @var QuestionTheme $questionTheme */ ?>
 
 <div class="col-lg-12 content-right">
 
@@ -102,14 +102,14 @@
             </td>
             <td>
                 <?php
-                    echo $questionTheme['title'] . ' (Type: ' .$questionTheme['question_type'] . ')';
+                    echo gT($questionTheme->title) . ' (Type: ' . $questionTheme->question_type . ')';
                 //echo $questionTypes[$question->type]['description'];
                 ?>
             </td>
         </tr>
 
         <!-- Warning : You need to add answer -->
-        <?php if ($answersCount == 0 && (int)$questionTheme['settings']->answerscales > 0):?>
+        <?php if ($answersCount == 0 && (int) ($questionTheme->getDecodedSettings()->answerscales) > 0):?>
         <tr>
             <td>
             </td>
@@ -124,7 +124,7 @@
         <?php endif; ?>
 
         <!--  Warning : You need to add subquestions to this question -->
-        <?php  if ($subquestionsCount == 0 && (int)$questionTheme['settings']->subquestions > 0): ?>
+        <?php  if ($subquestionsCount == 0 && (int) ($questionTheme->getDecodedSettings()->subquestions) > 0): ?>
             <tr>
                 <td></td>
                 <td>
@@ -173,6 +173,25 @@
             </tr>
         <?php endif; ?>
 
+
+        <!-- Encrypted -->
+        <?php if (isset($question->encrypted)):?>
+            <tr>
+                <td>
+                    <strong>
+                        <?php eT("Encrypted:"); ?>
+                    </strong>
+                </td>
+                <td>
+                    <?php if ($question->encrypted == "Y") : ?>
+                        <?php eT("Yes"); ?>
+                    <?php else:?>
+                        <?php eT("No"); ?>
+                    <?php endif;  ?>
+                </td>
+            </tr>
+        <?php endif; ?>
+
         <!-- Condition for this question -->
         <?php if (trim($question->relevance) != ''): ?>
             <tr>
@@ -206,25 +225,29 @@
         <!-- Advanced Settings -->
         <?php foreach ($advancedSettings as $settings){ ?>
             <?php foreach ($settings as $setting){
-
-                if($setting['default'] != $setting['value']){ ?>
+                $value = $setting['value'];
+                if (!empty($setting['i18n'])) {
+                    $value = $setting[$question->survey->language]['value'];
+                }
+                if($setting['default'] != $value){ ?>
                 <tr>
                     <td>
                         <strong>
-                            <?php echo $setting['caption'];?>:
+                            <?php eT($setting['caption']);?>:
                         </strong>
                     </td>
                     <td>
                         <?php
-                            if (isset($setting['expression']) && $setting['expression'] == 2) {
-                                LimeExpressionManager::ProcessString('{' . $setting['value'] . '}', $question->qid);
-                                echo LimeExpressionManager::GetLastPrettyPrintExpression();
-                            } else {
-                                if (($setting['i18n'] ==null) || ($setting['i18n'] == false)) {
-                                    echo htmlspecialchars($setting['value']);
+
+                            if (isset($setting['expression']) && $setting['expression'] > 0) {
+                                if ($setting['expression'] == 1) {
+                                    LimeExpressionManager::ProcessString($value, $question->qid);
                                 } else {
-                                    echo htmlspecialchars($setting[$question->survey->language]['value']);
+                                    LimeExpressionManager::ProcessString('{' . $value . '}', $question->qid);
                                 }
+                                echo viewHelper::stripTagsEM(LimeExpressionManager::GetLastPrettyPrintExpression());
+                            } else {
+                                echo htmlspecialchars($value);
                             }
                         ?>
                     </td>

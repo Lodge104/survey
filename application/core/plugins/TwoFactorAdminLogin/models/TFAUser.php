@@ -12,11 +12,11 @@ class TFAUser extends User
     public function attributeLabels()
     {
         return [
-            'authType' => 'Type of 2-Factor-Authentication used',
-            'secretKey' => 'Authentication base value',
+            'authType' => gT('Two-factor authentication method'),
+            'secretKey' => gT('Secret base key'),
             'uid' => gT('User ID'),
-            'firstLogin' => 'Logged in with 2FA',
-            'forceNewFirstLogin' => 'Force to set 2FA'
+            'firstLogin' => gT('Logged in with 2FA'),
+            'forceNewFirstLogin' => gT('Force to enable 2FA')
         ];
     }
 
@@ -58,21 +58,21 @@ class TFAUser extends User
         if(!$this->hasAuthSet) {
             return '';
         }
-
-        return ''
-        .'<button '
-            .'class="btn btn-icon btn-danger btn-sm TFA--management--action-deleteToken" '
-            .'title="'.gT("Delete 2FA key").'" '
-            .'data-toggle="tooltip" '
-            .'data-confirmtext="'.gT('Are you sure you want to delete this 2FA key?').'" '
-            .'data-buttons="{confirm_cancel: \''.gT('No, cancel').'\', confirm_ok: \''.gT('Yes, I am sure').'\'}" '
-            .'data-href="'.Yii::app()->createUrl("plugins/direct/plugin/TwoFactorAdminLogin/function/directCallDeleteKey").'" '
-            .'data-uid="'.$this->uid.'" '
-            .'data-errortext="'.gT('An error has happened, and the key could not be deleted.').'" '
-        .'>'
-            .'<i class="fa fa-trash"></i>'
-        .'</button>&nbsp;'
-        .'';
+        $buttons = "<div class='icon-btn-row'>";
+        $buttons .= '<button '
+            . 'class="btn btn-icon btn-default btn-sm TFA--management--action-deleteToken" '
+            . 'title="' . gT("Delete 2FA key") . '" '
+            . 'data-toggle="tooltip" '
+            . 'data-confirmtext="' . gT('Are you sure you want to delete this 2FA key?') . '" '
+            . 'data-buttons="{confirm_cancel: \'' . gT('No, cancel') . '\', confirm_ok: \'' . gT('Yes, I am sure') . '\'}" '
+            . 'data-href="' . Yii::app()->createUrl("plugins/direct/plugin/TwoFactorAdminLogin/function/directCallDeleteKey") . '" '
+            . 'data-uid="' . $this->uid . '" '
+            . 'data-errortext="' . gT('An error has happened, and the key could not be deleted.') . '" '
+            . '>'
+            . '<i class="fa fa-trash text-danger"></i>'
+            . '</button>';
+        $buttons .= "</div>";
+        return $buttons;
     }
 
     /**

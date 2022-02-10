@@ -68,12 +68,14 @@ class SurveysGroupsController extends Survey_Common_Action
                     App()->createUrl("admin/surveysgroups/sa/update", array('id' => $model->gsid, '#' => 'settingsForThisGroup'))
                 );
             }
+        } else {
+            $model->name = SurveysGroups::getNewCode();
         }
 
         $aData = array(
             'model' => $model,
             'action' => App()->createUrl("admin/surveysgroups/sa/create", array('#' => 'settingsForThisGroup')),
-            'pageTitle' => 'Create survey group',
+            'pageTitle' => gT('Create survey group'),
         );
         $aData['aRigths'] = array(
             'update' => true,
@@ -84,10 +86,12 @@ class SurveysGroupsController extends Survey_Common_Action
             'savebutton' => array(
                 'form' => 'surveys-groups-form'
             ),
-            'returnbutton' => array(
-                'url' => 'surveyAdministration/listsurveys#surveygroups',
-                'text' => gT('Back'),
-            )
+            'saveandclosebutton' => [
+                'form' => 'surveys-groups-form',
+            ],
+            'white_closebutton' => array(
+                'url' => App()->createUrl('surveyAdministration/listsurveys', ['#' => 'surveygroups']),
+            ),
         );
         /* User for dropdown */
         $aUserIds = getUserList('onlyuidarray');
@@ -158,7 +162,7 @@ class SurveysGroupsController extends Survey_Common_Action
         $aData = array(
             'model' => $model,
             'action' => App()->createUrl("admin/surveysgroups/sa/update", array('id' => $model->gsid, '#' => 'settingsForThisGroup')),
-            'pageTitle' => 'Update survey group: ' . $model->title,
+            'pageTitle' => gT('Update survey group: ') . $model->title,
         );
 
         $aData['oSurveySearch'] = $oSurveySearch;
@@ -316,20 +320,26 @@ class SurveysGroupsController extends Survey_Common_Action
 
         $buttons = [];
 
-        $buttons['closebutton'] = array(
+        // White Close Button
+        $buttons['white_closebutton'] = array(
                 'url' => App()->createUrl('surveyAdministration/listsurveys', array('#' => 'surveygroups')),
         );
         if ($model->hasPermission('surveysettings', 'update')) {
+            // Save Button
             $buttons['savebutton'] = [
                 'form' => 'survey-settings-options-form'
             ];
 
+            // Save and Close butotn
             $buttons['saveandclosebutton'] = array(
                 'form' => 'survey-settings-options-form'
             );
         }
         $aData['partial'] = $sPartial;
-        $aData['pageTitle'] = 'Survey settings for group: ' . $model->title;
+
+        // Page Title
+        $aData['pageTitle'] = gT('Survey settings for group: ') . $model->title;
+
         $aData['fullpagebar'] = $buttons;
         $this->_renderWrappedTemplate('surveysgroups', 'surveySettings', $aData);
     }
@@ -341,6 +351,8 @@ class SurveysGroupsController extends Survey_Common_Action
      */
     public function delete($id)
     {
+        $this->requirePostRequest();
+
         $oGroupToDelete = $this->loadModel($id);
         if (!$oGroupToDelete->hasPermission('group', 'delete')) {
             throw new CHttpException(403, gT("You do not have permission to access this page."));

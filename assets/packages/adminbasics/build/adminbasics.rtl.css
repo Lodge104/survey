@@ -116,10 +116,6 @@
   display: none;
 }
 
-#cpdbatt {
-  min-height: 100px;
-}
-
 .draggable-container {
   min-height: 300px;
 }
@@ -227,6 +223,10 @@ div.mappable-attribute-wrapper.paired.ui-state-disabled {
   min-height: 100px;
 }
 
+#cpdbatt {
+  min-height: 100px;
+}
+
 #selectable .ui-selecting {
   background: #8CCE00;
 }
@@ -307,13 +307,50 @@ div.mappable-attribute-wrapper.paired.ui-state-disabled {
   padding-bottom: 15px;
 }
 
-.grid-view .table td.button-column, .grid-view .table th.button-column {
+.grid-view .table td.button-column, .grid-view .table th.button-column, .grid-view-ls .table td.button-column, .grid-view-ls .table th.button-column {
   white-space: nowrap;
   text-align: initial;
 }
 
-.grid-view .table th > .sort-link .caret {
+.grid-view .table th > .sort-link .caret, .grid-view-ls .table th > .sort-link .caret {
   left: -10px;
+}
+
+.grid-view .table .filters > td .filter-container, .grid-view-ls .table .filters > td .filter-container {
+  padding: 0;
+}
+
+.grid-view-ls .table td {
+  vertical-align: middle;
+}
+
+.grid-view-ls .table td input[type="checkbox"]:after {
+  margin-top: -3px;
+  margin-left: -3px;
+}
+
+.grid-view-ls .table .button-column {
+  white-space: nowrap;
+  text-align: initial;
+  min-width: 50px;
+}
+
+.grid-view-ls .summary {
+  color: #999999;
+  font-size: 12px;
+  text-align: left;
+}
+
+.grid-view-ls.grid-view-loading {
+  background: url(../img/loader.gif) no-repeat 0% 10px;
+}
+
+.grid-view-ls.grid-view-loading .table {
+  opacity: 0.5;
+}
+
+.grid-view-ls.grid-view-loading .table th > .sort-link .caret {
+  display: none;
 }
 
 .dropdown-menu.larger-dropdown {
@@ -443,6 +480,7 @@ div.mappable-attribute-wrapper.paired.ui-state-disabled {
   width: 60%;
   z-index: 3500;
   background: rgba(255, 255, 255, 0.1);
+  min-height: 0;
 }
 
 .bg-white {
@@ -716,10 +754,32 @@ html {
   font-size: 1.5em;
 }
 
+.menubar {
+  position: relative;
+}
+
 .surveybar {
-  padding-top: 5px;
-  padding-bottom: 5px;
-  z-index: 1000;
+  width: 100%;
+  padding: 13px 0 8px;
+  margin: 0 auto 15px;
+  z-index: 100;
+  box-shadow: -3px 3px 3px #35363f;
+}
+
+.surveybar .btn, .surveybar button {
+  margin-bottom: 5px;
+}
+
+.btn.pull-right {
+  margin-right: 5px;
+}
+
+.list-surveys {
+  margin-top: 10px;
+}
+
+#fullpagebar {
+  z-index: 100;
 }
 
 .tab-content {
@@ -1519,7 +1579,7 @@ div.panel.disabled a {
   max-height: initial;
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
   .main-content-container {
     max-width: 100%;
   }
@@ -1713,6 +1773,42 @@ div.panel.disabled a {
   color: #fff;
 }
 
+.icon-btn-row {
+  display: flex;
+}
+
+.icon-btn-row .btn.btn-lg {
+  width: 46px;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.icon-btn-row .btn {
+  width: 34px;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.icon-btn-row .btn.btn-sm {
+  width: 30px;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.icon-btn-row .btn.btn-xs {
+  width: 22px;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.icon-btn-row :not(:first-child).btn, .icon-btn-row :not(:first-child) .btn {
+  margin-right: 5px;
+}
+
+.icon-btn-row :not(:first-child).btn.btn-xs, .icon-btn-row :not(:first-child) .btn.btn-xs {
+  margin-right: 3px;
+}
+
 /**
 *  Radio / Check box buttons
 */
@@ -1849,7 +1945,7 @@ fieldset[disabled] .checkbox label {
   color: #e51c23;
 }
 
-@media (min-width: 768px) {
+@media screen and (min-width: 768px) {
   .form-inline .radio,
   .form-inline .checkbox {
     display: inline-block;
@@ -2682,6 +2778,10 @@ span[data-tooltip] {
   top: 50px;
 }
 
+.modal-footer .btn {
+  margin-bottom: 0;
+}
+
 #tokensidemenu {
   border-top: 1px solid #e3e3e3;
 }
@@ -2802,10 +2902,6 @@ iframe#dialog {
 
 #labelsetpreview {
   overflow-x: hidden;
-}
-
-#labelsetbrowserModal .modal-dialog {
-  width: 80%;
 }
 
 .question-filter-container {
@@ -3234,10 +3330,6 @@ table#responsedetail tr td {
   padding-top: 0;
 }
 
-#quick-add-condition-modal .modal-dialog {
-  width: 800px;
-}
-
 #login-panel {
   max-width: 400px;
   margin-right: auto;
@@ -3305,173 +3397,110 @@ input[type="file"].form-control {
   display: none;
 }
 
-/* To make Statistics printable really easy */
+/* Some printing optimization */
 @media print {
-  @page {
-    size: A4 portrait;
-    margin-right: 1.0cm;
-    margin-left: 1.5cm;
-    margin-top: 1.2cm;
-    margin-bottom: 1cm;
-    overflow: visible;
-  }
-  * {
-    overflow: visible !important;
-  }
-  html,
-  body {
+  html, body {
     margin: 0;
-    max-width: 0%;
+    padding: 0;
+    max-width: none;
   }
   body {
     text-align: right;
     margin: 0;
     padding: 0;
-    overflow: visible;
-    min-width: 19.0cm !important;
-    min-height: 27.7cm;
     width: 100% !important;
-    height: 100%;
   }
-  body.onStatistics a:not(.printable),
-  body.onStatistics p:not(.printable),
-  body.onStatistics button:not(.printable),
-  body.onStatistics nav:not(.printable),
-  body.onStatistics form:not(.printable),
-  body.onStatistics footer:not(.printable),
-  body.onStatistics h1:not(.printable),
-  body.onStatistics h2:not(.printable),
-  body.onStatistics h3:not(.printable),
-  body.onStatistics h4:not(.printable),
-  body.onStatistics h5:not(.printable),
-  body.onStatistics .jumbotron,
-  body.onStatistics .menubar,
-  body.onStatistics > div:not(#vue-apps-main-container),
-  body.onStatistics div#vue-apps-main-container > div:not(#pjax-content),
-  body.onStatistics div#vue-apps-main-container > div#pjax-content > div:not(#in_survey_common),
-  body.onStatistics div#in_survey_common > div:not(#statisticsview) {
-    display: none !important;
-    visibility: hidden !important;
-    overflow: hidden !important;
+  .side-body {
+    margin: 0;
     padding: 0;
-    position: absolute;
-    right: -1000px;
-    top: -1000px;
-    margin: 0 !important;
-    width: 0px !important;
   }
-  body.onStatistics div.row {
-    display: block !important;
-    position: static;
+  #sidebar {
+    display: none;
   }
-  body.onStatistics div[class^="col-"] {
-    display: block !important;
-    float: none !important;
-    position: static;
+  #browsermenubarid {
+    display: none;
   }
-  body.onStatistics > div#vue-apps-main-container,
-  body.onStatistics div#in_survey_common,
-  body.onStatistics > div#vue-apps-main-container > div#pjax-content,
-  body.onStatistics #statisticsview {
-    display: block;
-    position: static;
-    width: 99% !important;
-    max-width: 95% !important;
-    min-width: 19.6cm !important;
-    min-height: 29.7cm !important;
-    height: 100% !important;
-    overflow: visible;
-    page-break-inside: auto;
-    break-inside: auto;
+  .surveymanagerbar {
+    display: none;
   }
-  body.onStatistics #statisticsview div,
-  body.onStatistics #statisticsview table {
-    position: static;
+  #vue-apps-main-container #vue-sidebar-container {
+    display: none;
   }
-  /*body.onStatistics td:not(.printable),
-  body.onStatistics th:not(.printable),*/
-  /*body.onStatistics table:not(.printable),*/
-  body.onStatistics #statisticsview div:not(#statsContainerLoading) {
-    width: 99% !important;
-    max-width: 100% !important;
-    float: none !important;
-    display: block;
-  }
-  body.onStatistics #statisticsview a.printable,
-  body.onStatistics #statisticsview p.printable,
-  body.onStatistics #statisticsview span.printable,
-  body.onStatistics #statisticsview table.printable,
-  body.onStatistics #statisticsview table.statisticstable,
-  body.onStatistics #statisticsview h1.printable,
-  body.onStatistics #statisticsview h2.printable,
-  body.onStatistics #statisticsview h3.printable,
-  body.onStatistics #statisticsview h4.printable,
-  body.onStatistics #statisticsview h5.printable {
-    width: 95% !important;
-    max-width: 100%;
+  #statisticsview .col-lg-12 {
     float: none;
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-    margin-top: 1cm;
-    margin-bottom: 1cm;
-    position: static;
+    width: 100%;
+    display: block;
   }
-  body.onStatistics div.printable {
-    position: static;
-    page-break-after: auto;
-    break-after: auto;
-    page-break-inside: avoid;
+  #pjax-content .side-body {
+    float: none;
+    width: 100%;
+    display: block;
+  }
+  #pjax-content {
+    max-width: none !important;
+  }
+  footer.footer {
+    display: none;
+  }
+  /* Some stat specific */
+  .statisticsbloc {
+    float: none;
+    width: auto;
+    display: block;
+  }
+  .statisticstable {
     break-inside: avoid;
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-    margin-top: 1cm;
-    margin-bottom: 1cm;
-    padding: 0 !important;
-  }
-  body.onStatistics div.printable table {
-    position: static;
     page-break-inside: avoid;
+    break-after: always;
+    page-break-after: always;
+  }
+  .canvas-chart {
     break-inside: avoid;
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-    margin-top: 1cm;
-    margin-bottom: 1cm;
-    padding: 0 !important;
-  }
-  body.onStatistics table.printable thead,
-  body.onStatistics table.printable tbody,
-  body.onStatistics table.printable tr {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  body.onStatistics table.printable * {
-    page-break-after: avoid;
-    break-after: avoid;
-    page-break-before: avoid;
-    break-before: avoid;
     page-break-inside: avoid;
-    break-inside: avoid;
-  }
-  body.onStatistics .side-body {
     max-width: 100%;
-    margin: 0 !important;
-    padding: 0 !important;
+    height: auto;
   }
-  body.onStatistics .side-menu {
-    display: none !important;
-    visibility: none !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    margin-right: 0 px !important;
+  /* Only for stat ? */
+  .statisticsbrowsebutton {
+    display: none;
   }
-  body.onStatistics .absolute-wrapper {
-    display: none !important;
-    visibility: none !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
+  body.onStatistics .btn {
+    display: none;
+  }
+  /* Chartjs and legend width */
+  body.onStatistics .chartjs-container {
+    width: 70%;
+    float: right;
+  }
+  body.onStatistics .legend {
+    width: 30%;
+    float: right;
+  }
+  body.onStatistics .legend .col-sm-1 {
+    display: inline-block;
+    width: auto;
+    padding: 0;
+    padding-left: 3pt;
+    padding-right: 3pt;
+  }
+  body.onStatistics .legend .col-sm-10 {
+    display: inline-block;
+    width: auto;
+    padding: 0;
+  }
+  /* Relaced in adminsidepanel */
+  body.onStatistics .ls-flex,
+  body.onStatistics .ls-flex-column,
+  body.onStatistics .ls-flex-row {
+    display: block;
+  }
+  body.onStatistics #sidebar {
+    display: none;
+  }
+  body.onStatistics .ls-flex-column .col-11,
+  body.onStatistics .ls-flex-row .col-11,
+  body.onStatistics .ls-flex .col-11 {
+    width: auto;
   }
 }
 
@@ -4542,6 +4571,22 @@ table.dataTable thead .sorting_desc:after {
   margin-top: 0 !important;
 }
 
+#sticky-topbar-placeholder {
+  display: none;
+}
+
+.menubar.sticky + #sticky-topbar-placeholder {
+  display: block;
+}
+
+.baseline-align > * {
+  vertical-align: baseline;
+}
+
+.baseline-align > .form-group {
+  display: inline-block;
+}
+
 /* Reduce margins for question editor */
 #edit-question-form {
   margin-right: -15px;
@@ -4584,4 +4629,15 @@ table.dataTable thead .sorting_desc:after {
 .subquestions-table > tbody > tr > td:last-of-type,
 .answeroptions-table > tbody > tr > td:last-of-type {
   padding-left: 0;
+}
+
+/** Surveys Grid View **/
+#survey-grid {
+  overflow-x: visible;
+}
+
+/* Fix text alignment on RTL */
+html[dir="rtl"] .dropdown-menu,
+html[dir="rtl"] th {
+  text-align: initial;
 }

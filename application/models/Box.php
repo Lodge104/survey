@@ -78,7 +78,7 @@ class Box extends CActiveRecord
     public function search()
     {
         // @todo Please modify the following code to remove attributes that should not be searched.
-
+        $pageSize = Yii::app()->user->getState('pageSize', Yii::app()->params['defaultPageSize']);
         $criteria = new CDbCriteria();
 
         $criteria->compare('id', $this->id);
@@ -89,9 +89,12 @@ class Box extends CActiveRecord
         $criteria->compare('desc', $this->desc, true);
         $criteria->compare('page', $this->page, true);
 
-        return new CActiveDataProvider($this, array(
-            'criteria' => $criteria,
-        ));
+        return new CActiveDataProvider($this, [
+            'criteria'   => $criteria,
+            'pagination' => [
+                'pageSize' => $pageSize,
+            ]
+        ]);
     }
 
     /**
@@ -130,26 +133,33 @@ class Box extends CActiveRecord
     }
 
     /**
+     * Returns the Buttons for the Grid View
      * @return string
      */
     public function getbuttons()
     {
-
         $url = Yii::app()->createUrl("/homepageSettings/updateBox/id/");
         $url .= '/' . $this->id;
-        $button = '<a class="btn btn-default" href="' . $url . '" role="button"><span class="fa fa-pencil" ></span></a>';
+        $button = "<div class='icon-btn-row'>";
+        $button .= '<a class="btn btn-sm btn-default green-border" data-toggle="tooltip" data-target="top" '
+         . 'title="' . gT('Edit') . '"'
+         . 'href="'
+         . $url
+         . '" role="button"><span class="fa fa-pencil" ></span></a>';
 
         $url = Yii::app()->createUrl("/homepageSettings/deleteBox");
-        //$url .= '/'.$this->id;
-        $button .= '<a class="btn btn-default selector--ConfirmModal"'
+        $button .= '<a class="btn btn-sm btn-default selector--ConfirmModal"'
         . ' data-button-no="' . gT('Cancel') . '"'
         . ' data-button-yes="' . gT('Delete') . '"'
         . ' data-button-type="btn-danger"'
         . ' href="' . $url . '"'
-        . ' title="' . gT("Delete the box") . '"'
+        . ' data-toggle="tooltip"'
+        . ' data-target="top"'
+        . ' title="' . gT('Delete the box') . '"'
         . ' role="button" data-post=\'' . json_encode(['id' => $this->id]) . '\''
         . ' data-text="' . gT('Are you sure you want to delete this box ?') . '"'
-        . '><span class="text-danger fa fa-trash" ></span></a>';
+        . '><span class="fa fa-trash text-danger" ></span></a>';
+        $button .= "</div>";
         return $button;
     }
 

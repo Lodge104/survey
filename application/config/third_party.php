@@ -190,21 +190,6 @@ return array(
         )
     ),
 
-    // jQuery Superfish
-    'jquery-superfish' => array(
-        'basePath' => 'third_party.jquery-superfish',
-        'js' => array(
-            'js/superfish.js',
-            'js/hoverIntent.js'
-        ),
-        'css' => array(
-            'css/superfish.css'
-        ),
-        'depends' => array(
-            'jquery'
-        )
-    ),
-
     // jQuery json
     'jquery-json' => array(
         'basePath' => 'third_party.jquery-json',
@@ -283,6 +268,7 @@ return array(
         'jquery-ace' => array(
             'devBaseUrl' => 'third_party/jquery-ace',
             'basePath' => 'third_party.jquery-ace',
+            'position' => CClientScript::POS_BEGIN,
         'js' => array(
             'jquery.ace.js',
         ),

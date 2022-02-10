@@ -252,7 +252,7 @@ class participantsaction extends Survey_Common_Action
         if ($count > 1) {
             return sprintf(gT("Export %s participants to CSV"), $count);
         } elseif ($count == 1) {
-            return gT("Export participant to CSV");
+            return gT("Export participants to CSV");
         } else {
             return $count;
         }
@@ -293,7 +293,7 @@ class participantsaction extends Survey_Common_Action
         $aData['searchstring'] = $searchstring;
 
         // Green Bar (SurveyManagerBar) Page Title
-        $aData['pageTitle'] = "Central participants database summary";
+        $aData['pageTitle'] = gT("Central participants database summary");
 
         // loads the participant panel and summary view
         $this->_renderWrappedTemplate('participants', array('participantsPanel', 'summary'), $aData);
@@ -401,7 +401,7 @@ class participantsaction extends Survey_Common_Action
         }
 
         // Green Bar (SurveyManagerBar) Page Title
-        $aData['pageTitle'] = 'Central participant management';
+        $aData['pageTitle'] = gT('Central participant management');
         $aData['ownsAddParticipantsButton'] = true;
 
         // Loads the participant panel view and display participant view
@@ -780,7 +780,7 @@ class participantsaction extends Survey_Common_Action
 
         $aData = array(
             'aAttributes' => ParticipantAttributeName::model()->getAllAttributes(),
-            'pageTitle' => "Import CSV",
+            'pageTitle' => gT("Import CSV"),
         );
         Yii::app()->clientScript->registerPackage('bootstrap-switch');
         $this->_renderWrappedTemplate('participants', array('participantsPanel', 'importCSV'), $aData);
@@ -1301,7 +1301,7 @@ class participantsaction extends Survey_Common_Action
             'deleteblacklisted' => Yii::app()->getConfig('deleteblacklisted'),
             'allowunblacklist' => Yii::app()->getConfig('allowunblacklist'),
             'aAttributes' => ParticipantAttributeName::model()->getAllAttributes(),
-            'pageTitle' => "Blacklist settings",
+            'pageTitle' => gT("Blacklist settings"),
         );
         Yii::app()->clientScript->registerPackage('bootstrap-switch');
         $this->_renderWrappedTemplate('participants', array('participantsPanel', 'blacklist'), $aData);
@@ -1374,7 +1374,7 @@ class participantsaction extends Survey_Common_Action
             'aAttributes' => ParticipantAttributeName::model()->getAllAttributes(),
             'model' => $model,
             'debug' => Yii::app()->request->getParam('Attribute'),
-            'pageTitle' => "Attribute management",
+            'pageTitle' => gT("Attribute management"),
             'ownsAddAttributeButton' => true,
         );
         // Page size
@@ -1976,7 +1976,7 @@ class participantsaction extends Survey_Common_Action
             'aAttributes' => ParticipantAttributeName::model()->getAllAttributes(),
             'model' => $model,
             'debug' => Yii::app()->request->getParam('Participant'),
-            'pageTitle' => "Share panel",
+            'pageTitle' => gT("Share panel"),
         );
         // Page size
         if (Yii::app()->request->getParam('pageSizeShareParticipantView')) {
@@ -2064,6 +2064,7 @@ class participantsaction extends Survey_Common_Action
     public function editShareInfo()
     {
         $operation = Yii::app()->request->getPost('oper');
+        // NB: Comma-separated list.
         $shareIds = Yii::app()->request->getPost('id');
         if ($operation == 'del') {
             // If operation is delete , it will delete, otherwise edit it
@@ -2367,6 +2368,8 @@ class participantsaction extends Survey_Common_Action
      */
     public function deleteSingleParticipantShare($participantId, $shareUid)
     {
+        $this->requirePostRequest();
+
         $participantShare = ParticipantShare::model()->findByPk(array(
             'participant_id' => $participantId,
             'share_uid' => $shareUid

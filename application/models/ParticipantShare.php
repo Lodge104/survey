@@ -155,21 +155,29 @@ class ParticipantShare extends LSActiveRecord
         $userId = yii::app()->user->id;
         $isOwner = $this->participant->owner_uid == $userId;
         $isSuperAdmin = Permission::model()->hasGlobalPermission('superadmin', 'read');
+        $buttons = "<div class='icon-btn-row'>";
         if ($isOwner || $isSuperAdmin) {
             $url = Yii::app()->createUrl(
                 'admin/participants/sa/deleteSingleParticipantShare',
-                array(
+                [
                     'participantId' => urlencode($this->participant_id),
-                    'shareUid' => $this->share_uid
-                )
+                    'shareUid'      => $this->share_uid
+                ]
             );
-
-            return "<a href='#' data-toggle='modal' data-target='#confirmation-modal' data-onclick='(function() { LS.CPDB.deleteSingleParticipantShare(\"" . $url . "\"); })'>"
-                . "<button class='btn btn-xs btn-default action_delete_shareParticipant'><i class='fa fa-trash text-danger'></i></button>"
-                . "</a>";
-        } else {
-            return '';
+            $buttons .= "<span data-toggle='tooltip' title='" . gT("Delete sharing") . "'><a href='#'
+            class='btn btn-sm btn-default action_delete_shareParticipant'
+            data-toggle='modal' 
+            data-target='#confirmation-modal'
+            data-title='" . gt('Unshare this participant') . "'
+            data-btntext='" . gt('Unshare') . "'
+            data-message='" . gT('Do you really want to unshare this participant?') . "' 
+            data-onclick='(function() { LS.CPDB.deleteSingleParticipantShare(\"" . $url . "\"); })'>"
+                . "<i class='fa fa-trash text-danger'></i>"
+                . "</a></span>";
         }
+        $buttons .= "</div>";
+
+        return $buttons;
     }
 
     /**
@@ -217,17 +225,17 @@ class ParticipantShare extends LSActiveRecord
             array(
                 "name" => 'participant.lastname',
                 "header" => gT("Last name"),
-                "filter" => TbHtml::textField("Participant[lastname]", isset($participantFilter['lastname'])?$participantFilter['lastname']:'')
+                "filter" => TbHtml::textField("Participant[lastname]", isset($participantFilter['lastname']) ? $participantFilter['lastname'] : '')
             ),
             array(
                 "name" => 'participant.firstname',
                 "header" => gT("First name"),
-                "filter" => TbHtml::textField("Participant[firstname]", isset($participantFilter['firstname'])?$participantFilter['firstname']:'')
+                "filter" => TbHtml::textField("Participant[firstname]", isset($participantFilter['firstname']) ? $participantFilter['firstname'] : '')
             ),
             array(
                 "name" => 'participant.email',
                 "header" => gT("Email address"),
-                "filter" => TbHtml::textField("Participant[email]", isset($participantFilter['email'])?$participantFilter['email']:'')
+                "filter" => TbHtml::textField("Participant[email]", isset($participantFilter['email']) ? $participantFilter['email'] : '')
             ),
             array(
                 "name" => 'share_uid',
@@ -304,7 +312,7 @@ class ParticipantShare extends LSActiveRecord
         $criteria->compare('share_uid', $this->share_uid);
         $criteria->compare('date_added', $this->date_added, true);
         $criteria->compare('can_edit', $this->can_edit, true);
-        if (!empty($participantFilter)){
+        if (!empty($participantFilter)) {
             $criteria->compare('participant.lastname', $participantFilter['lastname'], true);
             $criteria->compare('participant.firstname', $participantFilter['firstname'], true);
             $criteria->compare('participant.email', $participantFilter['email'], true);
@@ -348,7 +356,6 @@ class ParticipantShare extends LSActiveRecord
             $oParticipantShare = new ParticipantShare();
             $oParticipantShare->setAttributes($data);
             $oParticipantShare->save();
-
         } else {
             $this->updateShare($data);
         }
@@ -365,7 +372,7 @@ class ParticipantShare extends LSActiveRecord
             $data = array("participant_id" => $participantId, "share_uid" => $shareuid, "can_edit" => $data['can_edit']);
         }
         $criteria = new CDbCriteria();
-        $criteria->addColumnCondition(['participant_id'=>$data['participant_id'],'share_uid'=>$data['share_uid']]);
+        $criteria->addColumnCondition(['participant_id' => $data['participant_id'],'share_uid' => $data['share_uid']]);
         ParticipantShare::model()->updateAll($data, $criteria);
     }
 
@@ -381,7 +388,14 @@ class ParticipantShare extends LSActiveRecord
             list($participantId, $uId) = explode("--", $row);
             Yii::app()->db
                 ->createCommand()
-                ->delete('{{participant_shares}}', "participant_id = '$participantId' AND share_uid = $uId");
+                ->delete(
+                    '{{participant_shares}}',
+                    sprintf(
+                        "participant_id = '%d' AND share_uid = %d",
+                        (int) $participantId,
+                        (int) $uId
+                    )
+                );
         }
     }
 

@@ -837,7 +837,10 @@ function templateDefaultTexts($sLanguage, $mode = 'html', $sNewlines = 'text')
 * Compares two elements from an array (passed by the usort function)
 * and returns -1, 0 or 1 depending on the result of the comparison of
 * the sort order of the group_order and question_order field
-*
+* Used by :
+* - conditionsaction->getQuestionRows with merging group and question attributes (all in same array)
+* - remotecontrol_handle->export_statistics with merging group and question attributes (all in same array)
+* - checkQuestions() in activate_helper function with ?
 * @param mixed $a
 * @param mixed $b
 * @return int
@@ -991,7 +994,7 @@ function getExtendedAnswer($iSurveyID, $sFieldCode, $sValue, $sLanguage)
                     $sValue = convertDateTimeFormat($sValue, "Y-m-d H:i:s", $dateformatdetails['phpdate']);
                 }
                 break;
-            case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION:
+            case Question::QT_K_MULTIPLE_NUMERICAL:
             case Question::QT_N_NUMERICAL:
                 // Fix the value : Value is stored as decimal in SQL
                 if ($sValue[0] === ".") {
@@ -1004,11 +1007,11 @@ function getExtendedAnswer($iSurveyID, $sFieldCode, $sValue, $sLanguage)
                     }
                 }
                 break;
-            case Question::QT_L_LIST_DROPDOWN:
+            case Question::QT_L_LIST:
             case Question::QT_EXCLAMATION_LIST_DROPDOWN:
             case Question::QT_O_LIST_WITH_COMMENT:
             case Question::QT_I_LANGUAGE:
-            case Question::QT_R_RANKING_STYLE:
+            case Question::QT_R_RANKING:
                 $this_answer = Answer::model()->getAnswerFromCode($fields['qid'], $sValue, $sLanguage);
                 if ($sValue == "-oth-") {
                     $this_answer = gT("Other", null, $sLanguage);
@@ -1034,7 +1037,7 @@ function getExtendedAnswer($iSurveyID, $sFieldCode, $sValue, $sLanguage)
                         $this_answer = gT("No answer", null, $sLanguage);
                 }
                 break;
-            case Question::QT_G_GENDER_DROPDOWN:
+            case Question::QT_G_GENDER:
                 switch ($sValue) {
                     case "M":
                         $this_answer = gT("Male", null, $sLanguage);
@@ -1059,7 +1062,7 @@ function getExtendedAnswer($iSurveyID, $sFieldCode, $sValue, $sLanguage)
                         break;
                 }
                 break;
-            case Question::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS:
+            case Question::QT_E_ARRAY_INC_SAME_DEC:
                 switch ($sValue) {
                     case "I":
                         $this_answer = gT("Increase", null, $sLanguage);
@@ -1072,9 +1075,9 @@ function getExtendedAnswer($iSurveyID, $sFieldCode, $sValue, $sLanguage)
                         break;
                 }
                 break;
-            case Question::QT_F_ARRAY_FLEXIBLE_ROW:
-            case Question::QT_H_ARRAY_FLEXIBLE_COLUMN:
-            case Question::QT_1_ARRAY_MULTISCALE:
+            case Question::QT_F_ARRAY:
+            case Question::QT_H_ARRAY_COLUMN:
+            case Question::QT_1_ARRAY_DUAL:
                 if (isset($fields['scale_id'])) {
                     $iScaleID = $fields['scale_id'];
                 } else {
@@ -1174,8 +1177,8 @@ function createCompleteSGQA($iSurveyID, $aFilters, $sLanguage)
             $sLanguage = $oSurvey->language;
         }
         switch ($flt['type']) {
-            case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION: // Multiple Numerical
-            case Question::QT_Q_MULTIPLE_SHORT_TEXT: // Multiple Short Text
+            case Question::QT_K_MULTIPLE_NUMERICAL: // Multiple Numerical
+            case Question::QT_Q_MULTIPLE_SHORT_TEXT: // Multiple short text
                 //get answers
                 $result = Question::model()->getQuestionsForStatistics('title as code, question as answer', "parent_qid=$flt[qid] AND language = '{$sLanguage}'", 'question_order');
 
@@ -1185,12 +1188,12 @@ function createCompleteSGQA($iSurveyID, $aFilters, $sLanguage)
                     $allfields[] = $myfield2;
                 }
                 break;
-            case Question::QT_A_ARRAY_5_CHOICE_QUESTIONS: // ARRAY OF 5 POINT CHOICE QUESTIONS
-            case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS: // ARRAY OF 10 POINT CHOICE QUESTIONS
+            case Question::QT_A_ARRAY_5_POINT: // Array of 5 point choice questions
+            case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS: // Array of 10 point choice questions
             case Question::QT_C_ARRAY_YES_UNCERTAIN_NO: // ARRAY OF YES\No\gT("Uncertain") QUESTIONS
-            case Question::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS: // ARRAY OF Increase/Same/Decrease QUESTIONS
-            case Question::QT_F_ARRAY_FLEXIBLE_ROW: // FlEXIBLE ARRAY
-            case Question::QT_H_ARRAY_FLEXIBLE_COLUMN: // ARRAY (By Column)
+            case Question::QT_E_ARRAY_INC_SAME_DEC: // Array of Increase/Same/Decrease questions
+            case Question::QT_F_ARRAY: // Array
+            case Question::QT_H_ARRAY_COLUMN: // Array (By Column)
                 //get answers
                 $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[qid] AND language = '{$sLanguage}'", 'question_order');
 
@@ -1207,8 +1210,8 @@ function createCompleteSGQA($iSurveyID, $aFilters, $sLanguage)
                 $myfield = "T$myfield";
                 $allfields[] = $myfield;
                 break;
-            case Question::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT:  //ARRAY (Multi Flex) (Text)
-            case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS:  //ARRAY (Multi Flex) (Numbers)
+            case Question::QT_SEMICOLON_ARRAY_TEXT:  // Array (Text)
+            case Question::QT_COLON_ARRAY_NUMBERS:  // Array (Numbers)
                 $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[qid] AND language = '{$sLanguage}' AND scale_id = 0", 'question_order');
 
                 foreach ($result as $row) {
@@ -1219,7 +1222,7 @@ function createCompleteSGQA($iSurveyID, $aFilters, $sLanguage)
                     }
                 }
                 break;
-            case Question::QT_R_RANKING_STYLE: //RANKING
+            case Question::QT_R_RANKING: // Ranking
                 //get some answers
                 $result = Answer::model()->getQuestionsForStatistics('code, answer', "qid=$flt[qid] AND language = '{$sLanguage}'", 'sortorder, answer');
                 //get number of answers
@@ -1233,9 +1236,9 @@ function createCompleteSGQA($iSurveyID, $aFilters, $sLanguage)
 
                 break;
                 //Boilerplate questions are only used to put some text between other questions -> no analysis needed
-            case Question::QT_X_BOILERPLATE_QUESTION:  //This is a boilerplate question and it has no business in this script
+            case Question::QT_X_TEXT_DISPLAY:  //This is a boilerplate question and it has no business in this script
                 break;
-            case Question::QT_1_ARRAY_MULTISCALE: // MULTI SCALE
+            case Question::QT_1_ARRAY_DUAL: // Dual scale
                 //get answers
                 $result = Question::model()->getQuestionsForStatistics('title, question', "parent_qid=$flt[qid] AND language = '{$sLanguage}'", 'question_order');
                 //loop through answers
@@ -1392,7 +1395,7 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
     App()->setLanguage($sLanguage);
     // Collect all default values once so don't need separate query for each question with defaults
     // First collect language specific defaults
-    
+
     $defaultsQuery = "SELECT a.qid, a.sqid, a.scale_id, a.specialtype, al10.defaultvalue"
     . " FROM {{defaultvalues}} as a "
     . " LEFT JOIN  {{defaultvalue_l10ns}} as al10 ON a.dvid = al10.dvid "
@@ -1434,12 +1437,11 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
 
     // Main query
     $quotedGroups = Yii::app()->db->quoteTableName('{{groups}}');
-    $aquery = "SELECT g.*, q.*, gls.*, qls.*, qa.attribute, qa.value"
+    $aquery = "SELECT g.*, q.*, gls.*, qls.*"
     . " FROM $quotedGroups g"
     . ' JOIN {{questions}} q on q.gid=g.gid '
     . ' JOIN {{group_l10ns}} gls on gls.gid=g.gid '
     . ' JOIN {{question_l10ns}} qls on qls.qid=q.qid '
-    . " LEFT JOIN {{question_attributes}} qa ON qa.qid=q.qid AND qa.attribute='question_template' "
     . " WHERE qls.language='{$sLanguage}' and gls.language='{$sLanguage}' AND"
     . " g.sid={$surveyid} AND"
     . " q.parent_qid=0";
@@ -1469,8 +1471,8 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
         $usedinconditions = 'N';
 
         // Check if answertable has custom setting for current question
-        if (isset($arow['attribute']) && isset($arow['type']) && $arow['attribute'] == 'question_template') {
-            $answerColumnDefinition = QuestionTheme::getAnswerColumnDefinition($arow['value'], $arow['type']);
+        if (isset($arow['attribute']) && isset($arow['type']) && isset($arow['question_theme_name'])) {
+            $answerColumnDefinition = QuestionTheme::getAnswerColumnDefinition($arow['question_theme_name'], $arow['type']);
         }
 
         // Field identifier
@@ -1482,7 +1484,7 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
         // Types "L", "!", "O", "D", "G", "N", "X", "Y", "5", "S", "T", "U"
         $fieldname = "{$arow['sid']}X{$arow['gid']}X{$arow['qid']}";
 
-        if ($questionTypeMetaData[$arow['type']]['settings']->subquestions == 0 && $arow['type'] != Question::QT_R_RANKING_STYLE && $arow['type'] != Question::QT_VERTICAL_FILE_UPLOAD) {
+        if ($questionTypeMetaData[$arow['type']]['settings']->subquestions == 0 && $arow['type'] != Question::QT_R_RANKING && $arow['type'] != Question::QT_VERTICAL_FILE_UPLOAD) {
             if (isset($fieldmap[$fieldname])) {
                 $aDuplicateQIDs[$arow['qid']] = array('fieldname' => $fieldname, 'question' => $arow['question'], 'gid' => $arow['gid']);
             }
@@ -1507,7 +1509,7 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
                 }
             }
             switch ($arow['type']) {
-                case Question::QT_L_LIST_DROPDOWN:  //RADIO LIST
+                case Question::QT_L_LIST:  //RADIO LIST
                 case Question::QT_EXCLAMATION_LIST_DROPDOWN:  //DROPDOWN LIST
                     if ($arow['other'] == "Y") {
                         $fieldname = "{$arow['sid']}X{$arow['gid']}X{$arow['qid']}other";
@@ -1629,7 +1631,7 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
                 }
             }
             unset($answerset);
-        } elseif ($arow['type'] == Question::QT_1_ARRAY_MULTISCALE) {
+        } elseif ($arow['type'] == Question::QT_1_ARRAY_DUAL) {
             $abrows = getSubQuestions($surveyid, $arow['qid'], $sLanguage);
             foreach ($abrows as $abrow) {
                 $fieldname = "{$arow['sid']}X{$arow['gid']}X{$arow['qid']}{$abrow['title']}#0";
@@ -1681,7 +1683,7 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
                     // TODO SQrelevance for different scales? $fieldmap[$fieldname]['SQrelevance']=$abrow['relevance'];
                 }
             }
-        } elseif ($arow['type'] == Question::QT_R_RANKING_STYLE) {
+        } elseif ($arow['type'] == Question::QT_R_RANKING) {
             // Sub question by answer number OR attribute
             $answersCount = intval(Answer::model()->countByAttributes(array('qid' => $arow['qid'])));
             $maxDbAnswer = QuestionAttribute::model()->find("qid = :qid AND attribute = 'max_subquestions'", array(':qid' => $arow['qid']));
@@ -1749,7 +1751,7 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
             if (isset($answerColumnDefinition)) {
                 $fieldmap[$fieldname]['answertabledefinition'] = $answerColumnDefinition;
             }
-            
+
             if ($style == "full") {
                 $fieldmap[$fieldname]['title'] = $arow['title'];
                 $fieldmap[$fieldname]['question'] = "filecount - " . $arow['question'];
@@ -1781,7 +1783,7 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
                 if (isset($answerColumnDefinition)) {
                     $fieldmap[$fieldname]['answertabledefinition'] = $answerColumnDefinition;
                 }
-                
+
                 if ($style == "full") {
                     $fieldmap[$fieldname]['title'] = $arow['title'];
                     $fieldmap[$fieldname]['question'] = $arow['question'];
@@ -1833,7 +1835,7 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
                 if (isset($answerColumnDefinition)) {
                     $fieldmap[$fieldname]['answertabledefinition'] = $answerColumnDefinition;
                 }
-                
+
                 if ($style == "full") {
                     $fieldmap[$fieldname]['title'] = $arow['title'];
                     $fieldmap[$fieldname]['question'] = $arow['question'];
@@ -1856,7 +1858,7 @@ function createFieldMap($survey, $style = 'short', $force_refresh = false, $ques
                     if (isset($answerColumnDefinition)) {
                         $fieldmap[$fieldname]['answertabledefinition'] = $answerColumnDefinition;
                     }
-                    
+
                     if ($style == "full") {
                         $fieldmap[$fieldname]['title'] = $arow['title'];
                         $fieldmap[$fieldname]['question'] = $arow['question'];
@@ -2049,16 +2051,6 @@ function getQuestionAttributeValue($questionAttributeArray, $attributeName, $lan
     }
 }
 
-
-function categorySort($a, $b)
-{
-    $result = strnatcasecmp($a['category'], $b['category']);
-    if ($result == 0) {
-        $result = $a['sortorder'] - $b['sortorder'];
-    }
-    return $result;
-}
-
 function questionTitleSort($a, $b)
 {
     $result = strnatcasecmp($a['title'], $b['title']);
@@ -2153,7 +2145,7 @@ function SendEmailMessage($body, $subject, $to, $from, $sitename, $ishtml = fals
 
     $mail =  new LimeMailer();
     $mail->emailType = 'deprecated';
-    
+
     $fromname = '';
     $fromemail = $from;
     if (strpos($from, '<')) {
@@ -2752,7 +2744,8 @@ function breakToNewline($data)
 * Provides a safe way to end the application
 *
 * @param mixed $sText
-* @returns boolean Fake return so Scrutinizes shuts up
+* @return void
+* @todo This should probably never be used, since it returns 0 from CLI and makes PHPUnit think all is fine :(
 */
 function safeDie($sText)
 {
@@ -2760,7 +2753,6 @@ function safeDie($sText)
     $textarray = explode('<br />', $sText);
     $textarray = array_map('htmlspecialchars', $textarray);
     die(implode('<br />', $textarray));
-    return false; // do not remove
 }
 
 /**
@@ -3327,7 +3319,7 @@ function includeKeypad()
 function translateInsertansTags($newsid, $oldsid, $fieldnames)
 {
     uksort($fieldnames, function ($a, $b) {
-        return strlen($b)-strlen($a);
+        return strlen($b) - strlen($a);
     });
 
     Yii::app()->loadHelper('database');
@@ -3511,7 +3503,7 @@ function replaceExpressionCodes($iSurveyID, $aCodeMap)
             // Don't search/replace old codes that are too short or were numeric (because they would not have been usable in EM expressions anyway)
             if (strlen($sOldCode) > 1 && !is_numeric($sOldCode)) {
                 $sOldCode = preg_quote($sOldCode, '~');
-                $arQuestion->relevance = preg_replace("/\b{$sOldCode}/", $sNewCode, $arQuestion->relevance, -1, $iCount);
+                $arQuestion->relevance = preg_replace("~\b{$sOldCode}~", $sNewCode, $arQuestion->relevance, -1, $iCount);
                 $bModified = $bModified || $iCount;
             }
         }
@@ -3524,12 +3516,38 @@ function replaceExpressionCodes($iSurveyID, $aCodeMap)
                 // Don't search/replace old codes that are too short or were numeric (because they would not have been usable in EM expressions anyway)
                 if (strlen($sOldCode) > 1 && !is_numeric($sOldCode[0])) {
                     $sOldCode = preg_quote($sOldCode, '~');
-                    $arQuestionLS->question = preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $arQuestionLS->question, -1, $iCount);
+                    // The following regex only matches the last occurrence of the old code within each pair of brackets, so we apply the replace recursively
+                    // to catch all occurrences.
+                    $arQuestionLS->question = recursive_preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $arQuestionLS->question, -1, $iCount);
+                    $bModified = $bModified || $iCount;
+                    // Apply the replacement on question help text
+                    $arQuestionLS->help = recursive_preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $arQuestionLS->help, -1, $iCount);
                     $bModified = $bModified || $iCount;
                 }
             }
             if ($bModified) {
                 $arQuestionLS->save();
+            }
+        }
+        // Also apply on question's default values
+        $defaultValues = DefaultValue::model()->with('defaultvaluel10ns')->findAllByAttributes(['qid' => $arQuestion->qid]);
+        foreach ($defaultValues as $defaultValue) {
+            if (empty($defaultValue->defaultvaluel10ns)) {
+                continue;
+            }
+            foreach ($defaultValue->defaultvaluel10ns as $defaultValueL10n) {
+                $bModified = false;
+                foreach ($aCodeMap as $sOldCode => $sNewCode) {
+                    if (strlen($sOldCode) <= 1 || is_numeric($sOldCode)) {
+                        continue;
+                    }
+                    $sOldCode = preg_quote($sOldCode, '~');
+                    $defaultValueL10n->defaultvalue = recursive_preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $defaultValueL10n->defaultvalue, -1, $iCount);
+                    $bModified = $bModified || $iCount;
+                }
+                if ($bModified > 0) {
+                    $defaultValueL10n->save();
+                }
             }
         }
     }
@@ -3538,7 +3556,7 @@ function replaceExpressionCodes($iSurveyID, $aCodeMap)
         $bModified = false;
         foreach ($aCodeMap as $sOldCode => $sNewCode) {
             $sOldCode = preg_quote($sOldCode, '~');
-            $arGroup->grelevance = preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $arGroup->grelevance, -1, $iCount);
+            $arGroup->grelevance = preg_replace("~\b{$sOldCode}~", $sNewCode, $arGroup->grelevance, -1, $iCount);
             $bModified = $bModified || $iCount;
         }
         if ($bModified) {
@@ -3547,12 +3565,28 @@ function replaceExpressionCodes($iSurveyID, $aCodeMap)
         foreach ($arGroup->questiongroupl10ns as $arQuestionGroupLS) {
             foreach ($aCodeMap as $sOldCode => $sNewCode) {
                 $sOldCode = preg_quote($sOldCode, '~');
-                $arQuestionGroupLS->description = preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $arQuestionGroupLS->description, -1, $iCount);
+                $arQuestionGroupLS->description = recursive_preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $arQuestionGroupLS->description, -1, $iCount);
                 $bModified = $bModified || $iCount;
             }
             if ($bModified) {
                 $arQuestionGroupLS->save();
             }
+        }
+    }
+    // Apply the replacement on survey's end message
+    $surveyLanguageSettings = SurveyLanguageSetting::model()->findAllByAttributes(array('surveyls_survey_id' => $iSurveyID));
+    foreach ($surveyLanguageSettings as $surveyLanguageSetting) {
+        $bModified = false;
+        foreach ($aCodeMap as $sOldCode => $sNewCode) {
+            if (strlen($sOldCode) <= 1 || is_numeric($sOldCode)) {
+                continue;
+            }
+            $sOldCode = preg_quote($sOldCode, '~');
+            $surveyLanguageSetting->surveyls_endtext = recursive_preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $surveyLanguageSetting->surveyls_endtext, -1, $iCount);
+            $bModified = $bModified || $iCount;
+        }
+        if ($bModified) {
+            $surveyLanguageSetting->save();
         }
     }
 }
@@ -3698,7 +3732,7 @@ function fixLanguageConsistency($sid, $availlangs = '')
         }
         reset($langs);
     }
-    
+
     /* Remove invalid question : can break survey */
     switchMSSQLIdentityInsert('assessments', true);
     Survey::model()->findByPk($sid)->fixInvalidQuestions();
@@ -4487,7 +4521,7 @@ function fixSubquestions()
 */
 function ls_json_encode($content)
 {
-    $ans = json_encode($content);
+    $ans = json_encode($content, JSON_UNESCAPED_UNICODE);
     $ans = str_replace(array('{', '}'), array('{ ', ' }'), $ans);
     return $ans;
 }
@@ -4931,14 +4965,13 @@ function isZipBomb($zip_filename)
     $totalSize = 0;
     $zip = new ZipArchive();
     if ($zip->open($zip_filename) === true) {
-        
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $fileStats = $zip->statIndex($i);
             $totalSize += $fileStats['size'];
         }
-           
+
         $zip->close();
-    }        
+    }
     return ( $totalSize >  Yii::app()->getConfig('maximum_unzipped_size'));
 }
 
@@ -4953,7 +4986,7 @@ function get_zip_originalsize($filename)
 
     if (class_exists('ZipArchive')) {
         $size = 0;
-        $zip = new ZipArchive;
+        $zip = new ZipArchive();
         $zip->open($filename);
 
         for ($i = 0; $i < $zip->numFiles; $i++) {
@@ -5022,4 +5055,49 @@ function resourceExtractFilter($p_event, &$p_header)
     } else {
         return 0;
     }
+}
+
+/**
+ * Applies preg_replace recursively until $recursion_limit is exceeded or no more replacements are done.
+ * @param array|string $pattern
+ * @param array|string $replacement
+ * @param array|string $subject
+ * @param int $limit
+ * @param int $count    If specified, this variable will be filled with the total number of replacements done (including all iterations)
+ * @param int $recursion_limit  Max number of iterations allowed
+ * @return string|array
+ */
+function recursive_preg_replace($pattern, $replacement, $subject, $limit = -1, &$count = 0, $recursion_limit = 50)
+{
+    if ($recursion_limit < 0) {
+        return $subject;
+    }
+    $result = preg_replace($pattern, $replacement, $subject, $limit, $count);
+    if ($count > 0) {
+        $result = recursive_preg_replace($pattern, $replacement, $result, $limit, $auxCount, --$recursion_limit);
+        $count += $auxCount;
+    }
+    return $result;
+}
+
+/**
+ * Returns the standard deviation of supplied $numbers
+ * @param array $numbers The numbers to calculate the standard deviation for
+ * @return float
+ */
+function standardDeviation(array $numbers): float
+{
+    // Filter empty "" records
+    $numbers = array_filter($numbers);
+    $numberOfElements = count($numbers);
+
+    $variance = 0.0;
+    $average = array_sum($numbers) / $numberOfElements;
+
+    foreach ($numbers as $i) {
+        // sum of squares of differences between all numbers
+        $variance += ($i - $average) ** 2;
+    }
+
+    return sqrt($variance / $numberOfElements);
 }

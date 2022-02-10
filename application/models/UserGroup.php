@@ -281,7 +281,7 @@ class UserGroup extends LSActiveRecord
                 'header' => gT('Name'),
                 'name' => 'name',
                 'value' => '$data->name',
-                'htmlOptions' => array('class' => 'col-md-2'),
+                'htmlOptions' => array('class' => ''),
             ),
 
             array(
@@ -310,38 +310,39 @@ class UserGroup extends LSActiveRecord
                 'name' => 'actions',
                 'type' => 'raw',
                 'value' => '',
-                'htmlOptions' => array('class' => 'col-md-2 col-xs-1 text-right'),
+                'htmlOptions' => array('class' => ''),
             ),
 
         );
     }
 
     /**
+     * Returns the buttons for grid view
      * @return string
      */
     public function getButtons()
     {
-
-        // View users
-        $url = Yii::app()->createUrl("userGroup/viewGroup/ugid/$this->ugid");
-        $button = '<a class="btn btn-default list-btn" data-toggle="tooltip" data-placement="left" title="' . gT('View users') . '" href="' . $url . '" role="button"><span class="fa fa-list-alt" ></span></a>';
-
+        $button = "<div class='icon-btn-row'>";
         // Edit user group
         if (Permission::model()->hasGlobalPermission('usergroups', 'update')) {
             $url = Yii::app()->createUrl("userGroup/edit/ugid/$this->ugid");
-            $button .= ' <a class="btn btn-default list-btn" data-toggle="tooltip" data-placement="left" title="' . gT('Edit user group') . '" href="' . $url . '" role="button"><span class="fa fa-pencil" ></span></a>';
+            $button .= ' <a class="btn btn-default btn-sm green-border" data-toggle="tooltip" data-placement="top" title="' . gT('Edit user group') . '" href="' . $url . '" role="button"><span class="fa fa-pencil" ></span></a>';
         }
+
+        // View users
+        $url = Yii::app()->createUrl("userGroup/viewGroup/ugid/$this->ugid");
+        $button .= '<a class="btn btn-default btn-sm" data-toggle="tooltip" data-placement="top" title="' . gT('View users') . '" href="' . $url . '" role="button"><span class="fa fa-list-alt" ></span></a>';
 
         // Mail to user group
         // Which permission should be checked for this button to be available?
         $url = Yii::app()->createUrl("userGroup/mailToAllUsersInGroup/ugid/$this->ugid");
-        $button .= ' <a class="btn btn-default list-btn" data-toggle="tooltip" data-placement="left" title="' . gT('Email user group') . '" href="' . $url . '" role="button"><span class="icon-invite" ></span></a>';
+        $button .= ' <a class="btn btn-default btn-sm" data-toggle="tooltip" data-placement="top" title="' . gT('Email user group') . '" href="' . $url . '" role="button"><span class="icon-invite" ></span></a>';
 
         // Delete user group
         if (Permission::model()->hasGlobalPermission('usergroups', 'delete')) {
-            $button .= ' <span data-toggle="tooltip" title="' . gT('Delete user group') . '"><button class="btn btn-default list-btn action__delete-group" data-placement="left" href="#delete-modal" data-toggle="modal" data-ugid="' . $this->ugid . '" role="button"><i class="fa fa-trash text-warning"></i></button></span>';
+            $button .= '<button class="btn btn-default btn-sm red-border action__delete-group" data-toggle="tooltip" data-placement="top" title="' . gT('Delete user group') . '" href="#delete-modal" data-toggle="modal" data-ugid="' . $this->ugid . '" role="button"><span class="fa fa-trash text-danger"></span></button>';
         }
-
+        $button .= "</div>";
         return $button;
     }
 
@@ -433,7 +434,7 @@ class UserGroup extends LSActiveRecord
         return false;
     }
 
-    
+
 
     /**
      * Checks whether the specified UID is part of that group
@@ -445,7 +446,7 @@ class UserGroup extends LSActiveRecord
         $oModel = new UserInGroup();
         $oModel->uid = $uid;
         $oModel->ugid = $this->ugid;
-        
+
         return $oModel->save();
     }
 
@@ -475,7 +476,7 @@ class UserGroup extends LSActiveRecord
         $oUserFrom = User::model()->findByPk(Yii::app()->session['loginID']);
         $fromName = empty($oUserFrom->full_name) ? $oUserFrom->users_name : $oUserFrom->full_name;
         $mailer->setFrom($oUserFrom->email, $fromName);
-        
+
         // Add the sender to the list of users in order to receive a copy
         if ($copy == 1) {
             $oAuxUserInGroup = new UserInGroup();

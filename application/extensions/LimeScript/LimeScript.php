@@ -20,15 +20,27 @@
             $data['language']                   = Yii::app()->language;
             $data['replacementFields']['path']  = App()->createUrl("limereplacementfields/index");
             $json = json_encode($data, JSON_FORCE_OBJECT);
-            // TODO: CSRF should not be passed on GET requests. Test with subquestion quick-add to confirm fix (uses POST).
-            $script = "LS.data = $json;\n"
-                    . "LS.lang = {
-                        confirm: {
-                            confirm_cancel: '".gT('Cancel')."',
-                            confirm_ok: '".gT('OK')."'
+            $script = "LS.data = $json;\n
+                    // @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#jquery
+                    function csrfSafeMethod(method) {
+                        // these HTTP methods do not require CSRF protection
+                        return (/^(GET|HEAD|OPTIONS)$/.test(method));
+                    }
+                    // Use $.ajaxPrefilter() instead of $.ajaxSetup({beforeSend: ...}) to add the CSRF token because beforeSend is
+                    // executed after the content type is determined. So, if the request had no data when beforeSend is executed,
+                    // the content type is 'text/plain', which is wrong.
+                    $.ajaxPrefilter(function(settings) {
+                        if(!csrfSafeMethod(settings.type)) {
+                            // Data could be passed as string or object, so we add the token depending on the data type
+                            if (typeof settings.data == 'string') {
+                                // NB: This sometimes includes the CSRF token twice, when already added to data.
+                                settings.data +=  '&" . Yii::app()->request->csrfTokenName . "=" . Yii::app()->request->csrfToken ."';
+                            } else {
+                                settings.data = settings.data || {};
+                                settings.data." . Yii::app()->request->csrfTokenName . " = '" . Yii::app()->request->csrfToken . "';
+                            }
                         }
-                    };\n"
-                    . "$.ajaxSetup({data: {".Yii::app()->request->csrfTokenName.": LS.data.csrfToken}});";
+                    });";
             App()->getClientScript()->registerScript('LimeScript', $script, CClientScript::POS_HEAD);
         }
     }

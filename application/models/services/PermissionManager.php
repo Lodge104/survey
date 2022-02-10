@@ -75,7 +75,8 @@ class PermissionManager
                     'checked' => false,
                     /* The checkbox are disable if currentuser don't have permission */
                     'disabled' => !$this->getCurrentPermission($sPermission, $crud, $this->user->id),
-                    'indeterminate' => false
+                    'indeterminate' => false,
+                    'forced' => false,
                 );
             }
             /* If user id is set : update the data with permission of this user */
@@ -94,6 +95,9 @@ class PermissionManager
                         /* The user didn't have the permission set, but have permission by other way (inherited, plugin …) */
                         if (!$havePermissionSet) {
                             $aObjectPermissions[$sPermission]['current'][$crud]['indeterminate'] = $this->getCurrentPermission($sPermission, $crud, $userId);
+                        }
+                        if ($sPermission == $this->model->getMinimalPermissionRead() && $crud == 'read') {
+                            $aObjectPermissions[$sPermission]['current'][$crud]['forced'] = true;
                         }
                     }
                 }
@@ -150,30 +154,43 @@ class PermissionManager
         $this->app->getPluginManager()->dispatchEvent($oEvent);
 
         foreach ($aSetPermissions as $sPermission => $aSetPermission) {
-            $oCurrentPermission = $this->getDbPermission(
+            $success = $success && $this->applyPermissions($userId, $sPermission, $aSetPermission);
+        }
+        $this->setMinimalEntityPermission($userId);
+        return $success;
+    }
+
+    /**
+     * @param int $userId
+     * @param string $sPermission
+     * @param array $aSetPermission
+     * @return bool
+     */
+    public function applyPermissions($userId, $sPermission, $aSetPermission)
+    {
+        $success = true;
+        $oCurrentPermission = $this->getDbPermission(
+            get_class($this->model),
+            $this->model->getPrimaryKey(),
+            $userId,
+            $sPermission
+        );
+        if (empty($oCurrentPermission)) {
+            $oCurrentPermission = $this->setDbPermission(
                 get_class($this->model),
                 $this->model->getPrimaryKey(),
                 $userId,
                 $sPermission
             );
-            if (empty($oCurrentPermission)) {
-                $oCurrentPermission = $this->setDbPermission(
-                    get_class($this->model),
-                    $this->model->getPrimaryKey(),
-                    $userId,
-                    $sPermission
-                );
-            }
-            /* Set only the permission set in $aSetPermission : user have the rights */
-            foreach ($aSetPermission as $crud => $permission) {
-                $oCurrentPermission->setAttribute("{$crud}_p", intval($permission));
-            }
-            if (!$oCurrentPermission->save()) {
-                $success = false;
-                $this->app->setFlashMessage(CHtml::errorSummary($oCurrentPermission), 'warning');
-            }
         }
-        $this->setMinimalEntityPermission($userId);
+        /* Set only the permission set in $aSetPermission : user have the rights */
+        foreach ($aSetPermission as $crud => $permission) {
+            $oCurrentPermission->setAttribute("{$crud}_p", intval($permission));
+        }
+        if (!$oCurrentPermission->save()) {
+            $success = false;
+            $this->app->setFlashMessage(CHtml::errorSummary($oCurrentPermission), 'warning');
+        }
         return $success;
     }
 

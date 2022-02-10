@@ -33,6 +33,7 @@
  * @property string $validation_key  used for email link to reset or create a password for a survey participant
  *                                   Link is send when user is created or password has been reset
  * @property string $validation_key_expiration datetime when the validation key expires
+ * @property string $last_forgot_email_password datetime when user send email for forgot pw the last time (prevent bot)
  *
  * @property Permission[] $permissions
  * @property User $parentUser Parent user
@@ -105,15 +106,18 @@ class User extends LSActiveRecord
             array('lang', 'default', 'value' => Yii::app()->getConfig('defaultlang')),
             array('lang', 'LSYii_Validators', 'isLanguage' => true),
             array('htmleditormode', 'default', 'value' => 'default'),
-            array('htmleditormode', 'in', 'range'=>array('default', 'inline', 'popup', 'none'), 'allowEmpty'=>true),
+            array('htmleditormode', 'in', 'range' => array('default', 'inline', 'popup', 'none'), 'allowEmpty' => true),
             array('questionselectormode', 'default', 'value' => 'default'),
             array('questionselectormode', 'in', 'range' => array('default', 'full', 'none'), 'allowEmpty' => true),
             array('templateeditormode', 'default', 'value' => 'default'),
             array('templateeditormode', 'in', 'range' => array('default', 'full', 'none'), 'allowEmpty' => true),
             array('dateformat', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
+
             // created as datetime default current date in create scenario ?
             // modifier as datetime default current date ?
             array('validation_key', 'length','max' => self::MAX_VALIDATION_KEY_LENGTH),
+            //todo: write a rule for date (can also be null)
+            //array('lastForgotPwEmail', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
         );
     }
 
@@ -289,6 +293,9 @@ class User extends LSActiveRecord
         return false;
     }
 
+    /**
+     * @todo document me
+     */
     public function checkPasswordStrength($password)
     {
         $settings = Yii::app()->getConfig("passwordValidationRules");
@@ -373,6 +380,9 @@ class User extends LSActiveRecord
         return $errorMsg;
     }
 
+    /**
+     * @todo document me
+     */
     public function getPasswordHelpText()
     {
         $settings =  Yii::app()->getConfig("passwordValidationRules");
@@ -430,6 +440,9 @@ class User extends LSActiveRecord
         return Yii::app()->db->createCommand($query2)->bindParam(":surveyid", $surveyid, PDO::PARAM_INT)->bindParam(":postugid", $postusergroupid, PDO::PARAM_INT)->query(); //Checked
     }
 
+    /**
+     * @todo document me
+     */
     public function getGroupList()
     {
         $collector = array_map(function ($oUserInGroup) {
@@ -456,6 +469,7 @@ class User extends LSActiveRecord
     /**
      * Gets the buttons for the GridView
      * @return string
+     * TODO: this seems to not be used anymore - see getManagementButtons()
      */
     public function getButtons()
     {
@@ -469,7 +483,7 @@ class User extends LSActiveRecord
         $setPermissionsUrl = Yii::app()->getController()->createUrl('admin/user/sa/setuserpermissions');
         $setTemplatePermissionsUrl = Yii::app()->getController()->createUrl('admin/user/sa/setusertemplates');
         $changeOwnershipUrl = Yii::app()->getController()->createUrl('admin/user/sa/setasadminchild');
-        
+
         $oUser = self::model()->findByPK($this->uid);
         if ($this->uid == Yii::app()->user->getId()) {
             // Edit self
@@ -480,7 +494,7 @@ class User extends LSActiveRecord
                 data-uid='" . $this->uid . "'
                 data-user='" . htmlspecialchars($oUser['full_name']) . "'
                 data-action='modifyuser'
-                class='btn btn-default btn-xs action_usercontrol_button'>
+                class='btn btn-default btn-sm green-border action_usercontrol_button'>
                     <span class='fa fa-pencil text-success'></span>
                 </button>";
         } else {
@@ -491,7 +505,7 @@ class User extends LSActiveRecord
                     && $this->parent_id == Yii::app()->session['loginID']
                 )
             ) {
-                $editUser = "<button data-toggle='tooltip' data-url='" . $editUrl . "' data-user='" . htmlspecialchars($oUser['full_name']) . "' data-uid='" . $this->uid . "' data-action='modifyuser' title='" . gT("Edit this user") . "' type='submit' class='btn btn-default btn-xs action_usercontrol_button'><span class='fa fa-pencil text-success'></span></button>";
+                $editUser = "<button data-toggle='tooltip' data-url='" . $editUrl . "' data-user='" . htmlspecialchars($oUser['full_name']) . "' data-uid='" . $this->uid . "' data-action='modifyuser' title='" . gT("Edit this user") . "' type='submit' class='btn btn-default btn-sm green-border action_usercontrol_button'><span class='fa fa-pencil text-success'></span></button>";
             }
 
             if (
@@ -534,8 +548,8 @@ class User extends LSActiveRecord
                         data-action='deluser'
                         data-onclick='triggerRunAction($(\"#delete_user_" . $this->uid . "\"))'
                         data-message='" . gT("Do you want to delete this user?") . "'
-                        class='btn btn-default btn-xs '>
-                            <span class='fa fa-trash  text-danger'></span>
+                        class='btn btn-default btn-sm'>
+                            <span class='fa fa-trash text-danger'></span>
                         </button>
                     </span>";
             }
@@ -566,45 +580,52 @@ class User extends LSActiveRecord
         $editUrl = Yii::app()->getController()->createUrl('userManagement/addEditUser', ['userid' => $this->uid]);
         $setPermissionsUrl = Yii::app()->getController()->createUrl('userManagement/userPermissions', ['userid' => $this->uid]);
         $setRoleUrl = Yii::app()->getController()->createUrl('userManagement/addRole', ['userid' => $this->uid]);
-        $setTemplatePermissionsUrl = Yii::app()->getController()->createUrl('userManagement/userTemplatePermissions', ['userid' => $this->uid]);
         $changeOwnershipUrl = Yii::app()->getController()->createUrl('userManagement/takeOwnership');
+        $setTemplatePermissionsUrl = Yii::app()->getController()->createUrl('userManagement/userTemplatePermissions', ['userid' => $this->uid]);
         $deleteUrl = Yii::app()->getController()->createUrl('userManagement/deleteConfirm', ['userid' => $this->uid, 'user' => $this->full_name]);
-        
+
+        $iconBtnRow = "<div class='icon-btn-row'>";
+        $iconBtnRowEnd = "</div>";
 
         $userDetail = ""
             . "<button 
                 data-toggle='tooltip' 
                 title='" . gT("User details") . "'    
                 class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--userdetail' 
-                data-href='" . $detailUrl . "'><i class='fa fa-search'></i></button>";
+                data-href='" . $detailUrl . "'
+                >
+                <i class='fa fa-search'></i>
+                </button>";
 
         $editPermissionButton = ""
             . "<button 
                 data-toggle='tooltip' 
                 title='" . gT("Edit permissions") . "'  
                 class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--permissions' 
-                data-href='" . $setPermissionsUrl . "'><i class='fa fa-lock'></i></button>";
+                data-href='" . $setPermissionsUrl . "'
+                data-modalsize='modal-lg'
+                ><i class='fa fa-lock'></i></button>";
         $addRoleButton = ""
             . "<button 
                 data-toggle='tooltip' 
                 title='" . gT("User role") . "'
                 class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--addrole' 
                 data-href='" . $setRoleUrl . "'><i class='fa fa-users'></i></button>";
-        $editTemplatePermissionButton = ""
-            . "<button 
-                data-toggle='tooltip' 
-                title='" . gT("Template permissions") . "'
-                class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--templatepermissions' 
-                data-href='" . $setTemplatePermissionsUrl . "'><i class='fa fa-paint-brush'></i></button>";
         $editUserButton = ""
             . "<button 
                 data-toggle='tooltip' 
                 title='" . gT("Edit user") . "'
-                class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--edituser' 
-                data-href='" . $editUrl . "'><i class='fa fa-edit'></i></button>";
+                class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--edituser green-border' 
+                data-href='" . $editUrl . "'><i class='fa fa-pencil'></i></button>";
+        $editTemplatePermissionButton = ""
+            . "<button 
+        data-toggle='tooltip' 
+        title='" . gT("Template permissions") . "'
+        class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--templatepermissions' 
+        data-href='" . $setTemplatePermissionsUrl . "'><i class='fa fa-paint-brush'></i></button>";
         $takeOwnershipButton = ""
         . "<button 
-                id='UserManagement--takeown-" . $this->uid . "' 
+                id='UserManagement--takeown-" . $this->uid . "'
                 class='btn btn-sm btn-default' 
                 data-toggle='modal' 
                 data-target='#confirmation-modal' 
@@ -621,26 +642,10 @@ class User extends LSActiveRecord
         $deleteUserButton = ""
             . "<button 
                 id='UserManagement--delete-" . $this->uid . "' 
-                class='btn btn-sm btn-danger UserManagement--action--openmodal UserManagement--action--delete' 
+                class='btn btn-default btn-sm UserManagement--action--openmodal UserManagement--action--delete red-border'
                 data-toggle='tooltip' 
                 title='" . gT("Delete User") . "' 
                 data-href='" . $deleteUrl . "'><i class='fa fa-trash text-danger'></i></button>";
-        /*$deleteUserButton = ""
-            ."<button
-                id='UserManagement--delete-".$this->uid."'
-                class='btn btn-sm btn-danger'
-                data-toggle='modal'
-                data-target='#confirmation-modal'
-                data-url='".$deleteUrl."'
-                data-userid='".$this->uid."'
-                data-user='".$this->full_name."'
-                data-action='deluser'
-                data-onclick='LS.UserManagement.triggerRunAction(\"#UserManagement--delete-".$this->uid."\")'
-                data-message='".gt('Do you want to delete this user?')."'>
-                    <span data-toggle='tooltip' title='".gT("Delete User")."'>
-                        <i class='fa fa-trash text-danger'></i>
-                    </span>
-              </button>";*/
 
         // Superadmins can do everything, no need to do further filtering
         if (Permission::model()->hasGlobalPermission('superadmin', 'read')) {
@@ -651,9 +656,10 @@ class User extends LSActiveRecord
 
             // and Except deleting themselves and changing permissions when they are forced superadmin
             if (Permission::isForcedSuperAdmin($this->uid) || $this->uid == Yii::app()->user->getId()) {
-                return join("", [$userDetail, $editUserButton]);
+                return implode("", [$iconBtnRow, $userDetail, $editUserButton, $iconBtnRowEnd]);
             }
-            return join("", [
+            return implode("", [
+                $iconBtnRow,
                 $editUserButton,
                 $editPermissionButton,
                 $addRoleButton,
@@ -661,10 +667,12 @@ class User extends LSActiveRecord
                 $userDetail,
                 $editTemplatePermissionButton,
                 $this->parent_id != Yii::app()->session['loginID'] ? $takeOwnershipButton : '',
-                $deleteUserButton]);
+                $deleteUserButton,
+                $iconBtnRowEnd]);
         }
 
         $buttonArray = [];
+        $buttonArray[] = $iconBtnRow;
         // Check if user can see detail (must have probably but better save than sorry)
         if (
             $this->uid == Yii::app()->user->getId()                             //You can see yourself of course
@@ -697,14 +705,6 @@ class User extends LSActiveRecord
         ) {
             $buttonArray[] = $editPermissionButton;
         }
-        
-        //Check if user can set template permissions
-        if (
-            Permission::model()->hasGlobalPermission('templates', 'read')       //Has global permission templates read
-            && !Permission::isForcedSuperAdmin($this->uid)                      //Is not a forced superadmin
-        ) {
-            $buttonArray[] = $editTemplatePermissionButton;
-        }
 
         //Check if user can take ownership
         if (
@@ -725,9 +725,9 @@ class User extends LSActiveRecord
         ) {
             $buttonArray[] = $deleteUserButton;
         }
-        
-        
-        return join("", $buttonArray);
+        $buttonArray[] = $iconBtnRowEnd;
+
+        return implode("", $buttonArray);
     }
 
     public function getParentUserName()
@@ -752,7 +752,7 @@ class User extends LSActiveRecord
 
     public function getLastloginFormatted()
     {
-        
+
         $lastLogin = $this->last_login;
         if ($lastLogin == null) {
             return '---';
@@ -784,7 +784,10 @@ class User extends LSActiveRecord
                 "type" => 'raw',
                 "header" => gT("Action"),
                 'filter' => false,
-                'htmlOptions' => ["style" => "white-space: pre;"]
+                'htmlOptions' => [
+                    // "style" => "white-space: pre;",
+                    "class" => "text-center button-column"
+                ]
             ),
             array(
                 "name" => 'uid',
@@ -812,7 +815,7 @@ class User extends LSActiveRecord
                 "header" => gT("Created by"),
             )
         );
-        
+
         if (Permission::model()->hasGlobalPermission('superadmin', 'read')) {
             $cols[] = array(
                 "name" => 'surveysCreated',
@@ -914,13 +917,11 @@ class User extends LSActiveRecord
             }
         }
 
-        //filter for parentUserName
-        // This don't re&ally work : filter stay empty
         $getUser = Yii::app()->request->getParam('User');
         if (!empty($getUser['parentUserName'])) {
-            $getParentName = $getUser['parentUserName'];
-            $criteria->join = "LEFT JOIN lime_users luparent ON t.parent_id = luparent.uid";
-            $criteria->compare('luparent.users_name', $getParentName, true, 'OR');
+             $getParentName = $getUser['parentUserName'];
+            $criteria->join = "LEFT JOIN {{users}} u ON t.parent_id = u.uid";
+            $criteria->compare('u.users_name', $getParentName, true, 'OR');
         }
 
         return new CActiveDataProvider($this, array(
@@ -936,7 +937,8 @@ class User extends LSActiveRecord
      *
      * @return bool true if validation_key could be saved in db, false otherwise
      */
-    public function setValidationKey(){
+    public function setValidationKey()
+    {
         $this->validation_key = randomChars(self::MAX_VALIDATION_KEY_LENGTH);
 
         return $this->save();
@@ -948,7 +950,8 @@ class User extends LSActiveRecord
      * @return bool true if datetime could be saved, false otherwise
      * @throws Exception
      */
-    public function setValidationExpiration(){
+    public function setValidationExpiration()
+    {
         $datePlusMaxExpiration = new DateTime();
         $datePlusString = 'P' . self::MAX_EXPIRATION_TIME_IN_DAYS . 'D';
         $dateInterval = new DateInterval($datePlusString);

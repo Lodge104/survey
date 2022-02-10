@@ -14,35 +14,33 @@
 */
 /*
 * We need this later:
-*  1 - Array (Flexible Labels) Dual Scale
-5 - 5 Point Choice
-A - Array (5 Point Choice)
-B - Array (10 Point Choice)
-C - Array (Yes/No/Uncertain)
-D - Date
-E - Array (Increase, Same, Decrease)
-F - Array (Flexible Labels)
-G - Gender
-H - Array (Flexible Labels) by Column
-I - Language Switch
-K - Multiple Numerical Input
-L - List (Radio)
-M - Multiple choice
-N - Numerical Input
-O - List With Comment
-P - Multiple choice with comments
-Q - Multiple Short Text
-R - Ranking
-S - Short Free Text
-T - Long free text
-U - Huge Free Text
-X - Boilerplate Question
-Y - Yes/No
-! - List (Dropdown)
-: - Array (Flexible Labels) multiple drop down
-; - Array (Flexible Labels) multiple texts
-| - File Upload Question
-
+*
+* 1 - Array dual scale
+*5 - 5 point choice
+*A - Array (5 point choice)
+*B - Array (10 point choice)
+*C - Array (Yes/No/Uncertain)
+*D - Date
+*E - Array (Increase, Same, Decrease)
+*F - Array
+*G - Gender
+*H - Array by Column
+*I - Language Switch
+*K - Multiple numerical input
+*L - List (Radio)
+*M - Multiple choice
+*N - Numerical input
+*O - List With Comment
+*P - Multiple choice with comments
+*Q - Multiple short text
+*R - Ranking
+*S - Short free text
+*T - Long free text
+*U - Huge free text
+*X - Boilerplate Question
+*Y - Yes/No
+*! - List (Dropdown)
+*| - File Upload Question
 
 */
 
@@ -80,7 +78,7 @@ class dataentry extends Survey_Common_Action
         $aData['display']['menu_bars']['browse'] = gT("Data entry");
         $aData['title_bar']['title'] = gT("Data entry");
         $aData['sidemenu']['state'] = false;
-        
+
         $aData['topBar']['name'] = 'baseTopbar_view';
         $aData['topBar']['showImportButton'] = true;
         $aData['topBar']['showCloseButton'] = true;
@@ -294,14 +292,14 @@ class dataentry extends Survey_Common_Action
                 'type' => 'checkbox',
                 'label' => gT('Preserve response IDs')
             );
-            
+
             //Get the menubar
             $aData['display']['menu_bars']['browse'] = gT("Quick statistics");
             $survey = Survey::model()->findByPk($iSurveyId);
 
             $aData['title_bar']['title'] = gT('Browse responses') . ': ' . $survey->currentLanguageSettings->surveyls_title;
             $aData['sidemenu']['state'] = false;
-            
+
             $aData['topBar']['name'] = 'baseTopbar_view';
             $aData['topBar']['showImportButton'] = true;
             $aData['topBar']['showCloseButton'] = true;
@@ -374,7 +372,7 @@ class dataentry extends Survey_Common_Action
                 $beforeDataEntryImport->set('iSurveyID', $iSurveyId);
                 $beforeDataEntryImport->set('oModel', $targetResponse);
                 App()->getPluginManager()->dispatchEvent($beforeDataEntryImport);
- 
+
                 $imported++;
                 $targetResponse->save();
                 $aSRIDConversions[$iOldID] = $targetResponse->id;
@@ -406,7 +404,7 @@ class dataentry extends Survey_Common_Action
                 }
                 Yii::app()->session['flashmessage'] = sprintf(gT("%s old response(s) and according timings were successfully imported."), $imported, $iRecordCountT);
             }
-            $this->getController()->redirect(array("/admin/responses/sa/index/", 'surveyid' => $surveyid));
+            $this->getController()->redirect(["/responses/index/", 'surveyId' => $surveyid]);
         }
     }
 
@@ -619,14 +617,14 @@ class dataentry extends Survey_Common_Action
                             $aDataentryoutput .= CHtml::dropDownList('completed', $selected, $select_options, array('class' => 'form-control'));
 
                             break;
-                        case Question::QT_X_BOILERPLATE_QUESTION: //Boilerplate question
+                        case Question::QT_X_TEXT_DISPLAY: //Boilerplate question
                             $aDataentryoutput .= "";
                             break;
                         case Question::QT_Q_MULTIPLE_SHORT_TEXT:
                             $aDataentryoutput .= $fname['subquestion'] . '&nbsp;';
                             $aDataentryoutput .= CHtml::textField($fname['fieldname'], $idrow[$fname['fieldname']]);
                             break;
-                        case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION:
+                        case Question::QT_K_MULTIPLE_NUMERICAL:
                             $aDataentryoutput .= $fname['subquestion'] . '&nbsp;';
                             /* Fix DB DECIMAL type */
                             $value = $idrow[$fname['fieldname']];
@@ -691,7 +689,7 @@ class dataentry extends Survey_Common_Action
                                 $aDataentryoutput .= CHtml::dateTimeLocalField($fname['fieldname'], $thisdate);
                             }
                             break;
-                        case Question::QT_G_GENDER_DROPDOWN: //GENDER drop-down list
+                        case Question::QT_G_GENDER: //GENDER drop-down list
                             $select_options = array(
                             '' => gT("Please choose") . '...',
                             'F' => gT("Female"),
@@ -699,7 +697,7 @@ class dataentry extends Survey_Common_Action
                             );
                             $aDataentryoutput .= CHtml::listBox($fname['fieldname'], $idrow[$fname['fieldname']], $select_options);
                             break;
-                        case Question::QT_L_LIST_DROPDOWN: //LIST drop-down
+                        case Question::QT_L_LIST: //LIST drop-down
                         case Question::QT_EXCLAMATION_LIST_DROPDOWN: //List (Radio)
                             $qidattributes = QuestionAttribute::model()->getQuestionAttributes($fname['qid']);
                             if (isset($qidattributes['category_separator']) && trim($qidattributes['category_separator']) != '') {
@@ -791,7 +789,7 @@ class dataentry extends Survey_Common_Action
                             . "\t<br />\n"
                             . CHtml::textArea($fname['fieldname'], $idrow[$fname['fieldname']], array('cols' => 45,'rows' => 5));
                             break;
-                        case Question::QT_R_RANKING_STYLE: //RANKING TYPE QUESTION
+                        case Question::QT_R_RANKING: // Ranking TYPE QUESTION
                             $thisqid = $fname['qid'];
                             $currentvalues = array();
                             $myfname = $fname['sid'] . 'X' . $fname['gid'] . 'X' . $fname['qid'];
@@ -992,13 +990,13 @@ class dataentry extends Survey_Common_Action
                             /* no number fix with return window.LS.goodchars … */
                             $aDataentryoutput .= CHtml::textField($fname['fieldname'], $value, array('pattern' => "[-]?([0-9]{0,20}([\.][0-9]{0,10})?)?",'title' => gT("Only numbers may be entered in this field.")));
                             break;
-                        case Question::QT_S_SHORT_FREE_TEXT: //SHORT FREE TEXT
+                        case Question::QT_S_SHORT_FREE_TEXT: //Short free text
                             $aDataentryoutput .= CHtml::textField($fname['fieldname'], $idrow[$fname['fieldname']]);
                             break;
                         case Question::QT_T_LONG_FREE_TEXT: //LONG FREE TEXT
                             $aDataentryoutput .= CHtml::textArea($fname['fieldname'], $idrow[$fname['fieldname']], array('cols' => 45,'rows' => 5));
                             break;
-                        case Question::QT_U_HUGE_FREE_TEXT: //HUGE FREE TEXT
+                        case Question::QT_U_HUGE_FREE_TEXT: //Huge free text
                             $aDataentryoutput .= CHtml::textArea($fname['fieldname'], $idrow[$fname['fieldname']], array('cols' => 70,'rows' => 50));
                             break;
                         case Question::QT_Y_YES_NO_RADIO: //YES/NO radio-buttons
@@ -1020,7 +1018,7 @@ class dataentry extends Survey_Common_Action
                             $aDataentryoutput .= ">" . gT("No") . "</option>\n"
                             . "\t</select>\n";
                             break;
-                        case Question::QT_A_ARRAY_5_CHOICE_QUESTIONS: //ARRAY (5 POINT CHOICE) radio-buttons
+                        case Question::QT_A_ARRAY_5_POINT: // Array (5 point choice) radio-buttons
                             $aDataentryoutput .= "<table class='table'>\n";
                             $thisqid = $fname['qid'];
                             while ($fname['qid'] == $thisqid) {
@@ -1043,7 +1041,7 @@ class dataentry extends Survey_Common_Action
                             $aDataentryoutput .= "</table>\n";
                             $fname = prev($fnames);
                             break;
-                        case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS: //ARRAY (10 POINT CHOICE) radio-buttons
+                        case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS: // Array (10 point choice) radio-buttons
                             $aDataentryoutput .= "<table class='table'>\n";
                             $thisqid = $fname['qid'];
                             while ($fname['qid'] == $thisqid) {
@@ -1066,7 +1064,7 @@ class dataentry extends Survey_Common_Action
                             $fname = prev($fnames);
                             $aDataentryoutput .= "</table>\n";
                             break;
-                        case Question::QT_C_ARRAY_YES_UNCERTAIN_NO: //ARRAY (YES/UNCERTAIN/NO) radio-buttons
+                        case Question::QT_C_ARRAY_YES_UNCERTAIN_NO: // Array (Yes/Uncertain/No)
                             $aDataentryoutput .= "<table class='table'>\n";
                             $thisqid = $fname['qid'];
                             while ($fname['qid'] == $thisqid) {
@@ -1095,7 +1093,7 @@ class dataentry extends Survey_Common_Action
                             $fname = prev($fnames);
                             $aDataentryoutput .= "</table>\n";
                             break;
-                        case Question::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS: //ARRAY (Increase/Same/Decrease) radio-buttons
+                        case Question::QT_E_ARRAY_INC_SAME_DEC: // Array (Increase/Same/Decrease) radio-buttons
                             $aDataentryoutput .= "<table class='table'>\n";
                             $thisqid = $fname['qid'];
                             while ($fname['qid'] == $thisqid) {
@@ -1124,9 +1122,9 @@ class dataentry extends Survey_Common_Action
                             $fname = prev($fnames);
                             $aDataentryoutput .= "</table>\n";
                             break;
-                        case Question::QT_F_ARRAY_FLEXIBLE_ROW: //ARRAY (Flexible Labels)
-                        case Question::QT_H_ARRAY_FLEXIBLE_COLUMN:
-                        case Question::QT_1_ARRAY_MULTISCALE:
+                        case Question::QT_F_ARRAY: // Array
+                        case Question::QT_H_ARRAY_COLUMN:
+                        case Question::QT_1_ARRAY_DUAL:
                             $aDataentryoutput .= "<table class='table'>\n";
                             $thisqid = $fname['qid'];
                             while (isset($fname['qid']) && $fname['qid'] == $thisqid) {
@@ -1163,7 +1161,7 @@ class dataentry extends Survey_Common_Action
                             $fname = prev($fnames);
                             $aDataentryoutput .= "</table>\n";
                             break;
-                        case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS: //ARRAY (Multi Flexi) (Numbers)
+                        case Question::QT_COLON_ARRAY_NUMBERS: // Array (Numbers)
                             $qidattributes = QuestionAttribute::model()->getQuestionAttributes($fname['qid']);
                             $minvalue = 1;
                             $maxvalue = 10;
@@ -1219,7 +1217,7 @@ class dataentry extends Survey_Common_Action
                             $fname = prev($fnames);
                             $aDataentryoutput .= "</table>\n";
                             break;
-                        case Question::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT: //ARRAY (Multi Flexi)
+                        case Question::QT_SEMICOLON_ARRAY_TEXT: // Array
                             $aDataentryoutput .= "<table class='table'>\n";
                             $thisqid = $fname['qid'];
                             while (isset($fname['qid']) && $fname['qid'] == $thisqid) {
@@ -1245,20 +1243,56 @@ class dataentry extends Survey_Common_Action
                         case "startdate":
                         case "datestamp":
                             $thisdate = "";
+                            $dateformatdetails = getDateFormatData(Yii::app()->session['dateformat']);
                             if ($idrow[$fname['fieldname']] != '') {
                                 $datetimeobj = DateTime::createFromFormat("Y-m-d H:i:s", $idrow[$fname['fieldname']]);
                                 if ($datetimeobj == null) { //MSSQL uses microseconds by default in any datetime object
                                     $datetimeobj = DateTime::createFromFormat("Y-m-d H:i:s.u", $idrow[$fname['fieldname']]);
                                 }
                                 if ($datetimeobj) {
-                                    $thisdate = $datetimeobj->format("Y-m-d\TH:i");
+                                    $thisdate = $datetimeobj->format($dateformatdetails['phpdate'] . " H:i");
                                 }
                             }
-                            $aDataentryoutput .= CHtml::dateTimeLocalField($fname['fieldname'], $thisdate);
+                            $aDataentryoutput .= App()->getController()->widget(
+                                'yiiwheels.widgets.datetimepicker.WhDateTimePicker',
+                                array(
+                                    'name' => $fname['fieldname'],
+                                    'id' => $fname['fieldname'],
+                                    'value' => $thisdate,
+                                    'htmlOptions' => array(
+                                        'required' => in_array($fname['fieldname'], array("startdate")),
+                                    ),
+                                    'pluginOptions' => array(
+                                        'format' => $dateformatdetails['jsdate'] . " HH:mm",
+                                        'allowInputToggle' => true,
+                                        'showClear' => true,
+                                        'tooltips' => array(
+                                            'clear' => gT('Clear selection'),
+                                            'prevMonth' => gT('Previous month'),
+                                            'nextMonth' => gT('Next month'),
+                                            'selectYear' => gT('Select year'),
+                                            'prevYear' => gT('Previous year'),
+                                            'nextYear' => gT('Next year'),
+                                            'selectDecade' => gT('Select decade'),
+                                            'prevDecade' => gT('Previous decade'),
+                                            'nextDecade' => gT('Next decade'),
+                                            'prevCentury' => gT('Previous century'),
+                                            'nextCentury' => gT('Next century'),
+                                            'selectTime' => gT('Select time')
+                                        ),
+                                        'locale' => convertLStoDateTimePickerLocale(Yii::app()->session['adminlang']),
+                                    )
+                                ),
+                                true
+                            );
                             break;
                         case "startlanguage":
                         default:
-                            $aDataentryoutput .= CHtml::textField($fname['fieldname'], $idrow[$fname['fieldname']]);
+                            $aDataentryoutput .= CHtml::textField(
+                                $fname['fieldname'],
+                                $idrow[$fname['fieldname']],
+                                array('class' => 'form-control')
+                            );
                             break;
                     }
 
@@ -1302,6 +1336,8 @@ class dataentry extends Survey_Common_Action
      */
     public function delete()
     {
+        $this->requirePostRequest();
+
         $surveyid = '';
         if (isset($_REQUEST['surveyid']) && !empty($_REQUEST['surveyid'])) {
             $surveyid = $_REQUEST['surveyid'];
@@ -1312,7 +1348,7 @@ class dataentry extends Survey_Common_Action
 
         $surveyid = sanitize_int($surveyid);
         $survey = Survey::model()->findByPk($surveyid);
-        $id = $_REQUEST['id'];
+        $id = (int) $_REQUEST['id'];
 
         $aData = array(
             'surveyid' => $surveyid,
@@ -1411,7 +1447,7 @@ class dataentry extends Survey_Common_Action
                     }
                     break;
                 case Question::QT_N_NUMERICAL:
-                case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION:
+                case Question::QT_K_MULTIPLE_NUMERICAL:
                     if ($thisvalue === "") {
                         $oReponse->$fieldname = null;
                         break;
@@ -1434,7 +1470,7 @@ class dataentry extends Survey_Common_Action
                     }
                     $oReponse->$fieldname = $thisvalue;
                     break;
-                case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS:
+                case Question::QT_COLON_ARRAY_NUMBERS:
                     if (!empty($thisvalue) && strval($thisvalue) != strval(floatval($thisvalue))) {
                         // mysql not need, unsure about mssql
                         Yii::app()->setFlashMessage(sprintf(gT("Invalid numeric value for %s"), $fieldname), 'warning');
@@ -1450,32 +1486,27 @@ class dataentry extends Survey_Common_Action
                     }
                     if (empty($thisvalue)) {
                         if (Survey::model()->findByPk($surveyid)->isDateStamp) {
-                            $thisvalue = dateShift(date("Y-m-d H:i"), "Y-m-d\TH:i", Yii::app()->getConfig('timeadjust'));
+                            $oReponse->$fieldname = dateShift(date("Y-m-d H:i"), "Y-m-d\TH:i", Yii::app()->getConfig('timeadjust'));
                         } else {
-                            $thisvalue = date("Y-m-d\TH:i", (int) mktime(0, 0, 0, 1, 1, 1980));
+                            $oReponse->$fieldname = date("Y-m-d\TH:i", (int) mktime(0, 0, 0, 1, 1, 1980));
                         }
+                        break;
                     }
+                    // No break with submitdate set and completed as Y
                 case 'startdate':
                 case 'datestamp':
                     if (empty($thisvalue)) {
-                        $oReponse->$fieldname = null;
+                        $oReponse->$fieldname = dateShift(date("Y-m-d H:i"), "Y-m-d\TH:i", Yii::app()->getConfig('timeadjust'));
                         break;
                     }
-                    $dateformatdetails = getDateFormatForSID($surveyid);
-                    $datetimeobj = DateTime::createFromFormat('!' . $dateformatdetails['phpdate'], $thisvalue);
-                    if (!$datetimeobj) {
-                        /* Not able to use js system */
-                        $datetimeobj = DateTime::createFromFormat('Y-m-d\TH:i', $thisvalue);
-                    }
+                    $dateformatdetails = getDateFormatData(Yii::app()->session['dateformat']);
+                    $datetimeobj = DateTime::createFromFormat('!' . $dateformatdetails['phpdate'] . " H:i", $thisvalue);
                     if ($datetimeobj) {
                         $oReponse->$fieldname = $datetimeobj->format('Y-m-d H:i');
                     } else {
                         Yii::app()->setFlashMessage(sprintf(gT("Invalid datetime %s value for %s"), htmlentities($thisvalue), $fieldname), 'warning');
-                        if ($irow['type'] != 'submitdate') {
-                            $oReponse->$fieldname = date("Y-m-d H:i:s");// Need not null value
-                        } else {
-                            $oReponse->$fieldname = null;
-                        }
+                        /* We get here : we need a valid value : NOT NULL in db or completed != "N" */
+                        $oReponse->$fieldname = dateShift(date("Y-m-d H:i"), "Y-m-d\TH:i", Yii::app()->getConfig('timeadjust'));
                     }
                     break;
                 default:
@@ -1492,7 +1523,7 @@ class dataentry extends Survey_Common_Action
             Yii::app()->setFlashMessage(sprintf(gT("The response record %s was updated."), $id));
         }
         if (Yii::app()->request->getPost('close-after-save') == 'true') {
-            $this->getController()->redirect($this->getController()->createUrl("admin/responses/sa/view/surveyid/{$surveyid}/id/{$id}"));
+            $this->getController()->redirect($this->getController()->createUrl("responses/view/", ['surveyId' => $surveyid, 'id' => $id]));
         } else {
             $this->getController()->redirect($this->getController()->createUrl("admin/dataentry/sa/editdata/subaction/edit/surveyid/{$surveyid}/id/{$id}"));
         }
@@ -1618,7 +1649,7 @@ class dataentry extends Survey_Common_Action
                 foreach ($fieldmap as $irow) {
                     $fieldname = $irow['fieldname'];
                     if (isset($_POST[$fieldname])) {
-                        if ($_POST[$fieldname] == "" && ($irow['type'] == Question::QT_D_DATE || $irow['type'] == Question::QT_N_NUMERICAL || $irow['type'] == Question::QT_K_MULTIPLE_NUMERICAL_QUESTION)) {
+                        if ($_POST[$fieldname] == "" && ($irow['type'] == Question::QT_D_DATE || $irow['type'] == Question::QT_N_NUMERICAL || $irow['type'] == Question::QT_K_MULTIPLE_NUMERICAL)) {
                             // can't add '' in Date column
                             // Do nothing
                         } elseif ($irow['type'] == Question::QT_VERTICAL_FILE_UPLOAD) {
@@ -1709,7 +1740,7 @@ class dataentry extends Survey_Common_Action
                         }
                     }
                     $aToken->save();
-                    
+
                     // save submitdate into survey table
                     $aResponse = Response::model($surveyid)->findByPk($last_db_id);
                     $aResponse->submitdate = $submitdate;
@@ -2021,18 +2052,18 @@ class dataentry extends Survey_Common_Action
                         $cdata['hh'] = $hh;
                     }
                     switch ($arQuestion['type']) {
-                        case Question::QT_Q_MULTIPLE_SHORT_TEXT: //MULTIPLE SHORT TEXT
-                        case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION:
+                        case Question::QT_Q_MULTIPLE_SHORT_TEXT: //Multiple short text
+                        case Question::QT_K_MULTIPLE_NUMERICAL:
                             $cdata['dearesult'] = Question::model()->findAll("parent_qid={$arQuestion['qid']}");
                             break;
 
-                        case Question::QT_1_ARRAY_MULTISCALE: // multi scale^
+                        case Question::QT_1_ARRAY_DUAL: // Dual scale^
                             $cdata['dearesult'] = Question::model()->findAll("parent_qid={$arQuestion['qid']}");
                             $cdata['fother'] = $arQuestion->other;
 
                             break;
 
-                        case Question::QT_L_LIST_DROPDOWN: //LIST drop-down/radio-button list
+                        case Question::QT_L_LIST: //LIST drop-down/radio-button list
                         case Question::QT_EXCLAMATION_LIST_DROPDOWN:
                             if ($arQuestion['type'] == '!' && trim($qidattributes['category_separator']) != '') {
                                 $optCategorySeparator = $qidattributes['category_separator'];
@@ -2089,7 +2120,7 @@ class dataentry extends Survey_Common_Action
                             $cdata['defexists'] = $defexists;
 
                             break;
-                        case Question::QT_R_RANKING_STYLE: //RANKING TYPE QUESTION
+                        case Question::QT_R_RANKING: // Ranking TYPE QUESTION
                             $thisqid = $arQuestion['qid'];
                             $arAnswers = $arQuestion->answers;
                             $anscount = count($arAnswers);
@@ -2116,10 +2147,10 @@ class dataentry extends Survey_Common_Action
                         case Question::QT_I_LANGUAGE: //Language Switch
                             $cdata['slangs'] = $survey->allLanguages;
                             break;
-                        case Question::QT_A_ARRAY_5_CHOICE_QUESTIONS: //ARRAY (5 POINT CHOICE) radio-buttons
-                        case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS: //ARRAY (10 POINT CHOICE) radio-buttons
-                        case Question::QT_C_ARRAY_YES_UNCERTAIN_NO: //ARRAY (YES/UNCERTAIN/NO) radio-buttons
-                        case Question::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS: //ARRAY (YES/UNCERTAIN/NO) radio-buttons
+                        case Question::QT_A_ARRAY_5_POINT: // Array (5 point choice) radio-buttons
+                        case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS: // Array (10 point choice) radio-buttons
+                        case Question::QT_C_ARRAY_YES_UNCERTAIN_NO: // Array (Yes/Uncertain/No)
+                        case Question::QT_E_ARRAY_INC_SAME_DEC: // Array (Yes/Uncertain/No)
                         case Question::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS: //Multiple choice with comments checkbox + text
                             $cdata['mearesult'] = $arQuestion->subquestions;
                             break;
@@ -2128,7 +2159,7 @@ class dataentry extends Survey_Common_Action
                             $maxfiles = $qidattributes['max_num_of_files'];
                             $cdata['maxfiles'] = $maxfiles;
                             break;
-                        case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS: //ARRAY (Multi Flexi)
+                        case Question::QT_COLON_ARRAY_NUMBERS: // Array
                             $minvalue = 1;
                             $maxvalue = 10;
                             if (trim($qidattributes['multiflexible_max']) != '' && trim($qidattributes['multiflexible_min']) == '') {
@@ -2173,12 +2204,12 @@ class dataentry extends Survey_Common_Action
                                 $this->getController()->redirect($this->getController()->createUrl("/admin/"));
                             }
                             break;
-                        case Question::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT: //ARRAY (Multi Flexi)
+                        case Question::QT_SEMICOLON_ARRAY_TEXT: // Array
                             $cdata['lresult'] = $arQuestion->findAllByAttributes(['parent_qid' => $arQuestion['qid'], 'scale_id' => 1]);
                             $cdata['mearesult'] = $arQuestion->findAllByAttributes(['parent_qid' => $arQuestion['qid'], 'scale_id' => 0]);
                             break;
-                        case Question::QT_F_ARRAY_FLEXIBLE_ROW: //ARRAY (Flexible Labels)
-                        case Question::QT_H_ARRAY_FLEXIBLE_COLUMN:
+                        case Question::QT_F_ARRAY: // Array
+                        case Question::QT_H_ARRAY_COLUMN:
                             $cdata['mearesult'] = $arQuestion->subquestions;
                             $cdata['fresult'] = Answer::model()->findAllByAttributes(['qid' => $arQuestion['qid']]);
                             break;

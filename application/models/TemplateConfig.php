@@ -22,7 +22,6 @@
  */
 class TemplateConfig extends CActiveRecord
 {
-
     /** @var string $sTemplateName The template name */
     public $sTemplateName = '';
 
@@ -443,7 +442,8 @@ class TemplateConfig extends CActiveRecord
      */
     protected function setIsStandard()
     {
-        $this->isStandard = Template::isStandardTemplate($this->sTemplateName);
+        Yii::import('application.helpers.SurveyThemeHelper');
+        $this->isStandard = SurveyThemeHelper::isStandardTemplate($this->sTemplateName);
     }
 
 
@@ -803,6 +803,10 @@ class TemplateConfig extends CActiveRecord
         $aClassAndAttributes['attr']['modalfooterlink']   = ' href="#" data-dismiss="modal" ';
 
         $aClassAndAttributes['attr']['alertmodal'] = $aClassAndAttributes['attr']['modaldialog'] = $aClassAndAttributes['attr']['modalcontent'] = $aClassAndAttributes['attr']['modaltitle'] = $aClassAndAttributes['attr']['modalbody'] = $aClassAndAttributes['attr']['modalfooter'] = '';
+
+        // Soft Mandatory Checkbox
+        $aClassAndAttributes['class']['mandsoftcheckbox'] = '';
+        $aClassAndAttributes['class']['mandsoftcheckboxlabel'] = '';
 
         // Assessments
         $aClassAndAttributes['class']['assessmenttable']      = ' assessment-table ';
@@ -1259,7 +1263,7 @@ class TemplateConfig extends CActiveRecord
     {
     }
 
-    protected function getTemplateForPath($oRTemplate, $sPath)
+    protected function getTemplateConfigurationForAttribute($oRTemplate, $attribute)
     {
     }
 

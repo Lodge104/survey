@@ -27,12 +27,12 @@ abstract class QuestionBaseDataSet extends StaticModel
      * @param int $iQuestionID
      * @param int $sQuestionType
      * @param string $sLanguage
-     * @param null   $question_template
+     * @param null   $questionThemeName
      *
      * @return array
      * @throws CException
      */
-    public function getGeneralSettingsArray($iQuestionID = null, $sQuestionType = null, $sLanguage = null, $question_template = null)
+    public function getGeneralSettingsArray($iQuestionID = null, $sQuestionType = null, $sLanguage = null, $questionThemeName = null)
     {
         Yii::import('ext.GeneralOptionWidget.settings.*');
         if ($iQuestionID != null) {
@@ -43,7 +43,7 @@ abstract class QuestionBaseDataSet extends StaticModel
                 Yii::app()->request->getParam('surveyId');
             $this->oQuestion = $oQuestion = QuestionCreate::getInstance($iSurveyId, $sQuestionType);
         }
-        
+
         $this->sQuestionType = $sQuestionType == null ? $this->oQuestion->type : $sQuestionType;
         $this->sLanguage = $sLanguage == null ? $this->oQuestion->survey->language : $sLanguage;
 
@@ -76,7 +76,7 @@ abstract class QuestionBaseDataSet extends StaticModel
             'preg'            => new ValidationGeneralOption($this->oQuestion),
             'save_as_default' => new SaveAsDefaultGeneralOption($this->oQuestion)
         ];
-        
+
         $userSetting = SettingsUser::getUserSettingValue('question_default_values_' . $this->sQuestionType);
         if ($userSetting !== null) {
             $generalOptions['clear_default'] = new ClearDefaultGeneralOption();
@@ -89,12 +89,12 @@ abstract class QuestionBaseDataSet extends StaticModel
             // load xml file
             if (\PHP_VERSION_ID < 80000) {
                 libxml_disable_entity_loader(false);
-            }            
+            }
             $xml_config = simplexml_load_file($sXmlFilePath);
             $aXmlAttributes = json_decode(json_encode((array)$xml_config->generalattributes), true);
             if (\PHP_VERSION_ID < 80000) {
                 libxml_disable_entity_loader(true);
-            }            
+            }
         }
 
         foreach ($generalOptions as $key => $generalOption) {
