@@ -20,9 +20,8 @@
  * @copyright 2011
  * @access public
  */
-class saved extends Survey_Common_Action
+class Saved extends SurveyCommonAction
 {
-
     /**
      * Show the list of save response
      * @param int $surveyid
@@ -57,7 +56,7 @@ class saved extends Survey_Common_Action
         }
         $aData['savedResponsesPageSize'] = App()->user->getState('savedResponsesPageSize', App()->params['defaultPageSize']);
         $aViewUrls[] = 'savedlist_view';
-        $this->_renderWrappedTemplate('saved', $aViewUrls, $aData);
+        $this->renderWrappedTemplate('saved', $aViewUrls, $aData);
     }
 
     /**
@@ -68,7 +67,7 @@ class saved extends Survey_Common_Action
      * @param [type] $id
      * @return void
      */
-    public function resend_accesscode($surveyid, $id)
+    public function resendAccesscode($surveyid, $id)
     {
     }
 
@@ -95,9 +94,9 @@ class saved extends Survey_Common_Action
             throw new CHttpException(401, gT("Saved response not found"));
         }
         if ($oSavedControl->delete()) {
-            $oReponse = Response::model($surveyid)->findByPk($oSavedControl->srid);
-            if ($oReponse) {
-                $oReponse->delete();
+            $oResponse = Response::model($surveyid)->findByPk($oSavedControl->srid);
+            if ($oResponse) {
+                $oResponse->delete();
             }
         } else {
             if (Yii::app()->getRequest()->isAjaxRequest) {
@@ -122,7 +121,7 @@ class saved extends Survey_Common_Action
      * @param string[] $aViewUrls View url(s)
      * @param array $aData Data to be passed on. Optional.
      */
-    protected function _renderWrappedTemplate($sAction = 'saved', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
+    protected function renderWrappedTemplate($sAction = 'saved', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
         $aData['display']['menu_bars']['browse'] = gT('Browse responses'); // browse is independent of the above
         $aData['surveyid'] = $iSurveyId = $aData['iSurveyId'];
@@ -133,6 +132,6 @@ class saved extends Survey_Common_Action
         $aData['topBar']['name'] = 'baseTopbar_view';
         $aData['topBar']['leftSideView'] = 'responsesTopbarLeft_view';
 
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
+        parent::renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 }

@@ -39,6 +39,7 @@
  *
  * @property array $standardCols
  * @property array $standardColsForGrid
+ * @property array $custom_attributes
  */
 class TokenDynamic extends LSActiveRecord
 {
@@ -51,6 +52,8 @@ class TokenDynamic extends LSActiveRecord
     /**
      * @inheritdoc
      * @return TokenDynamic
+     * @param ?string $sid
+     * @psalm-suppress ParamNameMismatch Ignore that $sid is $className in parent class
      */
     public static function model($sid = null)
     {
@@ -174,7 +177,7 @@ class TokenDynamic extends LSActiveRecord
         $command = new CDbCriteria();
         $command->condition = '';
         $command->addCondition("(completed ='N') or (completed='')");
-        $command->addCondition("token <> ''");
+        $command->addCondition("t.token <> ''");
         $command->addCondition("email <> ''");
 
         if ($bEmail) {
@@ -205,7 +208,7 @@ class TokenDynamic extends LSActiveRecord
 
         $command->order = 'tid';
 
-        $oResult = TokenDynamic::model()->findAll($command);
+        $oResult = $this->findAll($command);
         foreach ($oResult as $key => $result) {
             $oResult[$key] = $result->decrypt();
         }
@@ -230,8 +233,8 @@ class TokenDynamic extends LSActiveRecord
     public function findUninvitedIDs($aTokenIds = false, $iMaxEmails = 0, $bEmail = true, $SQLemailstatuscondition = '', $SQLremindercountcondition = '', $SQLreminderdelaycondition = '')
     {
         $tokens = $this->findUninvited($aTokenIds, $iMaxEmails, $bEmail, $SQLemailstatuscondition, $SQLremindercountcondition, $SQLreminderdelaycondition);
-        $ids = array_map(function ($item) { 
-            return $item->tid; 
+        $ids = array_map(function ($item) {
+            return $item->tid;
         }, $tokens);
         return $ids;
     }
@@ -503,6 +506,7 @@ class TokenDynamic extends LSActiveRecord
     /**
      * @return array
      */
+    // phpcs:ignore
     public function getCustom_attributes()
     {
         $columns = $this->getMetaData()->columns;
@@ -621,7 +625,7 @@ class TokenDynamic extends LSActiveRecord
             array(
                 'header' => gT('Action'),
                 'class' => 'bootstrap.widgets.TbButtonColumn',
-                'template' => '{edit}{viewresponse}{spacerviewresponse}{previewsurvey}{previewsurveyspacer}{mail}{remind}{mailspacer}{viewparticipant}<span data-toggle="tooltip" title="' . gt('Delete survey participant') . '">{deletetoken}</span>{viewparticipantspacer}',
+                'template' => '{edit}{viewresponse}{spacerviewresponse}{previewsurvey}{launchsurvey}{previewsurveyspacer}{mail}{remind}{mailspacer}{viewparticipant}<span data-toggle="tooltip" title="' . gt('Delete survey participant') . '">{deletetoken}</span>{viewparticipantspacer}',
                 'htmlOptions' => array('class' => 'icon-btn-row'),
                 'buttons' => $this->getGridButtons(),
             ),
@@ -752,7 +756,6 @@ class TokenDynamic extends LSActiveRecord
     public function getAttributesForGrid()
     {
         $aCustomAttributesCols = array();
-        //$aCustomAttributes = $this->custom_attributes;
 
         $oSurvey = Survey::model()->findByAttributes(array("sid" => self::$sid));
         $aCustomAttributes = $oSurvey->tokenAttributes;
@@ -809,7 +812,19 @@ class TokenDynamic extends LSActiveRecord
         /* previewsurvey button */
         $baseView = intval(Permission::model()->hasSurveyPermission(self::$sid, 'responses', 'create'));
         $gridButtons['previewsurvey'] = array(
-            'label' => '<span class="sr-only">' . gT("Launch the survey with this participant") . '</span><span class="fa fa-eye" aria-hidden="true"></span>',
+            'label' => '<span class="sr-only">' . gT("Preview the survey with this participant") . '</span><span class="fa fa-eye" aria-hidden="true"></span>',
+            'imageUrl' => false,
+            'url' => 'App()->createUrl("/survey/index",array("sid"=>' . self::$sid . ',"token"=>$data->token,"newtest"=>"Y"));',
+            'options' => array(
+                'class' => "btn btn-default btn-sm",
+                'target' => "_blank",
+                'data-toggle' => "tooltip",
+                'title' => gT("Preview the survey with this participant")
+            ),
+            'visible' => $baseView . ' && !$data->survey->isActive && !empty($data->token) && ( $data->completed == "N" || empty($data->completed) || $data->survey->alloweditaftercompletion == "Y")'
+        );
+        $gridButtons['launchsurvey'] = array(
+            'label' => '<span class="sr-only">' . gT("Launch the survey with this participant") . '</span><span class="fa fa-play" aria-hidden="true"></span>',
             'imageUrl' => false,
             'url' => 'App()->createUrl("/survey/index",array("sid"=>' . self::$sid . ',"token"=>$data->token,"newtest"=>"Y"));',
             'options' => array(
@@ -818,7 +833,7 @@ class TokenDynamic extends LSActiveRecord
                 'data-toggle' => "tooltip",
                 'title' => gT("Launch the survey with this participant")
             ),
-            'visible' => $baseView . ' && !empty($data->token) && ( $data->completed == "N" || empty($data->completed) || $data->survey->alloweditaftercompletion == "Y")'
+            'visible' => $baseView . ' && $data->survey->isActive && !empty($data->token) && ( $data->completed == "N" || empty($data->completed) || $data->survey->alloweditaftercompletion == "Y")'
         );
         $gridButtons['previewsurveyspacer'] = array(
             'label' => '<span class="fa fa-eye  text-muted" aria-hidden="true"></span>',

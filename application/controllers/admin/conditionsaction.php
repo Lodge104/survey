@@ -20,9 +20,8 @@
  * @package        LimeSurvey
  * @subpackage    Backend
  */
-class conditionsaction extends Survey_Common_Action
+class ConditionsAction extends SurveyCommonAction
 {
-
     /**
      * @var array
      */
@@ -629,13 +628,13 @@ class conditionsaction extends Survey_Common_Action
         }
 
         $aData['conditionsoutput'] = $aViewUrls['output'];
-        $this->_renderWrappedTemplate('conditions', $aViewUrls, $aData);
+        $this->renderWrappedTemplate('conditions', $aViewUrls, $aData);
 
         // TMSW Condition->Relevance:  Must call LEM->ConvertConditionsToRelevance() whenever Condition is added or updated - what is best location for that action?
     }
 
     /**
-     * This array will be used to explain wich conditions is used to evaluate the question
+     * This array will be used to explain which conditions is used to evaluate the question
      * @return array
      */
     protected function getMethod()
@@ -660,7 +659,7 @@ class conditionsaction extends Survey_Common_Action
         if (empty(Yii::app()->request->getPost('ok'))) {
             $data = array('iSurveyID' => $iSurveyID);
             $content = $this->getController()->renderPartial('/admin/conditions/deleteAllConditions', $data, true);
-            $this->_renderWrappedTemplate('conditions', array('message' => array(
+            $this->renderWrappedTemplate('conditions', array('message' => array(
                 'title' => gT("Warning"),
                 'message' => $content
             )));
@@ -1073,7 +1072,7 @@ class conditionsaction extends Survey_Common_Action
         $copyconditionsfrom = returnGlobal('copyconditionsfrom');
         $copyconditionsto = returnGlobal('copyconditionsto');
         if (isset($copyconditionsto) && is_array($copyconditionsto) && isset($copyconditionsfrom) && is_array($copyconditionsfrom)) {
-            //Get the conditions we are going to copy
+            //Get the conditions we are going to copy and quote them properly
             foreach ($copyconditionsfrom as &$entry) {
                 $entry = Yii::app()->db->quoteValue($entry);
             }
@@ -1086,11 +1085,11 @@ class conditionsaction extends Survey_Common_Action
 
             foreach ($result->readAll() as $row) {
                 $proformaconditions[] = array(
-                    "scenario"        =>    $row['scenario'],
-                    "cqid"            =>    $row['cqid'],
+                    "scenario"      =>    $row['scenario'],
+                    "cqid"          =>    $row['cqid'],
                     "cfieldname"    =>    $row['cfieldname'],
                     "method"        =>    $row['method'],
-                    "value"            =>    $row['value']
+                    "value"         =>    $row['value']
                 );
             } // while
 
@@ -1101,7 +1100,7 @@ class conditionsaction extends Survey_Common_Action
 
                     //First lets make sure there isn't already an exact replica of this condition
                     $conditions_data = array(
-                        'qid'        => $newqid,
+                        'qid'        => (int) $newqid,
                         'scenario'   => $pfc['scenario'],
                         'cqid'       => $pfc['cqid'],
                         'cfieldname' => $pfc['cfieldname'],
@@ -1184,10 +1183,13 @@ class conditionsaction extends Survey_Common_Action
                 break;
             // Update scenario
             case "updatescenario":
-                // TODO: Check if $p_newscenarionum is null
-                Condition::model()->insertRecords(array('scenario' => $p_newscenarionum), true, array(
-                    'qid' => $qid, 'scenario' => $p_scenario));
-                LimeExpressionManager::UpgradeConditionsToRelevance(null, $qid);
+                if (is_null($p_newscenarionum)) {
+                    Yii::app()->setFlashMessage(gT("No scenario number specified"), 'error');
+                } else {
+                    Condition::model()->insertRecords(array('scenario' => $p_newscenarionum), true, array(
+                        'qid' => $qid, 'scenario' => $p_scenario));
+                    LimeExpressionManager::UpgradeConditionsToRelevance(null, $qid);
+                }
                 break;
             // Delete all conditions for this question
             case "deleteallconditions":
@@ -1218,9 +1220,9 @@ class conditionsaction extends Survey_Common_Action
      * @return void
      * @throws CHttpException
      */
-    protected function _renderWrappedTemplate($sAction = 'conditions', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
+    protected function renderWrappedTemplate($sAction = 'conditions', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
+        parent::renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 
     /**
@@ -1310,18 +1312,13 @@ class conditionsaction extends Survey_Common_Action
      */
     protected function getQuestionRows()
     {
-        $qresult = Question::model()->findAllByAttributes(array(
-            'parent_qid' => 0,
-            'sid' => $this->iSurveyID));
+        $qresult = Question::model()->primary()->getQuestionList($this->iSurveyID);
 
         //'language' => $this->language
         $qrows = array();
         foreach ($qresult as $k => $v) {
             $qrows[$k] = array_merge($v->attributes, $v->group->attributes);
         }
-
-        // Perform a case insensitive natural sort on group name then question title (known as "code" in the form) of a multidimensional array
-        usort($qrows, 'groupOrderThenQuestionOrder');
 
         return $qrows;
     }
@@ -1430,8 +1427,7 @@ class conditionsaction extends Survey_Common_Action
                                 array(
                                     'qid' => $rows['qid'],
                                     'scale_id' => 0,
-                                ),
-                                array('order' => 'sortorder, code')
+                                )
                             );
                             foreach ($fresult as $frow) {
                                 $canswers[] = array($rows['sid'] . $X . $rows['gid'] . $X . $rows['qid'] . $arows['title'], $frow['code'], $frow->answerl10ns[$this->language]->answer);
@@ -1502,7 +1498,7 @@ class conditionsaction extends Survey_Common_Action
                 foreach ($aresult as $arows) {
                     $attr = QuestionAttribute::model()->getQuestionAttributes($rows['qid']);
                     $sLanguage = $this->language;
-                    // dualscale_header are allways set, but can be empty
+                    // dualscale_header are always set, but can be empty
                     $label1 = empty($attr['dualscale_headerA'][$sLanguage]) ? gT('Scale 1') : $attr['dualscale_headerA'][$sLanguage];
                     $label2 = empty($attr['dualscale_headerB'][$sLanguage]) ? gT('Scale 2') : $attr['dualscale_headerB'][$sLanguage];
                     $shortanswer = "{$arows['title']}: [" . strip_tags($arows->questionl10ns[$this->language]->question) . "][$label1]";
@@ -1518,7 +1514,7 @@ class conditionsaction extends Survey_Common_Action
                             'answerl10ns' => array(
                                 'condition' => 'answerl10ns.language = :lang',
                                 'params' => array(':lang' => $this->language)
-                            )))->findAllByAttributes(array('qid' => $rows['qid'], 'scale_id' => 0), array('order' => 'sortorder, answer'));
+                            )))->findAllByAttributes(array('qid' => $rows['qid'], 'scale_id' => 0));
                     foreach ($lresult as $lrows) {
                         $canswers[] = array($rows['sid'] . $X . $rows['gid'] . $X . $rows['qid'] . $arows['title'] . "#0", "{$lrows['code']}", "{$lrows['code']}");
                     }
@@ -1529,9 +1525,9 @@ class conditionsaction extends Survey_Common_Action
                                 'condition' => 'answerl10ns.language = :lang',
                                 'params' => array(':lang' => $this->language)
                             )))->findAllByAttributes(array(
-                        'qid' => $rows['qid'],
-                        'scale_id' => 1
-                            ), array('order' => 'sortorder, answer'));
+                                'qid' => $rows['qid'],
+                                'scale_id' => 1
+                            ));
 
                     foreach ($lresult as $lrows) {
                         $canswers[] = array($rows['sid'] . $X . $rows['gid'] . $X . $rows['qid'] . $arows['title'] . "#1", "{$lrows['code']}", "{$lrows['code']}");
@@ -1567,10 +1563,9 @@ class conditionsaction extends Survey_Common_Action
                                 'params' => array(':lang' => $this->language)
                             )))->findAllByAttributes(
                                 array(
-                                "qid" => $rows['qid'],
-                                "scale_id" => 0,
-                                ),
-                                array('order' => 'sortorder, answer')
+                                    "qid" => $rows['qid'],
+                                    "scale_id" => 0,
+                                )
                             );
 
                 $acount = count($aresult);
@@ -1656,9 +1651,9 @@ class conditionsaction extends Survey_Common_Action
                                 'params' => array(':lang' => $this->language),
                                 'alias' => 'answerl10ns',
                             )))->findAllByAttributes(array(
-                            'qid' => $rows['qid'],
-                            'scale_id' => 0,
-                            ), array('order' => 'sortorder, answer'));
+                                'qid' => $rows['qid'],
+                                'scale_id' => 0,
+                            ));
 
                         foreach ($aresult as $arows) {
                             $theanswer = $arows->answerl10ns[$this->language]->answer;

@@ -38,6 +38,7 @@ class SurveyDynamic extends LSActiveRecord
     /**
      * @inheritdoc
      * @return SurveyDynamic
+     * @psalm-suppress ParamNameMismatch Ignore that $sid is $className in parent class
      */
     public static function model($sid = null)
     {
@@ -87,11 +88,11 @@ class SurveyDynamic extends LSActiveRecord
             return array(
                 'survey'   => array(self::HAS_ONE, 'Survey', array(), 'condition' => ('sid = ' . self::$sid)),
                 'tokens'   => array(self::HAS_ONE, 'TokenDynamic', array('token' => 'token')),
-                'saved_control'   => array(self::HAS_ONE, 'SavedControl', array('srid' => 'id'))
+                'saved_control'   => array(self::HAS_ONE, 'SavedControl', array('srid' => 'id'), 'condition' => ('sid = ' . self::$sid))
             );
         } else {
             return array(
-                'saved_control'   => array(self::HAS_ONE, 'SavedControl', array('srid' => 'id'))
+                'saved_control'   => array(self::HAS_ONE, 'SavedControl', array('srid' => 'id'), 'condition' => ('sid = ' . self::$sid))
             );
         }
     }
@@ -387,7 +388,7 @@ class SurveyDynamic extends LSActiveRecord
         $oFieldMap = json_decode(base64_decode($base64jsonFieldMap));
         $value     = $this->$colName;
 
-        $sFullValue = strip_tags(getExtendedAnswer(self::$sid, $oFieldMap->fieldname, $value, $sLanguage));
+        $sFullValue = viewHelper::flatten(getExtendedAnswer(self::$sid, $oFieldMap->fieldname, $value, $sLanguage));
         if (strlen($sFullValue) > 50) {
             $sElipsizedValue = ellipsize($sFullValue, $this->ellipsize_question_value);
             $sValue          = '<span data-toggle="tooltip" data-placement="left" title="' . quoteText($sFullValue) . '">' . $sElipsizedValue . '</span>';
@@ -629,6 +630,7 @@ class SurveyDynamic extends LSActiveRecord
      * @see: http://www.yiiframework.com/wiki/324/cgridview-keep-state-of-page-and-sort/
      * @see: http://www.yiiframework.com/forum/index.php?/topic/8994-dropdown-for-pagesize-in-cgridview
      */
+    // phpcs:ignore
     public function getEllipsize_header_value()
     {
         return Yii::app()->user->getState('defaultEllipsizeHeaderValue', Yii::app()->params['defaultEllipsizeHeaderValue']);
@@ -640,6 +642,7 @@ class SurveyDynamic extends LSActiveRecord
      * @see: http://www.yiiframework.com/wiki/324/cgridview-keep-state-of-page-and-sort/
      * @see: http://www.yiiframework.com/forum/index.php?/topic/8994-dropdown-for-pagesize-in-cgridview
      */
+    // phpcs:ignore
     public function getEllipsize_question_value()
     {
         return Yii::app()->user->getState('defaultEllipsizeQuestionValue', Yii::app()->params['defaultEllipsizeQuestionValue']);
@@ -772,16 +775,16 @@ class SurveyDynamic extends LSActiveRecord
     /**
      * Get an array to find question data responsively
      * This should be part of the question object.
-     * And in future developement this should be part of the specific question type object
+     * And in future development this should be part of the specific question type object
      *
      * @param Question $oQuestion
      * @param SurveyDynamic $oResponses
      * @param boolean $bHonorConditions
      * @param boolean $subquestion
-     * @param boolean $getComment
+     * @param boolean $getCommentOnly If should only returns the "comments" or "other" response.
      * @return array | boolean
      */
-    public function getQuestionArray($oQuestion, $oResponses, $bHonorConditions, $subquestion = false, $getComment = false, $sLanguage = null)
+    public function getQuestionArray($oQuestion, $oResponses, $bHonorConditions, $subquestion = false, $getCommentOnly = false, $sLanguage = null)
     {
 
         $attributes = QuestionAttribute::model()->getQuestionAttributes($oQuestion->qid);
@@ -868,7 +871,7 @@ class SurveyDynamic extends LSActiveRecord
         }
 
 
-        if ($getComment === true) {
+        if ($getCommentOnly) {
             $fieldname .= 'comment';
         }
 
@@ -922,15 +925,11 @@ class SurveyDynamic extends LSActiveRecord
             $aQuestionAttributes['fileinfo'] = json_decode($aQuestionAttributes['answervalue'], true);
         }
 
-
         if ($oQuestion->parent_qid != 0 && $oQuestion->parent['type'] === "1") {
             $aAnswers = (
-                $oQuestion->parent_qid == 0
-                    ? $oQuestion->answers
-                    : ($oQuestion->parent != null
-                        ? $oQuestion->parent->answers
-                        : []
-                    )
+                $oQuestion->parent != null
+                ? $oQuestion->parent->answers
+                : []
             );
 
             foreach ($aAnswers as $key => $value) {
@@ -998,6 +997,12 @@ class SurveyDynamic extends LSActiveRecord
             if (strpos($aQuestionAttributes['answervalue'], ".") !== false) { // Remove last 0 and last . ALWAYS (see \SurveyObj\getShortAnswer)
                 $aQuestionAttributes['answervalue'] = rtrim(rtrim($aQuestionAttributes['answervalue'], "0"), ".");
             }
+        }
+
+        // If trying to retrieve main question ($getCommentOnly = false), retrieve comment in a new attribute
+        // Check if $getCommentOnly = false to avoid endless recursivity
+        if ($oQuestion->type == 'O' && !$getCommentOnly) {
+            $aQuestionAttributes['comment'] = $this->getQuestionArray($oQuestion, $oResponses, $bHonorConditions, true, true);
         }
 
         return $aQuestionAttributes;

@@ -3,7 +3,7 @@
 /**
  * This is the model class for table "{{boxes}}".
  *
- * The followings are the available columns in table '{{boxes}}':
+ * The following are the available columns in table '{{boxes}}':
  * @property integer $id Primary key
  * @property integer $position
  * @property string $url
@@ -233,6 +233,7 @@ class Box extends CActiveRecord
     /**
      * @return int
      */
+    // phpcs:ignore
     public function getIcons_length()
     {
         return count($this->icons);

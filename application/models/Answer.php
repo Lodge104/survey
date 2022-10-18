@@ -36,10 +36,10 @@ class Answer extends LSActiveRecord
      * @inheritdoc
      * @return static
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var self $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 
@@ -78,6 +78,14 @@ class Answer extends LSActiveRecord
         return array(
             array('qid', 'numerical', 'integerOnly' => true),
             array('code', 'length', 'min' => 1, 'max' => 5),
+            array('code', 'required'),
+            // Only alphanumeric
+            array(
+                'code',
+                'match',
+                'pattern' => '/^[[:alnum:]]*$/',
+                'message' => gT('Answer codes may only contain alphanumeric characters.'),
+            ),
             // Unicity of key
             array(
                 'code',
@@ -87,6 +95,13 @@ class Answer extends LSActiveRecord
             array('sortorder', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
             array('assessment_value', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
             array('scale_id', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
+        );
+    }
+
+    public function defaultScope()
+    {
+        return array(
+            'order' => 'sortorder, code'
         );
     }
 

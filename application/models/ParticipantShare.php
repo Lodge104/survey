@@ -18,7 +18,7 @@ use ls\ajax\AjaxHelper;
 /**
  * This is the model class for table "{{participant_shares}}".
  *
- * The followings are the available columns in table '{{participant_shares}}':
+ * The following are the available columns in table '{{participant_shares}}':
  * @property string $participant_id
  * @property integer $share_uid
  * @property string $date_added
@@ -31,17 +31,16 @@ use ls\ajax\AjaxHelper;
  */
 class ParticipantShare extends LSActiveRecord
 {
-
     public $ownerName;
 
     /**
      * @inheritdoc
      * @return ParticipantShare
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var self $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 

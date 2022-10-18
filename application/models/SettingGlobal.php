@@ -45,9 +45,9 @@ class SettingGlobal extends LSActiveRecord
      * @inheritdoc
      * @return CActiveRecord
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
-        return parent::model($class);
+        return parent::model($className);
     }
 
     /** @inheritdoc */
@@ -100,7 +100,7 @@ class SettingGlobal extends LSActiveRecord
     }
 
     /** @inheritdoc
-     * Allways update of current application config after sucessfull save
+     * Always update of current application config after sucessfull save
      **/
     protected function afterSave()
     {

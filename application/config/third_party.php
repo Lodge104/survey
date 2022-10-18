@@ -28,8 +28,8 @@ return array(
         'basePath' => 'third_party.jquery',
         'position' =>CClientScript::POS_HEAD,
         'js' => array(
-            'jquery-3.5.1'.$minVersion.'.js',
-            'jquery-migrate-3.3.2'.$minVersion.'.js',
+            'jquery-3.6.1'.$minVersion.'.js',
+            'jquery-migrate-3.4.0'.$minVersion.'.js',
         )
     ),
 
@@ -212,22 +212,6 @@ return array(
         )
     ),
 
-    // qTip2
-    'qTip2' => array(
-        'basePath' => 'third_party.qTip2',
-        'position' => CClientScript::POS_BEGIN,
-        'js' => array(
-            'dist/jquery.qtip.min.js'
-        ),
-        'css' => array(
-            'dist/jquery.qtip.min.css'
-        ),
-        'depends' => array(
-            'jquery'
-        )
-
-    ),
-
     // jQuery Table Sorter
     'jquery-tablesorter' => array(
         'basePath' => 'third_party.jquery-tablesorter',
@@ -362,6 +346,7 @@ return array(
 
     'jspdf' => array(
         'basePath' => 'third_party.jspdf',
+        'position' => CClientScript::POS_BEGIN,
         'js' => array(
             'jspdf.min.js',
             'createpdf_worker.js'
@@ -410,6 +395,7 @@ return array(
     ),
     'jszip' => array(
         'basePath' => 'third_party.jszip',
+        'position' => CClientScript::POS_BEGIN,
         'js' => array(
             'jszip.js',
             'fileSaver.js',

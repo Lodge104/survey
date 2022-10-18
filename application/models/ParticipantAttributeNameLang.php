@@ -15,7 +15,7 @@
 /**
  * This is the model class for table "{{{{participant_attribute_names_lang}}}}".
  *
- * The followings are the available columns in table '{{{{participant_attribute_names_lang}}}}':
+ * The following are the available columns in table '{{{{participant_attribute_names_lang}}}}':
  * @property integer $attribute_id
  * @property string $attribute_name
  * @property string $lang
@@ -24,7 +24,6 @@
  */
 class ParticipantAttributeNameLang extends LSActiveRecord
 {
-
     /** @inheritdoc */
     public function primaryKey()
     {
@@ -35,10 +34,10 @@ class ParticipantAttributeNameLang extends LSActiveRecord
      * @inheritdoc
      * @return ParticipantAttributeNameLang
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var self $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 

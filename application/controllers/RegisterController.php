@@ -22,7 +22,6 @@
 */
 class RegisterController extends LSYii_Controller
 {
-
     /* @var string : Default layout when using render : leave at bare actually : just send content */
     public $layout = 'survey';
     /* @var string the template name to be used when using layout */
@@ -300,7 +299,7 @@ class RegisterController extends LSYii_Controller
         }
         $aMessage['mail-contact'] = sprintf(gT("Survey administrator %s (%s)"), $aSurveyInfo['adminname'], $aSurveyInfo['adminemail']);
         $this->sMessage = $this->renderPartial('/survey/system/message', array('aMessage' => $aMessage), true);
-        // Allways return true : if we come here, we allways trye to send an email
+        // Always return true : if we come here, we always trye to send an email
         return true;
     }
 

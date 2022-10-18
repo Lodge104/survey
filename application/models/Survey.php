@@ -107,7 +107,7 @@ use LimeSurvey\PluginManager\PluginEvent;
  * @property string $responsesTableName Name of survey resonses table
  * @property string $timingsTableName Name of survey timings table
  * @property boolean $hasTokensTable Whether survey has a tokens table or not
- * @property boolean $hasResponsesTable Wheteher the survey reponses (data) table exists in DB
+ * @property boolean $hasResponsesTable Wheteher the survey responses (data) table exists in DB
  * @property boolean $hasTimingsTable Wheteher the survey timings table exists in DB
  * @property string $googleanalyticsapikeysetting Returns the value for the SurveyEdit GoogleAnalytics API-Key UseGlobal Setting
  * @property integer $countTotalQuestions Count of questions (in that language, without subquestions)
@@ -273,9 +273,8 @@ class Survey extends LSActiveRecord implements PermissionInterface
             // pgsql need casting, unsure for mssql
             if (Yii::app()->db->getDriverName() == 'pgsql') {
                 $oCriteria->addInCondition('CAST(stg_value as ' . App()->db->schema->getColumnType("integer") . ')', $aGroupId);
-            }
-            //mysql App()->db->schema->getColumnType("integer") give int(11), mssql seems to have issue if cast alpha to numeric
-            else {
+            } else {
+                //mysql App()->db->schema->getColumnType("integer") give int(11), mssql seems to have issue if cast alpha to numeric
                 $oCriteria->addInCondition('stg_value', $aGroupId);
             }
             SettingGlobal::model()->deleteAll($oCriteria);
@@ -332,6 +331,8 @@ class Survey extends LSActiveRecord implements PermissionInterface
             PluginSetting::model()->deleteAllByAttributes(array("model" => 'Survey', "model_id" => $this->sid));
             // Delete all uploaded files.
             rmdirr(Yii::app()->getConfig('uploaddir') . '/surveys/' . $this->sid);
+            // Delete all failed email notifications
+            FailedEmail::model()->deleteAllByAttributes(array('surveyid' => $this->sid));
         }
 
         // Remove from cache
@@ -423,10 +424,10 @@ class Survey extends LSActiveRecord implements PermissionInterface
      * @inheritdoc
      * @return Survey
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var Survey $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 
@@ -532,7 +533,8 @@ class Survey extends LSActiveRecord implements PermissionInterface
             array('running', 'safe', 'on' => 'search'),
             array('expires', 'date','format' => ['yyyy-M-d H:m:s.???','yyyy-M-d H:m:s','yyyy-M-d H:m'],'allowEmpty' => true),
             array('startdate', 'date','format' => ['yyyy-M-d H:m:s.???','yyyy-M-d H:m:s','yyyy-M-d H:m'],'allowEmpty' => true),
-            array('datecreated', 'date','format' => ['yyyy-M-d H:m:s.???','yyyy-M-d H:m:s','yyyy-M-d H:m'],'allowEmpty' => true)
+            array('datecreated', 'date','format' => ['yyyy-M-d H:m:s.???','yyyy-M-d H:m:s','yyyy-M-d H:m'],'allowEmpty' => true),
+            array('expires', 'checkExpireAfterStart'),
         );
     }
 
@@ -601,7 +603,7 @@ class Survey extends LSActiveRecord implements PermissionInterface
     {
         $loginID = (int) $loginID;
         $criteria = $this->getDBCriteria();
-        $criteriaPerm = self::getPermissionCriteria();
+        $criteriaPerm = self::getPermissionCriteria($loginID);
         $criteria->mergeWith($criteriaPerm, 'AND');
         return $this;
     }
@@ -766,7 +768,7 @@ class Survey extends LSActiveRecord implements PermissionInterface
     }
 
     /**
-     * Wheteher the survey reponses (data) table exists in DB
+     * Wheteher the survey responses (data) table exists in DB
      * @return boolean
      */
     public function getHasResponsesTable()
@@ -777,7 +779,7 @@ class Survey extends LSActiveRecord implements PermissionInterface
     }
 
     /**
-     * Wheteher the survey reponses timings exists in DB
+     * Wheteher the survey responses timings exists in DB
      * @return boolean
      */
     public function getHasTimingsTable()
@@ -1131,9 +1133,8 @@ class Survey extends LSActiveRecord implements PermissionInterface
         // If the survey is not active, no date test is needed
         if ($this->active == 'N') {
             $running = '<a href="' . App()->createUrl('/surveyAdministration/view/surveyid/' . $this->sid) . '" class="survey-state" data-toggle="tooltip" title="' . gT('Inactive') . '"><span class="fa fa-stop text-warning"></span><span class="sr-only">' . gT('Inactive') . '"</span></a>';
-        }
-        // If it's active, then we check if not expired
-        elseif ($this->expires != '' || $this->startdate != '') {
+        } elseif ($this->expires != '' || $this->startdate != '') {
+            // If it's active, then we check if not expired
             // Time adjust
             $sNow    = date("Y-m-d H:i:s", strtotime(Yii::app()->getConfig('timeadjust'), strtotime(date("Y-m-d H:i:s"))));
             $sStop   = ($this->expires != '') ? date("Y-m-d H:i:s", strtotime(Yii::app()->getConfig('timeadjust'), strtotime($this->expires))) : $sNow;
@@ -1162,9 +1163,8 @@ class Survey extends LSActiveRecord implements PermissionInterface
             } else {
                 $running = $sIconRunning;
             }
-        }
-        // If it's active, and doesn't have expire date, it's running
-        else {
+        } else {
+            // If it's active, and doesn't have expire date, it's running
             $running = '<a href="' . App()->createUrl('/surveyAdministration/view/surveyid/' . $this->sid) . '" class="survey-state" data-toggle="tooltip" title="' . gT('Active') . '"><span class="fa fa-play text-success"></span><span class="sr-only">' . gT('Active') . '"</span></a>';
             //$running = '<div class="survey-state"><span class="fa fa-play text-success"></span></div>';
         }
@@ -2029,31 +2029,24 @@ class Survey extends LSActiveRecord implements PermissionInterface
         return $result !== false;
     }
 
+    /**
+     * Get the final label for survey id
+     * @param string $dataSecurityNoticeLabel current label
+     * @param integer $surveyId unused
+     * @return string
+     */
     public static function replacePolicyLink($dataSecurityNoticeLabel, $surveyId)
     {
-
-        $STARTPOLICYLINK = "";
-        $ENDPOLICYLINK = "";
-
-        if (self::model()->findByPk($surveyId)->showsurveypolicynotice == 2) {
-            $STARTPOLICYLINK = "<a href='#data-security-modal-" . $surveyId . "' data-toggle='collapse'>";
-            $ENDPOLICYLINK = "</a>";
-            if (!preg_match('/(\{STARTPOLICYLINK\}|\{ENDPOLICYLINK\})/', $dataSecurityNoticeLabel)) {
-                $dataSecurityNoticeLabel .= "<br/> {STARTPOLICYLINK}" . gT("Show policy") . "{ENDPOLICYLINK}";
-            }
-        }
-
-
-
-        $dataSecurityNoticeLabel =  preg_replace('/\{STARTPOLICYLINK\}/', $STARTPOLICYLINK, $dataSecurityNoticeLabel);
-
-        $countEndLabel = 0;
-        $dataSecurityNoticeLabel =  preg_replace('/\{ENDPOLICYLINK\}/', $ENDPOLICYLINK, $dataSecurityNoticeLabel, -1, $countEndLabel);
-        if ($countEndLabel == 0) {
-            $dataSecurityNoticeLabel .= '</a>';
-        }
-
-        return $dataSecurityNoticeLabel;
+        /* @var string[] to go to automatic translation */
+        $translation = [
+            gT("Show policy")
+        ];
+        return App()->twigRenderer->renderPartial(
+            '/subviews/privacy/privacy_datasecurity_notice_label.twig',
+            [
+                'dataSecurityNoticeLabel' => $dataSecurityNoticeLabel,
+            ]
+        );
     }
 
     /**
@@ -2257,10 +2250,10 @@ class Survey extends LSActiveRecord implements PermissionInterface
     public function hasPermission($sPermission, $sCRUD = 'read', $iUserID = null)
     {
         $sGlobalCRUD = $sCRUD;
-        if (($sCRUD == 'create' || $sCRUD == 'import')) { // Create and import (token, reponse , question content …) need only allow update surveys
+        if (($sCRUD == 'create' || $sCRUD == 'import')) { // Create and import (token, response , question content …) need only allow update surveys
             $sGlobalCRUD = 'update';
         }
-        if (($sCRUD == 'delete' && $sPermission != 'survey')) { // Delete (token, reponse , question content …) need only allow update surveys
+        if (($sCRUD == 'delete' && $sPermission != 'survey')) { // Delete (token, response , question content …) need only allow update surveys
             $sGlobalCRUD = 'update';
         }
         /* Global */
@@ -2291,5 +2284,18 @@ class Survey extends LSActiveRecord implements PermissionInterface
             }
         );
         return $aSurveys;
+    }
+
+    /**
+     * Validates the Expiration Date is not lower than the Start Date
+     */
+    public function checkExpireAfterStart($attributes, $params)
+    {
+        if (empty($this->startdate) || empty($this->expires)) {
+            return true;
+        }
+        if ($this->expires < $this->startdate) {
+            $this->addError('expires', gT("Expiration date can't be lower than the start date", 'unescaped'));
+        }
     }
 }

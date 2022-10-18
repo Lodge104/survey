@@ -3,7 +3,7 @@
 /**
  * This is the model class for table "{{tutorials}}".
  *
- * The followings are the available columns in table '{{tutorials}}':
+ * The following are the available columns in table '{{tutorials}}':
  * @property integer $tid
  * @property string $name
  * @property string $title
@@ -12,13 +12,13 @@
  * @property integer $active
  * @property string $permission
  * @property string $permission_grade
+ * @property string $settings
  *
- * The followings are the available model relations:
+ * The following are the available model relations:
  * @property TutorialEntry[] $tutorialEntries
  */
 class Tutorial extends LSActiveRecord
 {
-
     /**
      * @return string the associated database table name
      */

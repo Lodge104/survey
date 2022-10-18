@@ -20,21 +20,21 @@
  * @copyright 2011
  * @access public
  */
-class emailtemplates extends Survey_Common_Action
+class EmailTemplates extends SurveyCommonAction
 {
     /**
      * Load edit email template screen.
      * @param mixed $iSurveyId
      * @return
      */
-    function index($iSurveyId)
+    public function index($iSurveyId)
     {
         $iSurveyId = sanitize_int($iSurveyId);
         $survey = Survey::model()->findByPk($iSurveyId);
 
         if (!Permission::model()->hasSurveyPermission($iSurveyId, 'surveylocale', 'read')) {
             Yii::app()->setFlashMessage(gT("You do not have permission to access this page."), 'error');
-            $this->getController()->redirect(array('admin/survey', 'sa' => 'view', 'surveyid' => $iSurveyId));
+            $this->getController()->redirect(array('surveyAdministration/view', 'surveyid' => $iSurveyId));
         }
 
         Yii::app()->loadHelper('admin.htmleditor');
@@ -95,14 +95,14 @@ class emailtemplates extends Survey_Common_Action
 
         App()->getClientScript()->registerPackage('expressionscript');
 
-        $this->_renderWrappedTemplate('emailtemplates', array('output' => $sEditScript, 'emailtemplates_view'), $aData);
+        $this->renderWrappedTemplate('emailtemplates', array('output' => $sEditScript, 'emailtemplates_view'), $aData);
     }
 
     /**
      * Function responsible to process any change in email template.
      * @return
      */
-    function update($iSurveyId)
+    public function update($iSurveyId)
     {
         $sBaseUrl = Yii::app()->getBaseUrl();
         $uploadUrl = Yii::app()->getConfig('uploadurl');
@@ -313,10 +313,10 @@ class emailtemplates extends Survey_Common_Action
      * @param string|array $aViewUrls View url(s)
      * @param array $aData Data to be passed on. Optional.
      */
-    protected function _renderWrappedTemplate($sAction = 'emailtemplates', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
+    protected function renderWrappedTemplate($sAction = 'emailtemplates', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
         App()->getClientScript()->registerPackage('emailtemplates');
         $aData['display']['menu_bars']['surveysummary'] = 'editemailtemplates';
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
+        parent::renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 }

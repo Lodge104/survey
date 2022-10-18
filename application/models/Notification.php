@@ -3,7 +3,7 @@
 /**
  * This is the model class for table "{{notifications}}".
  *
- * The followings are the available columns in table '{{notifications}}':
+ * The following are the available columns in table '{{notifications}}':
  * @property integer $id
  * @property string $entity survey or user
  * @property string $entity_id survey id or user id
@@ -18,7 +18,6 @@
  */
 class Notification extends LSActiveRecord
 {
-
     const NORMAL_IMPORTANCE = 1; // Just notification in admin menu
     const BELL_IMPORTANCE = 2; // TODO: Bell animation
     const HIGH_IMPORTANCE = 3; // Popup on page load

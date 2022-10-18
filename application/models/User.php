@@ -38,8 +38,10 @@
  * @property Permission[] $permissions
  * @property User $parentUser Parent user
  * @property string $parentUserName  Parent user's name
+ * @property string $last_login
+ * @property Permissiontemplates[] $roles
+ * @property UserGroup[] $groups
  */
-
 class User extends LSActiveRecord
 {
     /** @var int maximum time the validation_key is valid*/
@@ -61,10 +63,10 @@ class User extends LSActiveRecord
      * @inheritdoc
      * @return User
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var self $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 
@@ -160,43 +162,14 @@ class User extends LSActiveRecord
         return $dateFormat['phpdate'];
     }
 
+    /**
+     * @todo Not used?
+     */
     public function getFormattedDateCreated()
     {
         $dateCreated = $this->created;
         $date = new DateTime($dateCreated);
-        return $date->format($this->dateFormat);
-    }
-    /**
-     * Returns onetime password
-     *
-     * @access public
-     * @param string $username
-     * @return string
-     */
-    public function getOTPwd($username)
-    {
-        // TODO get this via $this instead of param
-        $this->db->select('uid, users_name, password, one_time_pw, dateformat, full_name, htmleditormode');
-        $this->db->where('users_name', $username);
-        $data = $this->db->get('users', 1);
-
-        return $data;
-    }
-
-    /**
-     * Deletes onetime password
-     *
-     * @access public
-     * @param string $username
-     */
-    public function deleteOTPwd($username)
-    {
-        // TODO get this via $this instead of param
-        $data = array(
-            'one_time_pw' => ''
-        );
-        $this->db->where('users_name', $username);
-        $this->db->update('users', $data);
+        return $date->format($this->getDateFormat());
     }
 
     /**
@@ -207,7 +180,7 @@ class User extends LSActiveRecord
      * @param string $new_pass
      * @param string $new_full_name
      * @param string $new_email
-     * @param string $parent_user
+     * @param int $parent_user
      * @return integer|boolean User ID if success
      */
     public static function insertUser($new_user, $new_pass, $new_full_name, $parent_user, $new_email)
@@ -425,7 +398,7 @@ class User extends LSActiveRecord
      */
     public function insertRecords($data)
     {
-        return $this->db->insert('users', $data);
+        return $this->getDb()->insert('users', $data);
     }
 
     /**
@@ -499,11 +472,7 @@ class User extends LSActiveRecord
                 </button>";
         } else {
             if (
-                Permission::model()->hasGlobalPermission('superadmin', 'read')
-                || $this->uid == Yii::app()->session['loginID']
-                || (Permission::model()->hasGlobalPermission('users', 'update')
-                    && $this->parent_id == Yii::app()->session['loginID']
-                )
+                $this->canEdit(Yii::app()->session['loginID'])
             ) {
                 $editUser = "<button data-toggle='tooltip' data-url='" . $editUrl . "' data-user='" . htmlspecialchars($oUser['full_name']) . "' data-uid='" . $this->uid . "' data-action='modifyuser' title='" . gT("Edit this user") . "' type='submit' class='btn btn-default btn-sm green-border action_usercontrol_button'><span class='fa fa-pencil text-success'></span></button>";
             }
@@ -649,7 +618,7 @@ class User extends LSActiveRecord
 
         // Superadmins can do everything, no need to do further filtering
         if (Permission::model()->hasGlobalPermission('superadmin', 'read')) {
-            //Prevent users to modify original superadmin. Original superadmin can change his password on his account setting!
+            //Prevent users from modifying the original superadmin. Original superadmin can change the password on their account setting!
             if ($this->uid == 1) {
                 $editUserButton = "";
             }
@@ -684,13 +653,7 @@ class User extends LSActiveRecord
             $buttonArray[] = $userDetail;
         }
         // Check if user is editable
-        if (
-            $this->uid == Yii::app()->user->getId()                             //One can edit onesself of course
-            || (
-                Permission::model()->hasGlobalPermission('users', 'update')     //Global permission to edit users given
-                && $this->parent_id == Yii::app()->session['loginID']           //AND User is owned by admin
-            )
-        ) {
+        if ($this->canEdit(Yii::app()->session['loginID'])) {
             $buttonArray[] = $editUserButton;
         }
 
@@ -750,16 +713,19 @@ class User extends LSActiveRecord
         return join(', ', $list);
     }
 
+    /**
+     * Returns the last login formatted for displaying.
+     * @return string
+     */
     public function getLastloginFormatted()
     {
-
         $lastLogin = $this->last_login;
         if ($lastLogin == null) {
             return '---';
         }
 
         $date = new DateTime($lastLogin);
-        return $date->format($this->dateFormat) . ' ' . $date->format('H:i');
+        return $date->format($this->getDateFormat()) . ' ' . $date->format('H:i');
     }
 
     public function getManagementCheckbox()
@@ -960,5 +926,31 @@ class User extends LSActiveRecord
         $this->validation_key_expiration = $datePlusMaxExpiration->format('Y-m-d H:i:s');
 
         return $this->save();
+    }
+
+    /**
+     * Get the decription to be used in list
+     * @return $string
+     */
+    public function getDisplayName()
+    {
+        if (empty($this->full_name)) {
+            return $this->users_name;
+        }
+        return sprintf(gt("%s (%s)"), $this->users_name, $this->full_name);
+    }
+
+    /**
+     * Returns true if logged in user with id $loginId can edit this user
+     *
+     * @param int $loginId
+     * @return bool
+     */
+    public function canEdit($loginId)
+    {
+        return
+            Permission::model()->hasGlobalPermission('superadmin', 'read')
+            || $this->uid == $loginId
+            || (Permission::model()->hasGlobalPermission('users', 'update') && $this->parent_id == $loginId);
     }
 }

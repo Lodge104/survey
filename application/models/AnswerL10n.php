@@ -24,7 +24,6 @@
  */
 class AnswerL10n extends LSActiveRecord
 {
-
     /** @inheritdoc */
     public function tableName()
     {
@@ -46,10 +45,10 @@ class AnswerL10n extends LSActiveRecord
      * @inheritdoc
      * @return AnswerL10n
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var self $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 
@@ -68,6 +67,18 @@ class AnswerL10n extends LSActiveRecord
             ['aid','numerical','integerOnly' => true],
             ['answer', 'LSYii_Validators'],
             ['language', 'length', 'min' => 2, 'max' => 20], // in array languages ?
+            /* Add rules for existing unique index : answer_l10ns_idx ['aid', 'language'] */
+            array('aid', 'unique', 'criteria' => array(
+                    'condition' => 'language=:language',
+                    'params' => array(':language' => $this->language)
+                ),
+                'message' => sprintf(
+                    // Usage of {attribute} need attributeLabels, {value} never exist in message
+                    gT("Answer ID '%s' is already in use for language '%s'."),
+                    $this->aid,
+                    $this->language
+                ),
+            ),
         ];
     }
 }

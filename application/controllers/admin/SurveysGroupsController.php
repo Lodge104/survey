@@ -19,9 +19,8 @@ use LimeSurvey\Models\Services\SurveysGroupCreator;
 /**
  * Class SurveysGroupsController
  */
-class SurveysGroupsController extends Survey_Common_Action
+class SurveysGroupsController extends SurveyCommonAction
 {
-
     /**
      * Displays a particular model.
      *
@@ -100,7 +99,7 @@ class SurveysGroupsController extends Survey_Common_Action
         $userCriteria->order = "full_name";
         $userCriteria->addInCondition('uid', $aUserIds);
         $aData['oUsers'] = User::model()->findAll($userCriteria);
-        $this->_renderWrappedTemplate('surveysgroups', 'create', $aData);
+        $this->renderWrappedTemplate('surveysgroups', 'create', $aData);
     }
 
     /**
@@ -200,6 +199,19 @@ class SurveysGroupsController extends Survey_Common_Action
 
         $oTemplateOptions           = new TemplateConfiguration();
         $oTemplateOptions->scenario = 'surveygroup';
+        $filterForm = Yii::app()->request->getPost('TemplateConfiguration', false);
+        if ($filterForm) {
+            $oTemplateOptions->setAttributes($filterForm, false);
+            if (array_key_exists('template_description', $filterForm)) {
+                $oTemplateOptions->template_description = $filterForm['template_description'];
+            }
+            if (array_key_exists('template_type', $filterForm)) {
+                $oTemplateOptions->template_type = $filterForm['template_type'];
+            }
+            if (array_key_exists('template_extends', $filterForm)) {
+                $oTemplateOptions->template_extends = $filterForm['template_extends'];
+            }
+        }
         $aData['templateOptionsModel'] = $oTemplateOptions;
 
         // Page size
@@ -208,7 +220,7 @@ class SurveysGroupsController extends Survey_Common_Action
         }
         $aData['pageSize'] = Yii::app()->user->getState('pageSizeTemplateView', Yii::app()->params['defaultPageSize']); // Page size
 
-        $this->_renderWrappedTemplate('surveysgroups', 'update', $aData);
+        $this->renderWrappedTemplate('surveysgroups', 'update', $aData);
     }
 
     /**
@@ -341,7 +353,7 @@ class SurveysGroupsController extends Survey_Common_Action
         $aData['pageTitle'] = gT('Survey settings for group: ') . $model->title;
 
         $aData['fullpagebar'] = $buttons;
-        $this->_renderWrappedTemplate('surveysgroups', 'surveySettings', $aData);
+        $this->renderWrappedTemplate('surveysgroups', 'surveySettings', $aData);
     }
 
     /**
@@ -390,7 +402,7 @@ class SurveysGroupsController extends Survey_Common_Action
         $aData = array(
             'model' => $model
         );
-        $this->_renderWrappedTemplate('surveysgroups', 'index', $aData);
+        $this->renderWrappedTemplate('surveysgroups', 'index', $aData);
     }
 
     /**

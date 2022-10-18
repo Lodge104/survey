@@ -20,9 +20,8 @@
  * @package       LimeSurvey
  * @subpackage    Backend
  */
-class CheckIntegrity extends Survey_Common_Action
+class CheckIntegrity extends SurveyCommonAction
 {
-
     /**
      * Constructor
      *
@@ -49,12 +48,12 @@ class CheckIntegrity extends Survey_Common_Action
      */
     public function index()
     {
-        $aData = $this->_checkintegrity();
+        $aData = $this->checkintegrity();
         $aData['pageTitle'] = gT('Check data integrity');
         $aData['fullpagebar']['returnbutton']['url'] = 'admin/index';
         $aData['fullpagebar']['returnbutton']['text'] = gT('Back');
 
-        $this->_renderWrappedTemplate('checkintegrity', 'check_view', $aData);
+        $this->renderWrappedTemplate('checkintegrity', 'check_view', $aData);
     }
 
     public function fixredundancy()
@@ -63,7 +62,7 @@ class CheckIntegrity extends Survey_Common_Action
         $aData = [];
         $aData['messages'] = array();
         if (Permission::model()->hasGlobalPermission('settings', 'update') && Yii::app()->request->getPost('ok') == 'Y') {
-            $aDelete = $this->_checkintegrity();
+            $aDelete = $this->checkintegrity();
             if (isset($aDelete['redundanttokentables'])) {
                 foreach ($aDelete['redundanttokentables'] as $aTokenTable) {
                     if (in_array($aTokenTable['table'], $oldsmultidelete)) {
@@ -83,7 +82,7 @@ class CheckIntegrity extends Survey_Common_Action
             if (count($aData['messages']) == 0) {
                 $aData['messages'][] = gT('No old survey or survey participants table selected.');
             }
-            $this->_renderWrappedTemplate('checkintegrity', 'fix_view', $aData);
+            $this->renderWrappedTemplate('checkintegrity', 'fix_view', $aData);
         }
     }
 
@@ -99,7 +98,7 @@ class CheckIntegrity extends Survey_Common_Action
         if (Yii::app()->request->getPost('ok') != 'Y') {
             throw new CHttpException(403);
         }
-        $aDelete = $this->_checkintegrity();
+        $aDelete = $this->checkintegrity();
         $aData = array([
             'messsages' => array(),
             'warnings'  => array(),
@@ -171,14 +170,14 @@ class CheckIntegrity extends Survey_Common_Action
         }
 
         if (isset($aDelete['orphansurveytables'])) {
-            $aData = $this->_dropOrphanSurveyTables($aDelete['orphansurveytables'], $aData);
+            $aData = $this->dropOrphanSurveyTables($aDelete['orphansurveytables'], $aData);
         }
 
         if (isset($aDelete['orphantokentables'])) {
             $aData = $this->deleteOrphanTokenTables($aDelete['orphantokentables'], $aData);
         }
 
-        $this->_renderWrappedTemplate('checkintegrity', 'fix_view', $aData);
+        $this->renderWrappedTemplate('checkintegrity', 'fix_view', $aData);
     }
 
     /**
@@ -204,7 +203,7 @@ class CheckIntegrity extends Survey_Common_Action
      * @param array $aData
      * @return array
      */
-    private function _dropOrphanSurveyTables(array $surveyTables, array $aData)
+    private function dropOrphanSurveyTables(array $surveyTables, array $aData)
     {
         foreach ($surveyTables as $aSurveyTable) {
             Yii::app()->db->createCommand()->dropTable($aSurveyTable);
@@ -562,7 +561,7 @@ class CheckIntegrity extends Survey_Common_Action
      * @return array Array with all found issues.
      * @throws CDbException
      */
-    protected function _checkintegrity()
+    protected function checkintegrity()
     {
         /* Find is some fix is done */
         $bDirectlyFixed = false;
@@ -613,7 +612,7 @@ class CheckIntegrity extends Survey_Common_Action
                 $aColumns = $model->getMetaData()->columns;
                 $aQids    = array();
 
-                // We get the columns of the reponses table
+                // We get the columns of the responses table
                 foreach ($aColumns as $oColumn) {
                     // Question columns start with the SID
                     if (strpos($oColumn->name, (string)$oSurvey->sid) !== false) {
@@ -631,15 +630,17 @@ class CheckIntegrity extends Survey_Common_Action
                             if (isset($match[0][1])) {
                                 $sQID = substr($sDirtyQid, 0, $match[0][1]);
                             } else {
-                                // It was just the QID....
+                                // It was just the QID.... (maybe)
                                 $sQID = $sDirtyQid;
-                            }
-                            if ((string) intval($sQID) !== $sQID) {
-                                throw new \Exception('sQID is not an integer: ' . $sQID);
                             }
 
                             // Here, we get the question as defined in backend
-                            $oQuestion = Question::model()->findByAttributes([ 'qid' => $sQID , 'sid' => $oSurvey->sid ]);
+                            try {
+                                $oQuestion = Question::model()->findByAttributes(['qid' => $sQID , 'sid' => $oSurvey->sid]);
+                            } catch (Exception $e) {
+                                // QID potentially invalid , see #17458, reset $oQuestion
+                                $oQuestion = null;
+                            }
                             if (is_a($oQuestion, 'Question')) {
                                 // We check if its GID is the same as the one defined in the column name
                                 if ($oQuestion->gid != $sGid) {
@@ -745,7 +746,7 @@ class CheckIntegrity extends Survey_Common_Action
         /*     Check conditions                                               */
         /**********************************************************************/
         $okQuestion = array();
-        $sQuery = 'SELECT cqid,cid,cfieldname FROM {{conditions}}';
+        $sQuery = 'SELECT cqid,cid,cfieldname,qid FROM {{conditions}}';
         $aConditions = Yii::app()->db->createCommand($sQuery)->queryAll();
         $aDelete = array();
         foreach ($aConditions as $condition) {
@@ -758,6 +759,15 @@ class CheckIntegrity extends Survey_Common_Action
                     } else {
                         $okQuestion[$condition['cqid']] = $condition['cqid'];
                     }
+                }
+            }
+            // Check that QID exists
+            if (!array_key_exists($condition['qid'], $okQuestion)) {
+                $iRowCount = Question::model()->countByAttributes(array('qid' => $condition['qid']));
+                if (!$iRowCount) {
+                    $aDelete['conditions'][] = array('cid' => $condition['cid'], 'reason' => gT('No matching QID'));
+                } else {
+                    $okQuestion[$condition['qid']] = $condition['qid'];
                 }
             }
             //Only do this if there actually is a 'cfieldname'
@@ -1245,8 +1255,8 @@ class CheckIntegrity extends Survey_Common_Action
      * @param string $aViewUrls View url(s)
      * @param array $aData Data to be passed on. Optional.
      */
-    protected function _renderWrappedTemplate($sAction = 'checkintegrity', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
+    protected function renderWrappedTemplate($sAction = 'checkintegrity', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
+        parent::renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 }

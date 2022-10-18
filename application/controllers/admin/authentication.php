@@ -26,9 +26,8 @@
 *
 * @method void redirect(string|array $url, boolean $terminate, integer $statusCode)
  */
-class Authentication extends Survey_Common_Action
+class Authentication extends SurveyCommonAction
 {
-
     /**
      * Show login screen and parse login data
      * Will redirect or echo json depending on ajax call
@@ -42,7 +41,7 @@ class Authentication extends Survey_Common_Action
             Yii::app()->setLanguage(Yii::app()->session["adminlang"]);
         }
         // The page should be shown only for non logged in users
-        $this->_redirectIfLoggedIn();
+        $this->redirectIfLoggedIn();
 
         // Result can be success, fail or data for template
         $result = self::prepareLogin();
@@ -61,9 +60,8 @@ class Authentication extends Survey_Common_Action
                 ls\ajax\AjaxHelper::outputError(gT('Incorrect username and/or password!'));
                 return;
             }
-        }
-        // If not ajax, redirect to admin startpage or again to login form
-        else {
+        } else {
+            // If not ajax, redirect to admin startpage or again to login form
             if ($succeeded) {
                 self::doRedirect();
             } elseif ($failed) {
@@ -77,7 +75,7 @@ class Authentication extends Survey_Common_Action
         $aData = $result;
 
         // If for any reason, the plugin bugs, we can't let the user with a blank screen.
-        $this->_renderWrappedTemplate('authentication', 'login', $aData);
+        $this->renderWrappedTemplate('authentication', 'login', $aData);
     }
 
     /**
@@ -144,7 +142,7 @@ class Authentication extends Survey_Common_Action
             $aData['summary'] = self::getSummary('logout');
             $aData['pluginContent'] = $newLoginForm->getAllContent(); // Retreives the private varibale "_content" , and parse it to $aData['pluginContent'], which will be  rendered in application/views/admin/authentication/login.php
         } else {
-            // The form has been submited, or the plugin has been stoped (so normally, the value of login/password are available)
+            // The form has been submitted, or the plugin has been stoped (so normally, the value of login/password are available)
 
                 // Handle getting the post and populating the identity there
             $authMethod = App()->getRequest()->getPost('authMethod', $identity->plugin); // If form has been submitted, $_POST['authMethod'] is set, else  $identity->plugin should be set, ELSE: TODO error
@@ -152,7 +150,7 @@ class Authentication extends Survey_Common_Action
 
             // Call the function afterLoginFormSubmit of the plugin.
             // For Authdb, it calls AuthPluginBase::afterLoginFormSubmit()
-            // which set the plugin's private variables _username and _password with the POST informations if it's a POST request else it does nothing
+            // which set the plugin's private variables _username and _password with the POST information if it's a POST request else it does nothing
             $event = new PluginEvent('afterLoginFormSubmit');
             $event->set('identity', $identity);
             App()->getPluginManager()->dispatchEvent($event, array($authMethod));
@@ -163,7 +161,7 @@ class Authentication extends Survey_Common_Action
             // which will call the plugin function newUserSession() (eg: Authdb::newUserSession() )
             // TODO: for sake of clarity, the plugin function should be renamed to authenticate().
             if ($identity->authenticate()) {
-                FailedLoginAttempt::model()->deleteAttempts();
+                FailedLoginAttempt::model()->deleteAttempts(FailedLoginAttempt::TYPE_LOGIN);
                 App()->user->setState('plugin', $authMethod);
 
                 Yii::app()->session['just_logged_in'] = true;
@@ -259,7 +257,7 @@ class Authentication extends Survey_Common_Action
             'validationKey' => $user->validation_key
         ];
 
-        $this->_renderWrappedTemplate('authentication', 'newPassword', $aData);
+        $this->renderWrappedTemplate('authentication', 'newPassword', $aData);
     }
 
     /**
@@ -288,10 +286,10 @@ class Authentication extends Survey_Common_Action
      */
     public function forgotpassword()
     {
-        $this->_redirectIfLoggedIn();
+        $this->redirectIfLoggedIn();
 
         if (!Yii::app()->request->getPost('action')) {
-            $this->_renderWrappedTemplate('authentication', 'forgotpassword');
+            $this->renderWrappedTemplate('authentication', 'forgotpassword');
         } else {
             $sUserName = Yii::app()->request->getPost('user');
             $sEmailAddr = Yii::app()->request->getPost('email');
@@ -317,6 +315,12 @@ class Authentication extends Survey_Common_Action
         }
     }
 
+    /**
+     * Check if db update is necessary and does the update
+     *
+     * @return void
+     * @throws Exception
+     */
     public static function runDbUpgrade()
     {
         // Check if the DB is up to date
@@ -367,7 +371,7 @@ class Authentication extends Survey_Common_Action
     /**
      * Redirects a logged in user to the administration page
      */
-    private function _redirectIfLoggedIn()
+    private function redirectIfLoggedIn()
     {
         if (!Yii::app()->user->getIsGuest()) {
             $this->runDbUpgrade();
@@ -376,14 +380,66 @@ class Authentication extends Survey_Common_Action
     }
 
     /**
-     * Redirect after login
+     * Redirect after login.
+     * Do a db update if any exists.
+     * Clean failed_emails table (delete entries older then 30days)
+     *
      * @return void
      */
     private static function doRedirect()
     {
         self::runDbUpgrade();
+        self::cleanFailedEmailTable();
+        self::createNewFailedEmailsNotification();
         $returnUrl = App()->user->getReturnUrl(array('/admin'));
         Yii::app()->getController()->redirect($returnUrl);
+    }
+
+    /**
+     * Delete all entries from failed_emails table which are older then 30days
+     *
+     * @return void
+     */
+    private static function cleanFailedEmailTable()
+    {
+        $criteria = new CDbCriteria();
+
+        //filter for 'created' date comparison
+        $dateNow = new DateTime();
+
+        //minus 30days
+        $dateNow = $dateNow->sub(new DateInterval('P30D'));
+        $dateNowFormatted = $dateNow->format('Y-m-d H:i');
+
+        $criteria->addCondition('created < \'' . $dateNowFormatted . '\'');
+
+        FailedEmail::model()->deleteAll($criteria);
+    }
+
+    /**
+     * Checks failed_emails table for entries for this user and creates a UniqueNotification
+     *
+     * @return void
+     */
+    private static function createNewFailedEmailsNotification()
+    {
+        $failedEmailModel = new FailedEmail();
+        $failedEmailSurveyTitles = $failedEmailModel->getFailedEmailSurveyTitles();
+        if (!empty($failedEmailSurveyTitles)) {
+            $uniqueNotification = new UniqueNotification(
+                array(
+                    'user_id' => App()->user->id,
+                    'title' => gT('Failed email notifications'),
+                    'markAsNew' => false,
+                    'importance' => Notification::NORMAL_IMPORTANCE,
+                    'message' => Yii::app()->getController()->renderPartial('//failedEmail/notification_message/_notification_message', [
+                        'failedEmailSurveyTitles' => $failedEmailSurveyTitles
+                    ], true)
+                )
+            );
+
+            $uniqueNotification->save();
+        }
     }
 
     /**
@@ -394,10 +450,10 @@ class Authentication extends Survey_Common_Action
      * @param array $aData Data to be passed on. Optional.
      * @return void
      */
-    protected function _renderWrappedTemplate($sAction = 'authentication', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
+    protected function renderWrappedTemplate($sAction = 'authentication', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
         $aData['display']['menu_bars'] = false;
         $aData['language'] = Yii::app()->getLanguage() != Yii::app()->getConfig("defaultlang") ? Yii::app()->getLanguage() : 'default';
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
+        parent::renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 }

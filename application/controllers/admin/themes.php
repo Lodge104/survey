@@ -22,9 +22,8 @@ use LimeSurvey\ExtensionInstaller\QuestionThemeInstaller;
 * @author
 * @copyright 2011
 */
-class themes extends Survey_Common_Action
+class Themes extends SurveyCommonAction
 {
-
     public function runWithParams($params)
     {
         $sTemplateName = Yii::app()->request->getPost('templatename', '');
@@ -190,7 +189,7 @@ class themes extends Survey_Common_Action
                 $aData = array('lid' => $lid);
             }
 
-            $this->_renderWrappedTemplate('themes', $aViewUrls, $aData);
+            $this->renderWrappedTemplate('themes', $aViewUrls, $aData);
         } else {
             App()->setFlashMessage(gT("We are sorry but you don't have permissions to do this."), 'error');
             $this->getController()->redirect(array("themeOptions/index"));
@@ -289,7 +288,7 @@ class themes extends Survey_Common_Action
         /** @var string */
         $themeType = returnGlobal('theme');
         if ($themeType === 'question') {
-            // Make questiontheme upload folder if it doesnt exist
+            // Make questiontheme upload folder if it doesn't exist
             if (!is_dir($questionthemerootdir = App()->getConfig('userquestionthemerootdir'))) {
                 mkdir($questionthemerootdir, 0777, true);
             }
@@ -497,7 +496,7 @@ class themes extends Survey_Common_Action
                         $uploadresult = gT("An error occurred uploading your file. This may be caused by incorrect permissions for the application /tmp folder.");
                     } else {
                         $uploadresult = sprintf(gT("File %s uploaded"), $filename);
-                        Template::model()->findByPk($templatename)->resetAssetVersion(); // Upload a files, asset need to be resetted (maybe)
+                        Template::model()->findByPk($templatename)->resetAssetVersion(); // Upload a files, asset need to be reset (maybe)
                         $status = 'success';
                     }
                 }
@@ -516,8 +515,9 @@ class themes extends Survey_Common_Action
      * @access protected
      * @param string $name
      * @return string
+     * @todo Used? Previous name: _strip_ext
      */
-    protected function _strip_ext($name)
+    protected function stripExt($name)
     {
         $ext = strrchr($name, '.');
         if ($ext !== false) {
@@ -552,7 +552,7 @@ class themes extends Survey_Common_Action
         /* Keep Bootstrap Package clean after loading template : because template can update boostrap */
         $aBootstrapPackage = Yii::app()->clientScript->packages['bootstrap-admin'];
 
-        $aViewUrls = $this->_initialise($templatename, $screenname, $editfile, true, true);
+        $aViewUrls = $this->initialise($templatename, $screenname, $editfile, true, true);
 
         App()->getClientScript()->reset();
         Yii::app()->clientScript->packages['bootstrap'] = $aBootstrapPackage;
@@ -567,7 +567,7 @@ class themes extends Survey_Common_Action
         // White Bar
         $aData['templateEditorBar']['buttons']['returnbutton'] = true;
 
-        $this->_renderWrappedTemplate('themes', $aViewUrls, $aData);
+        $this->renderWrappedTemplate('themes', $aViewUrls, $aData);
 
         // This helps handle the load/save buttons)
         if ($screenname != 'welcome') {
@@ -615,7 +615,7 @@ class themes extends Survey_Common_Action
             /* No try to hack, go to delete */
             if (@unlink($the_full_file_path)) {
                 Yii::app()->user->setFlash('success', sprintf(gT("The file %s was deleted."), CHtml::encode($sPostedFile)));
-                Template::model()->findByPk($sTemplateName)->resetAssetVersion(); // Delete a files, asset need to be resetted (maybe)
+                Template::model()->findByPk($sTemplateName)->resetAssetVersion(); // Delete a files, asset need to be reset (maybe)
             } else {
                 Yii::app()->user->setFlash('error', sprintf(gT("File %s couldn't be deleted. Please check the permissions on the /upload/themes folder"), CHtml::encode($sPostedFile)));
             }
@@ -638,8 +638,8 @@ class themes extends Survey_Common_Action
         if (Permission::model()->hasGlobalPermission('templates', 'update')) {
             if (returnGlobal('action') == "templaterename" && returnGlobal('newname') && returnGlobal('copydir')) {
                 $sNewName = sanitize_dirname(returnGlobal('newname'));
-                $sNewDirectoryPath = Yii::app()->getConfig('userthemerootdir') . "/" . $sNewName;
-                $sOldDirectoryPath = Yii::app()->getConfig('userthemerootdir') . "/" . returnGlobal('copydir');
+                $sNewDirectoryPath = sanitize_dirname(Yii::app()->getConfig('userthemerootdir') . "/" . $sNewName);
+                $sOldDirectoryPath = sanitize_dirname(Yii::app()->getConfig('userthemerootdir') . "/" . returnGlobal('copydir'));
 
                 if (Template::isStandardTemplate(returnGlobal('newname'))) {
                     Yii::app()->user->setFlash('error', sprintf(gT("Template could not be renamed to '%s'."), $sNewName) . " " . gT("This name is reserved for standard template."));
@@ -883,7 +883,7 @@ class themes extends Survey_Common_Action
                         $oEditedTemplate->extendsFile($relativePathEditfile);
                     }
 
-                    $savefilename = $oEditedTemplate->extendsFile($relativePathEditfile);
+                    $savefilename = $oEditedTemplate->extendsFile($relativePathEditfile, $relativePathEditfile);
 
                     if (is_writable($savefilename)) {
                         if (!$handle = fopen($savefilename, 'w')) {
@@ -930,7 +930,7 @@ class themes extends Survey_Common_Action
      * @return void
      * @deprecated ? 151005
      */
-    protected function _templatebar($screenname, $editfile, $screens, $tempdir, $templatename)
+    protected function templatebar($screenname, $editfile, $screens, $tempdir, $templatename)
     {
         $aData = array();
         $aData['screenname'] = $screenname;
@@ -957,7 +957,7 @@ class themes extends Survey_Common_Action
      * @param array $myoutput
      * @return array
      */
-    protected function _templatesummary($templatename, $screenname, $editfile, $relativePathEditfile, $templates, $files, $cssfiles, $jsfiles, $otherfiles, $myoutput)
+    protected function templatesummary($templatename, $screenname, $editfile, $relativePathEditfile, $templates, $files, $cssfiles, $jsfiles, $otherfiles, $myoutput)
     {
         $tempdir = Yii::app()->getConfig("tempdir");
         $tempurl = Yii::app()->getConfig("tempurl");
@@ -1057,7 +1057,7 @@ class themes extends Survey_Common_Action
      * @param bool $showsummary
      * @return
      */
-    protected function _initialise($templatename, $screenname, $editfile, $showsummary = true)
+    protected function initialise($templatename, $screenname, $editfile, $showsummary = true)
     {
         // LimeSurvey style
         $oEditedTemplate = Template::getInstance($templatename, null, null, true, true)->prepareTemplateRendering($templatename, null, true);
@@ -1088,7 +1088,7 @@ class themes extends Survey_Common_Action
 
         /* See if we found the file to be edited inside template */
         /* @todo must control if is updatable : in updatable file OR is a view */
-        /* Actually allow to update any file exemple css/template-core.css */
+        /* Actually allow to update any file example css/template-core.css */
         // @TODO: Proper language code conversion
         $sLanguageCode = 'en';
         $availableeditorlanguages = array('bg', 'cs', 'de', 'dk', 'en', 'eo', 'es', 'fi', 'fr', 'hr', 'it', 'ja', 'mk', 'nl', 'pl', 'pt', 'ru', 'sk', 'zh');
@@ -1287,7 +1287,7 @@ class themes extends Survey_Common_Action
 
         if ($showsummary) {
             Yii::app()->clientScript->registerPackage($oEditedTemplate->sPackageName);
-            $aViewUrls = array_merge($aViewUrls, $this->_templatesummary($templatename, $screenname, $sEditfile, $editfile, $aAllTemplates, $files, $cssfiles, $jsfiles, $otherfiles, $myoutput));
+            $aViewUrls = array_merge($aViewUrls, $this->templatesummary($templatename, $screenname, $sEditfile, $editfile, $aAllTemplates, $files, $cssfiles, $jsfiles, $otherfiles, $myoutput));
         }
 
 
@@ -1325,9 +1325,9 @@ class themes extends Survey_Common_Action
      * @param string|array $aViewUrls View url(s)
      * @param array $aData Data to be passed on. Optional.
      */
-    protected function _renderWrappedTemplate($sAction = 'themes', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
+    protected function renderWrappedTemplate($sAction = 'themes', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
+        parent::renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 
     /**

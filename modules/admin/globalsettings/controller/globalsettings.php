@@ -17,7 +17,7 @@
 
 // First we define a namespace to avoid collision with core class.
 // Since we do that, all our call to the core/framework classes will need the global name space: /
-// For exemple:  \Yii::app()->getController()->renderPartial...
+// For example:  \Yii::app()->getController()->renderPartial...
 namespace lsadminmodules\globalsettings\controller;
 
 if (!defined('BASEPATH')) {
@@ -54,13 +54,13 @@ class GlobalSettings extends \GlobalSettings
      * @param string $aViewUrls View url(s)
      * @param array $aData Data to be passed on. Optional.
      */
-    protected function _renderWrappedTemplate($sAction = '', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
+    protected function renderWrappedTemplate($sAction = '', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
         // We add ou new paramater to the data to parse to the view
         $aData["myNewParam"] = $this->myNewParam;
 
         // Then we just call the parent method
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
+        parent::renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 
     /**

@@ -11,7 +11,7 @@ if ($oQuota->action == Quota::ACTION_TERMINATE){
     $tooltip = gT("Terminate survey");
     $icon = 'fa-exclamation-circle';
 } elseif ($oQuota->action == Quota::ACTION_CONFIRM_TERMINATE){
-    $tooltip = gT("Allow user to modify his last answers before terminate survey.");
+    $tooltip = gT("Allow user to modify their last answers before terminating the survey.");
     $icon = 'fa-exclamation-triangle';
 }
 ?>
@@ -33,11 +33,11 @@ if ($oQuota->action == Quota::ACTION_TERMINATE){
                 <th><?php eT('Question');?></th>
                 <th><?php eT('Answer');?></th>
                 <th class="text-right">
-                    <?php echo CHtml::beginForm(array("admin/quotas/sa/new_answer/surveyid/{$oSurvey->getPrimaryKey()}"), 'post');?>
+                    <?php echo CHtml::beginForm(array("admin/quotas/sa/newanswer/surveyid/{$oSurvey->getPrimaryKey()}"), 'post');?>
                     <?php echo CHtml::hiddenField('sid',$oSurvey->getPrimaryKey(), ['id'=> 'addForm_sid' ]);?>
                     <?php echo CHtml::hiddenField('action','quotas', ['id'=> 'addForm_action' ]);?>
                     <?php echo CHtml::hiddenField('quota_id',$oQuota->getPrimaryKey(), ['id'=> 'addForm_quota_id' ]);?>
-                    <?php echo CHtml::hiddenField('subaction','new_answer', ['id'=> 'addForm_subaction' ]);?>
+                    <?php echo CHtml::hiddenField('subaction','newanswer', ['id'=> 'addForm_subaction' ]);?>
                     <?php echo CHtml::submitButton(gT("Add answer"),array(
                         'name'=>'submit',
                         'class'=>'quota_new btn btn-default',

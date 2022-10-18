@@ -3,7 +3,7 @@
 /**
  * This is the model class for table "{{surveymenu}}".
  *
- * The followings are the available columns in table '{{surveymenu}}':
+ * The following are the available columns in table '{{surveymenu}}':
  * @property integer $id
  * @property integer $parent_id
  * @property integer $survey_id
@@ -18,7 +18,7 @@
  * @property integer $created_by
  * @property integer $active
  *
- * The followings are the available model relations:
+ * The following are the available model relations:
  * @property SurveymenuEntries[] $surveymenuEntries
  */
 class Surveymenu extends LSActiveRecord
@@ -485,6 +485,7 @@ class Surveymenu extends LSActiveRecord
      */
     public function restoreDefaults()
     {
+        $sOldLanguage = App()->language;
         $oDB = Yii::app()->db;
         switchMSSQLIdentityInsert('surveymenu', true);
         $oTransaction = $oDB->beginTransaction();
@@ -497,7 +498,6 @@ class Surveymenu extends LSActiveRecord
             }
             $oTransaction->commit();
         } catch (Exception $e) {
-            // FIXME $sOldLanguage is undefined
             App()->setLanguage($sOldLanguage);
             return false;
         }

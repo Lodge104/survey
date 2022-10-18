@@ -6,7 +6,6 @@
  */
 class UserManagementController extends LSBaseController
 {
-
     /**
      * @return array
      **/
@@ -98,7 +97,15 @@ class UserManagementController extends LSBaseController
                 ['errors' => [gT("You do not have permission to access this page.")]]
             );
         }
-        $oUser = $userid === null ? new User() : User::model()->findByPk($userid);
+        if ($userid === null) {
+            $oUser = new User();
+        } else {
+            $oUser = User::model()->findByPk((int)$userid);
+            if ($oUser === null) {
+                App()->user->setFlash('error', gT("User does not exist"));
+                $this->redirect(App()->request->urlReferrer);
+            }
+        }
         $randomPassword = \LimeSurvey\Models\Services\PasswordManagement::getRandomPassword();
         return $this->renderPartial('partial/addedituser', ['oUser' => $oUser, 'randomPassword' => $randomPassword]);
     }
@@ -178,7 +185,8 @@ class UserManagementController extends LSBaseController
             $passwordSetByUser = Yii::app()->request->getParam('preset_password');
             if ($passwordSetByUser == 0) { //in this case admin has not set a password, email with link will be sent
                 $data = $this->createAdminUser($aUser);
-            } else { //in this case admin has set a password, no email will be send ...just create user with given credentials
+            } else {
+                //in this case admin has set a password, no email will be send ..just create user with given credentials
                 $data = $this->createAdminUser($aUser, false);
             }
 
@@ -212,17 +220,24 @@ class UserManagementController extends LSBaseController
                 ['errors' => [gT("You do not have permission to access this page.")], 'noButton' => true]
             );
         }
-        $times = App()->request->getParam('times', 5);
-        $passwordSize = (int) App()->request->getParam('passwordsize', 5);
-        $passwordSize = $passwordSize < 8 || is_nan($passwordSize) ? 8 : $passwordSize;
-        $prefix = flattenText(App()->request->getParam('prefix', 'randuser_'));
-        $email = App()->request->getParam('email', User::model()->findByPk(App()->user->id)->email);
+        if (!App()->request->isPostRequest) {
+            //it has to be post request when inserting data to DB
+            return $this->renderPartial(
+                'partial/error',
+                ['errors' => [gT("Access denied.")], 'noButton' => true]
+            );
+        }
+        $times = App()->request->getPost('times', 5);
+        $minPwLength = \LimeSurvey\Models\Services\PasswordManagement::MIN_PASSWORD_LENGTH;
+        $passwordSize = (int) App()->request->getPost('passwordsize', $minPwLength);
+        $prefix = flattenText(App()->request->getPost('prefix', 'randuser_'));
+        $email = App()->request->getPost('email', User::model()->findByPk(App()->user->id)->email);
 
         $randomUsers = [];
 
         for (; $times > 0; $times--) {
             $name = $this->getRandomUsername($prefix);
-            $password = \LimeSurvey\Models\Services\PasswordManagement::getRandomPassword();
+            $password = \LimeSurvey\Models\Services\PasswordManagement::getRandomPassword($passwordSize);
             $oUser = new User();
             $oUser->users_name = $name;
             $oUser->full_name = $name;
@@ -304,6 +319,13 @@ class UserManagementController extends LSBaseController
             }
         }
 
+        // Transfer any Participants owned by this user to site's admin
+        $participantsTranferred = Participant::model()->updateAll(['owner_uid' => 1], 'owner_uid = :owner_uid', [':owner_uid' => $userId]);
+        if ($participantsTranferred) {
+            $transferredToName = User::model()->findByPk(1)->users_name;
+            $message .= sprintf(gT("All participants owned by this user were transferred to %s."), $transferredToName) . " ";
+        }
+
         $oUser = User::model()->findByPk($userId);
         //todo REFACTORING user permissions should be deleted also ... (in table permissions)
         $oUser->delete();
@@ -378,8 +400,8 @@ class UserManagementController extends LSBaseController
             );
         }
 
-        $oRequest = Yii::app()->request;
-        $userId = $oRequest->getParam('userid');
+        $userId = Yii::app()->request->getParam('userid');
+        $userId = sanitize_int($userId);
         $oUser = User::model()->findByPk($userId);
 
         // Check permissions
@@ -465,9 +487,8 @@ class UserManagementController extends LSBaseController
             );
         }
         $aTemplateModels = Template::model()->findAll();
-        $oRequest = Yii::app()->request;
-        $userId = $oRequest->getParam('userid');
-        $oUser = User::model()->findByPk($userId);
+        $userId = Yii::app()->request->getParam('userid');
+        $oUser = User::model()->findByPk((int)$userId);
 
         $aTemplates = array_map(function ($oTemplate) use ($userId) {
             $oPermission = Permission::model()->findByAttributes(array('permission' => $oTemplate->folder, 'uid' => $userId, 'entity' => 'template'));
@@ -524,6 +545,17 @@ class UserManagementController extends LSBaseController
      */
     public function actionAddRole(): ?string
     {
+        //Permission check user should have permission to add/edit new user ('create' or 'update')
+        if (
+            !(Permission::model()->hasGlobalPermission('users', 'create') ||
+            Permission::model()->hasGlobalPermission('users', 'update'))
+        ) {
+            return $this->renderPartial(
+                'partial/error',
+                ['errors' => [gT("You do not have permission to access this page.")], 'noButton' => true]
+            );
+        }
+
         $userId = Yii::app()->request->getParam('userid');
         $oUser = User::model()->findByPk($userId);
         $aPermissionTemplates = Permissiontemplates::model()->findAll();
@@ -604,7 +636,7 @@ class UserManagementController extends LSBaseController
         $allowFileType = ".csv";
 
         if ($importFormat == 'json') {
-            $importNote = sprintf(gT("Wrong definition! Please make sure that your JSON arrays contains the fields '%s', '%s', '%s', '%s', and '%s'"), '<b>users_name</b>', '<b>full_name</b>', '<b>email</b>', '<b>lang</b>', '<b>password</b>');
+            $importNote = sprintf(gT("Please make sure that your JSON arrays contain the fields '%s', '%s', '%s', '%s', and '%s'"), '<b>users_name</b>', '<b>full_name</b>', '<b>email</b>', '<b>lang</b>', '<b>password</b>');
             $allowFileType = ".json,application/json";
         }
 
@@ -631,11 +663,7 @@ class UserManagementController extends LSBaseController
             );
         }
 
-        $overwriteUsers = false;
-
-        if (isset($_POST['overwrite'])) {
-            $overwriteUsers = true;
-        }
+        $overwriteUsers = boolval(App()->getRequest()->getPost('overwrite'));
 
         switch ($importFormat) {
             case "json":
@@ -645,7 +673,11 @@ class UserManagementController extends LSBaseController
             default:
                 $aNewUsers = UserParser::getDataFromCSV($_FILES); //importFormat default is csv ...
         }
-
+        if (empty($aNewUsers)) {
+            Yii::app()->setFlashMessage(gT("No user definition found in file."), 'error');
+            $this->redirect(['userManagement/index']);
+            App()->end();
+        }
         $created = [];
         $updated = [];
 
@@ -698,7 +730,7 @@ class UserManagementController extends LSBaseController
         }
 
         Yii::app()->setFlashMessage(gT("Users imported successfully."), 'success');
-        $this->redirect('index');
+        $this->redirect(['userManagement/index']);
     }
 
 
@@ -706,7 +738,7 @@ class UserManagementController extends LSBaseController
      * Export users with specific format (json or csv)
      *
      * @param string $outputFormat json or csv
-     * @param int $uid userId
+     * @param int $uid userId   if 0, all users will be exported
      * @return mixed
      * @throws CException
      */
@@ -724,6 +756,15 @@ class UserManagementController extends LSBaseController
             $oUsers = User::model()->findByPk($uid);
         } else {
             $oUsers = User::model()->findAll();
+        }
+
+        //test GET PARAM $ouputFormat
+        switch ($outputFormat) {
+            case 'csv':
+            case 'json':  //all good, both cases are ok
+                break;
+            default:
+                $outputFormat = 'csv';
         }
 
         $aUsers = array();
@@ -1145,6 +1186,12 @@ class UserManagementController extends LSBaseController
             throw new CException("This action is not allowed, and should never happen", 500);
         }
 
+        // Abort if logged in user has no access to this user.
+        // Using same logic as User::getButtons().
+        if (!$oUser->canEdit(Yii::app()->session['loginID'])) {
+            throw new CHttpException(403, gT("You do not have permission to access this page."));
+        }
+
         $aUser['full_name'] = flattenText($aUser['full_name']); //to prevent xss ...
         $oUser->setAttributes($aUser);
 
@@ -1353,33 +1400,75 @@ class UserManagementController extends LSBaseController
      */
     protected function applyPermissionFromArray(int $iUserId, array $aPermissionArray): array
     {
-        //Delete all current Permissions
-        $oCriteria = new CDbCriteria();
-        $oCriteria->compare('uid', $iUserId);
-        // without entity
-        $oCriteria->compare('entity_id', 0);
-        // except for template entity (no entity_id is set here)
-        $oCriteria->compare('entity', "<>template");
-        Permission::model()->deleteAll($oCriteria);
-
+        /**
+         * Get current user permission to update only this permission
+         * NEVER delete existing Permission !
+         */
+        $aGlobalPermissions = Permission::model()->getGlobalBasePermissions();
+        /* Get only permission part */
+        $aAllowedPermissions = array_map(
+            function ($aGlobalPermission) {
+                return array(
+                    'create' => $aGlobalPermission['read'],
+                    'read' => $aGlobalPermission['read'],
+                    'update' => $aGlobalPermission['read'],
+                    'delete' => $aGlobalPermission['read'],
+                    'import' => $aGlobalPermission['read'],
+                    'export' => $aGlobalPermission['read'],
+                );
+            },
+            $aGlobalPermissions
+        );
+        $aCruds = array('create', 'read', 'update', 'delete', 'import', 'export');
+        if (!Permission::model()->hasGlobalPermission('superadmin', 'read')) {
+            // if not superadmin filter the available permissions as no admin may give more permissions than he owns
+            $aFilteredPermissions = array();
+            foreach ($aAllowedPermissions as $PermissionName => $aPermission) {
+                foreach ($aPermission as $sPermissionKey => &$sPermissionValue) {
+                    if (in_array($sPermissionKey, $aCruds) && !Permission::model()->hasGlobalPermission($PermissionName, $sPermissionKey)) {
+                        $sPermissionValue = false;
+                    }
+                }
+                // Only show a row for that permission if there is at least one permission he may give to other users
+                if (
+                    $aPermission['create'] || $aPermission['read'] || $aPermission['update']
+                    || $aPermission['delete'] || $aPermission['import'] || $aPermission['export']
+                ) {
+                    $aFilteredPermissions[$PermissionName] = $aPermission;
+                }
+            }
+            $aAllowedPermissions = $aFilteredPermissions;
+        }
         $results = [];
         //Apply the permission array
-        foreach ($aPermissionArray as $sPermissionKey => $aPermissionSettings) {
-            $oPermission = new Permission();
-            $oPermission->entity = 'global';
-            $oPermission->entity_id = 0;
-            $oPermission->uid = $iUserId;
-            $oPermission->permission = $sPermissionKey;
-
-            foreach ($aPermissionSettings as $sSettingKey => $sSettingValue) {
-                $oPermissionDBSettingKey = $sSettingKey . '_p';
-                $oPermission->$oPermissionDBSettingKey = $sSettingValue == 'on' ? 1 : 0;
+        foreach ($aAllowedPermissions as $permissionKey => $aAllowedPermission) {
+            /* get the current user permission or create */
+            $oPermission = Permission::model()->find(
+                "entity = :entity AND entity_id = :entity_id AND uid = :uid AND permission = :permission",
+                array(
+                    ":entity" => 'global',
+                    ":entity_id" => 0,
+                    ":uid" => $iUserId,
+                    ":permission" => $permissionKey,
+                )
+            );
+            if (empty($oPermission)) {
+                $oPermission = new Permission();
+                $oPermission->entity = 'global';
+                $oPermission->entity_id = 0;
+                $oPermission->uid = $iUserId;
+                $oPermission->permission = $permissionKey;
             }
-
-            $aPermissionData = Permission::getGlobalPermissionData($sPermissionKey);
-
-            $results[$sPermissionKey] = [
-                'descriptionData' => $aPermissionData,
+            foreach ($aAllowedPermission as $action => $havePermission) {
+                if ($havePermission) {
+                    $oPermission->setAttribute(
+                        $action . '_p',
+                        intval(!empty($aPermissionArray[$permissionKey][$action]))
+                    );
+                }
+            }
+            $results[$permissionKey] = [
+                'descriptionData' => Permission::getGlobalPermissionData($permissionKey),
                 'success' => $oPermission->save(),
                 'storedValue' => $oPermission->attributes
             ];

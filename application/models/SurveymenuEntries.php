@@ -3,7 +3,7 @@
 /**
  * This is the model class for table "{{surveymenu_entries}}".
  *
- * The followings are the available columns in table '{{surveymenu_entries}}':
+ * The following are the available columns in table '{{surveymenu_entries}}':
  * @property integer $id
  * @property integer $menu_id
  * @property integer $user_id
@@ -30,7 +30,7 @@
  * @property integer $created_by
  * @property integer $active
  *
- * The followings are the available model relations:
+ * The following are the available model relations:
  * @property Surveymenu $menu
  */
 class SurveymenuEntries extends LSActiveRecord
@@ -553,7 +553,7 @@ class SurveymenuEntries extends LSActiveRecord
         return true;
     }
 
-    private function _parseUniqueNameFromTitle()
+    private function parseUniqueNameFromTitle()
     {
 
         $name = preg_replace("/[^a-z]*/", "", strtolower($this->title));
@@ -570,7 +570,7 @@ class SurveymenuEntries extends LSActiveRecord
     public function save($runValidation = true, $attributes = null)
     {
         if ($this->getIsNewRecord()) {
-            $this->name = $this->_parseUniqueNameFromTitle();
+            $this->name = $this->parseUniqueNameFromTitle();
             $this->menu_title = empty($this->menu_title) ? $this->title : $this->menu_title;
             $this->menu_description = empty($this->menu_description) ? $this->title : $this->menu_title;
         }
