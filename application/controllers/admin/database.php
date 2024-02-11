@@ -691,7 +691,7 @@ class Database extends SurveyCommonAction
             $startdate = $this->filterEmptyFields($oSurvey, 'startdate');
             if ($unfilteredStartdate === null) {
                 // Not submitted.
-            } elseif (trim((string) $unfilteredStartdate) == "") {
+            } elseif (trim($unfilteredStartdate) == "") {
                 $oSurvey->startdate = "";
             } else {
                 Yii::app()->loadLibrary('Date_Time_Converter');
@@ -704,7 +704,7 @@ class Database extends SurveyCommonAction
             $expires = $this->filterEmptyFields($oSurvey, 'expires');
             if ($unfilteredExpires === null) {
                 // Not submitted.
-            } elseif (trim((string) $unfilteredExpires) == "") {
+            } elseif (trim($unfilteredExpires) == "") {
                 // Must not convert if empty.
                 $oSurvey->expires = "";
             } else {
@@ -735,19 +735,11 @@ class Database extends SurveyCommonAction
             $oSurvey->publicstatistics = $this->filterEmptyFields($oSurvey, 'publicstatistics');
             $oSurvey->autoredirect = $this->filterEmptyFields($oSurvey, 'autoredirect');
 
-            // save into the database only if global settings are off
-            //if (getGlobalSetting('showxquestions') === 'choose'){
-                $oSurvey->showxquestions = $this->filterEmptyFields($oSurvey, 'showxquestions');
-            //}
-            //if (getGlobalSetting('showgroupinfo') === 'choose'){
-                $oSurvey->showgroupinfo = $this->filterEmptyFields($oSurvey, 'showgroupinfo');
-            //}
-            //if (getGlobalSetting('showqnumcode') === 'choose'){
-                $oSurvey->showqnumcode = $this->filterEmptyFields($oSurvey, 'showqnumcode');
-            //}
-            //if (getGlobalSetting('shownoanswer') == 2){  // Don't do exact comparison because the value could be from global settings table (string) or from config (integer)
-                $oSurvey->shownoanswer = $this->filterEmptyFields($oSurvey, 'shownoanswer');
-            //}
+            $oSurvey->shownoanswer = $this->filterEmptyFields($oSurvey, 'shownoanswer');
+            $oSurvey->showxquestions = $this->filterEmptyFields($oSurvey, 'showxquestions');
+            $oSurvey->showgroupinfo = $this->filterEmptyFields($oSurvey, 'showgroupinfo');
+            $oSurvey->showqnumcode = $this->filterEmptyFields($oSurvey, 'showqnumcode');
+
             $oSurvey->showwelcome = $this->filterEmptyFields($oSurvey, 'showwelcome');
             $oSurvey->showsurveypolicynotice = $this->filterEmptyFields($oSurvey, 'showsurveypolicynotice');
             $oSurvey->allowprev = $this->filterEmptyFields($oSurvey, 'allowprev');
@@ -794,10 +786,10 @@ class Database extends SurveyCommonAction
 
         // Url params in json
         if (Yii::app()->request->getPost('allurlparams', false) !== false) {
-            $aURLParams = json_decode(Yii::app()->request->getPost('allurlparams', ''), true) ?? [];
+            $aURLParams = json_decode(Yii::app()->request->getPost('allurlparams'), true);
             SurveyURLParameter::model()->deleteAllByAttributes(array('sid' => $iSurveyID));
             foreach ($aURLParams as $aURLParam) {
-                $aURLParam['parameter'] = trim((string) $aURLParam['parameter']);
+                $aURLParam['parameter'] = trim($aURLParam['parameter']);
                 if ($aURLParam['parameter'] == '' || !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $aURLParam['parameter']) || $aURLParam['parameter'] == 'sid' || $aURLParam['parameter'] == 'newtest' || $aURLParam['parameter'] == 'token' || $aURLParam['parameter'] == 'lang') {
                     continue; // this parameter name seems to be invalid - just ignore it
                 }
@@ -904,7 +896,13 @@ class Database extends SurveyCommonAction
             $oSurvey->owner_id == Yii::app()->session['loginID']
             || Permission::model()->hasGlobalPermission('superadmin', 'read')
         ) {
-            $oSurvey->owner_id = $request->getPost('owner_id');
+            $ownerId = $request->getPost('owner_id');
+            // Before setting the owner, check if the user exists and can be seen
+            // by the current user (in case the request was forged)
+            $owner = \User::model()->findByPk($ownerId);
+            if (isset($owner) && in_array($ownerId, getUserList('onlyuidarray'))) {
+                $oSurvey->owner_id = $ownerId;
+            }
         }
 
         // If the base language is changing, we may need the current title to avoid the survey
@@ -983,7 +981,7 @@ class Database extends SurveyCommonAction
             $this->updatedFields[] = $fieldArrayName;
         }
 
-        $newValue = trim((string) $newValue);
+        $newValue = trim($newValue);
 
         $options = $this->updateableFields[$fieldArrayName];
 

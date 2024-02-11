@@ -234,27 +234,6 @@ class LimesurveyApi
     }
 
     /**
-     * Get the current survey in current oage
-     * @param boolean $onlyactivated return it only if activated
-     * @return false|integer
-     */
-    public function getCurrentSurveyid($onlyactivated = false)
-    {
-        $surveyId = \LimeExpressionManager::getLEMsurveyId();
-        if (empty($surveyId)) {
-            return false;
-        }
-        $survey = \Survey::model()->findByPk($surveyId);
-        if (!$survey) {
-            return false;
-        }
-        if ($onlyactivated && !$survey->getIsActive()) {
-            return false;
-        }
-        return $surveyId;
-    }
-
-    /**
      * Get the current Response
      * @param integer $surveyId
      * @return \Response|null
@@ -262,7 +241,7 @@ class LimesurveyApi
     public function getCurrentResponses($surveyId = null)
     {
         if (empty($surveyId)) {
-            $surveyId = $this->getCurrentSurveyid();
+            $surveyId = \LimeExpressionManager::getLEMsurveyId();
         }
         if (empty($surveyId)) {
             return;
@@ -347,7 +326,7 @@ class LimesurveyApi
         $base = App()->getDb()->tablePrefix . 'old_survey_' . $surveyId;
         $timingbase = App()->getDb()->tablePrefix . 'old_survey_' . $surveyId . '_timings_';
         foreach (App()->getDb()->getSchema()->getTableNames() as $table) {
-            if (strpos((string) $table, $base) === 0 && strpos((string) $table, $timingbase) === false) {
+            if (strpos($table, $base) === 0 && strpos($table, $timingbase) === false) {
                 $tables[] = $table;
             }
         }
@@ -419,14 +398,18 @@ class LimesurveyApi
     /**
      * @param int $surveyId
      * @param string $language
-     * $param array $conditions
+     * @param array $conditions
      * @return \Question[]
      */
     public function getQuestions($surveyId, $language = 'en', $conditions = array())
     {
-        $conditions['sid'] = $surveyId;
-        $conditions['language'] = $language;
-        return \Question::model()->with('subquestions')->findAllByAttributes($conditions);
+        $criteria = new \CDbCriteria();
+        $criteria->addCondition('t.sid = :sid');
+        $criteria->addCondition('questionl10ns.language = :language');
+        $criteria->params[':sid'] = $surveyId;
+        $criteria->params[':language'] = $language;
+
+        return \Question::model()->with('subquestions', 'questionl10ns')->findAllByAttributes($conditions, $criteria);
     }
 
     /**
@@ -547,7 +530,7 @@ class LimesurveyApi
         $db_group_name = flattenText($groupName, false, true, 'UTF-8', true);
         $db_group_description = flattenText($groupDescription);
 
-        if (isset($db_group_name) && strlen((string) $db_group_name) > 0) {
+        if (isset($db_group_name) && strlen($db_group_name) > 0) {
             $newUserGroup = new \UserGroup();
             $newUserGroup->owner_id = 1;
             $newUserGroup->name = $db_group_name;

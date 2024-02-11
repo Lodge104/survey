@@ -45,11 +45,14 @@ class UserGroupController extends LSBaseController
      */
     public function beforeRender($view)
     {
+        App()->getClientScript()->registerPackage('jquery-tablesorter');
         App()->getClientScript()->registerScriptFile(App()->getConfig('adminscripts') . 'users.js');
 
         Yii::app()->loadHelper('database');
 
         $this->aData['imageurl'] = Yii::app()->getConfig("adminimageurl");
+
+        $this->aData['menubar_pathname'] = '/userGroup/usergroupbar_view';
 
         return parent::beforeRender($view);
     }
@@ -69,12 +72,11 @@ class UserGroupController extends LSBaseController
         $aData = [];
 
         $model = UserGroup::model();
-        $aData['topbar']['title'] = gT('User group list');
-        $aData['topbar']['middleButtons'] = $this->renderPartial('partial/topbarBtns/leftSideButtons', [], true);
-        $aData['topbar']['rightButtons'] = $this->renderPartial('partial/topbarBtns/rightSideButtons', [
-            'addGroupSave' => false
-        ], true);
 
+        $aData['usergroupbar']['returnbutton']['url'] = 'admin/index';
+        $aData['usergroupbar']['returnbutton']['text'] = gT('Back');
+
+        $aData['pageTitle'] = gT('User group list');
 
         if (isset($_GET['pageSize'])) {
             Yii::app()->user->setState('pageSize', (int)$_GET['pageSize']);
@@ -98,9 +100,25 @@ class UserGroupController extends LSBaseController
      */
     public function actionViewGroup($ugid, bool $header = false)
     {
-        if (!Permission::model()->hasGlobalPermission('usergroups', 'read')) {
-            Yii::app()->session['flashmessage'] = gT('Access denied!');
-            $this->redirect(App()->createUrl("/admin"));
+        $ugid = (int)$ugid;
+        if (empty($ugid)) {
+            throw new CHttpException(400, gT('GroupId missing'));
+        }
+
+        $userGroup = UserGroup::model()->findByPk($ugid);
+        if (empty($userGroup)) {
+            throw new CHttpException(404, gT("User group not found."));
+        }
+
+        /* Permission check */
+        if (
+            !(
+                Permission::model()->hasGlobalPermission('superadmin', 'read') // Can always see all
+                || $userGroup->owner_id == App()->getCurrentUserId() // Are the owner
+                || ($userGroup->hasUser(App()->getCurrentUserId()) && Permission::model()->hasGlobalPermission('usergroups', 'read')) // Inside group, and allowed to see all usergroups
+            )
+        ) {
+            throw new CHttpException(403, gT("No access: You do not have permission to this user group."));
         }
 
         $aData = [];
@@ -109,97 +127,84 @@ class UserGroupController extends LSBaseController
         } else {
             $aData['headercfg'] = null;
         }
-
-        if ($ugid != false) {
-            $ugid = (int)$ugid;
-            $userGroup = UserGroup::model()->findByPk($ugid);
-            $uid = Yii::app()->user->id;
-            if (
-                $userGroup &&
-                (($userGroup->hasUser($uid) || $userGroup->owner_id == $uid) ||
-                    Permission::model()->hasGlobalPermission('superadmin', 'read'))
-            ) {
-                $aData['userGroup'] = $userGroup;
-            }
-        } else {
-            $sFlashType = 'error';
-            $sFlashMessage = gT('GroupId missing');
-            Yii::app()->user->setFlash($sFlashType, $sFlashMessage);
-            $this->redirect('index');
-        }
-
+        $aData['userGroup'] = $userGroup;
         $aData['ugid'] = $ugid;
-        if (Yii::app()->session['loginID']) {
-            $aData["usergroupid"] = $ugid;
-            $result = UserGroup::model()->requestViewGroup($ugid, Yii::app()->session["loginID"]);
-            if ($result) {
-                $crow = $result[0];
-                $aData["groupfound"] = true;
-                $aData["groupname"] = $crow['name'];
-                if (!empty($crow['description'])) {
-                    $aData["usergroupdescription"] = $crow['description'];
-                } else {
-                    $aData["usergroupdescription"] = "";
-                }
-            }
-            $aData["useradddialog"] = false;
-            $aData["addableUsers"] = [];
-            $aSearchCriteria = new CDbCriteria();
-            $aSearchCriteria->compare("ugid", $ugid);
-            if (!Permission::model()->hasGlobalPermission('superadmin', 'read')) {
-                $aSearchCriteria->compare("owner_id", Yii::app()->session['loginID']);
-            }
-            $aFilteredUserGroups = UserGroup::model()->count($aSearchCriteria);
+        $aData["usergroupid"] = $ugid;
+        $aData["groupfound"] = true;
+        $aData["groupname"] = $userGroup->name;
+        $aData["usergroupdescription"] = $userGroup->description;
 
-            if ($aFilteredUserGroups > 0) {
-                $aData["useradddialog"] = true;
-
-                $aUsers = User::model()->findAll(['join' => "LEFT JOIN (SELECT uid AS id FROM {{user_in_groups}} WHERE ugid = {$ugid}) AS b ON t.uid = b.id", 'condition' => "id IS NULL ORDER BY users_name"]);
-                $aNewUserListData = CHtml::listData($aUsers, 'uid', function ($user) {
-                    return \CHtml::encode($user->users_name) . " (" . \CHtml::encode($user->full_name) . ')';
-                });
-                // Remove group owner because an owner is automatically member of a group
-                unset($aNewUserListData[$userGroup->owner_id]);
-                $aData["addableUsers"] = array('-1' => gT("Please choose...")) + $aNewUserListData;
-                $aData["useraddurl"] = "";
+        $row = 1;
+        $userloop = array();
+        $bgcc = "oddrow";
+        foreach ($userGroup->users as $oUser) {
+            // @todo: Move the zebra striping to view
+            if ($bgcc == "evenrow") {
+                $bgcc = "oddrow";
+            } else {
+                $bgcc = "evenrow";
             }
+            $userloop[$row]["userid"] = $oUser->uid;
+
+            //  output users
+            $userloop[$row]["rowclass"] = $bgcc;
+            if (Permission::model()->hasGlobalPermission('usergroups', 'update') && $oUser->parent_id == Yii::app()->session['loginID']) {
+                $userloop[$row]["displayactions"] = true;
+            } else {
+                $userloop[$row]["displayactions"] = false;
+            }
+
+            $userloop[$row]["username"] = $oUser->users_name;
+            $userloop[$row]["email"] = $oUser->email;
+
+            $row++;
+        }
+        $aData["userloop"] = $userloop;
+
+        $aSearchCriteria = new CDbCriteria();
+        $aSearchCriteria->compare("ugid", $ugid);
+        if (!Permission::model()->hasGlobalPermission('superadmin', 'read')) {
+            $aSearchCriteria->compare("owner_id", Yii::app()->session['loginID']);
+        }
+        $aFilteredUserGroups = UserGroup::model()->count($aSearchCriteria);
+
+        $aData["useradddialog"] = false;
+        $aData["addableUsers"] = [];
+        if ($aFilteredUserGroups > 0) {
+            $aData["useradddialog"] = true;
+
+            $aUsers = User::model()->findAll(['join' => "LEFT JOIN (SELECT uid AS id FROM {{user_in_groups}} WHERE ugid = {$ugid}) AS b ON t.uid = b.id", 'condition' => "id IS NULL ORDER BY users_name"]);
+            $aNewUserListData = CHtml::listData($aUsers, 'uid', function ($user) {
+                return \CHtml::encode($user->users_name) . " (" . \CHtml::encode($user->full_name) . ')';
+            });
+            // Remove group owner because an owner is automatically member of a group
+            unset($aNewUserListData[$userGroup->owner_id]);
+            $aData["addableUsers"] = array('-1' => gT("Please choose...")) + $aNewUserListData;
+            $aData["useraddurl"] = "";
         }
 
-        $aData['topbar']['title'] = gT('User group') . ': ' . $userGroup->name;
-        $aData['topbar']['middleButtons'] = $this->renderPartial(
-            'partial/topbarBtns_manageGroup/leftSideButtons',
-            [
-                'userGroupId' => $userGroup->ugid,
-                'hasPermission' => (Yii::app()->session['loginID'] == $userGroup->owner_id ||
-                    Permission::model()->hasGlobalPermission('superadmin', 'read'))
-            ],
-            true
-        );
-        $aData['topbar']['rightButtons'] = $this->renderPartial(
-            'partial/topbarBtns_manageGroup/rightSideButtons',
-            [],
-            true
-        );
+        $aData['usergroupbar']['edit'] = true;
 
-        if (isset($_GET['pageSize'])) {
-            Yii::app()->user->setState('pageSize', (int)$_GET['pageSize']);
-        }
-        $model = User::model();
-        $filterForm = Yii::app()->request->getPost('User', false);
-        if ($filterForm) {
-            $model->setAttributes($filterForm, false);
-        }
+        // Return Button
+        $aData['usergroupbar']['returnbutton']['url'] = 'userGroup/index';
+        $aData['usergroupbar']['returnbutton']['text'] = gT('Back');
+
+        // Green Bar (SurveyManagerBar) Page Title
+        $basePageTitle = gT('User group');
+        $userGroupName = $aData['groupname'];
+        $aData['pageTitle'] = $basePageTitle . ' : ' . $userGroupName;
 
         $this->aData = $aData;
 
         $this->render('viewUserGroup_view', [
             'ugid' => $aData['ugid'],
+            'groupname' => $aData['groupname'],
             'groupfound' => $aData['groupfound'],
             'usergroupdescription' => $aData["usergroupdescription"],
             'headercfg' => $aData["headercfg"],
+            'userloop' => $aData["userloop"],
             'useradddialog' => $aData["useradddialog"],
-            'addableUsers' => $aData["addableUsers"],
-            'model' => $model
+            'addableUsers' => $aData["addableUsers"]
         ]);
     }
 
@@ -236,24 +241,26 @@ class UserGroupController extends LSBaseController
                 }
             } else {
                 $result = UserGroup::model()->requestEditGroup($ugid, Yii::app()->session['loginID']);
-                $aData['model'] = $result;
-                $aData['ugid'] = $result->ugid;
+                if ($result !== null) {
+                    $aData['model'] = $result;
+                    $aData['ugid'] = $result->ugid;
+                } else {
+                    Yii::app()->session['flashmessage'] = gT("You don't have permission to edit this usergroup");
+                    $this->redirect(App()->createUrl("/admin"));
+                }
             }
         } else {
             Yii::app()->session['flashmessage'] = gT("You don't have permission to edit a usergroup");
             $this->redirect(App()->createUrl("/admin"));
         }
 
-        $aData['topbar']['title'] = sprintf(gT("Editing user group (Owner: %s)"), Yii::app()->session['user']);
-        $aData['topbar']['rightButtons'] = $this->renderPartial(
-            'partial/topbarBtns/rightSideButtons',
-            [
-                'backUrl' => Yii::app()->createUrl('userGroup/index'),
-                'addGroupSave' => true
-            ],
-            true
-        );
+        $aData['usergroupbar']['returnbutton']['url'] = 'userGroup/index';
+        $aData['usergroupbar']['returnbutton']['text'] = gT('Back');
+        $aData['usergroupbar']['savebutton']['form'] = 'usergroupform';
+        $aData['usergroupbar']['savebutton']['text'] = gT("Save");
 
+        // Green Bar (SurveyManagerBar) Page Title
+        $aData['pageTitle'] = sprintf(gT("Editing user group (Owner: %s)"), Yii::app()->session['user']);
         $this->aData = $aData;
 
         $this->render('editUserGroup_view', [
@@ -268,20 +275,25 @@ class UserGroupController extends LSBaseController
      */
     public function actionAddGroup()
     {
-        $action = $_POST['action'] ?? '';
+        $action = App()->getRequest()->getPost('action');
         $aData = array();
 
         if (Permission::model()->hasGlobalPermission('usergroups', 'create')) {
             if ($action == "saveusergroup") {
                 //try to save the normal yii-way (validation rules must be implement in UserGroup()->rules(...)
                 $model = new UserGroup();
-                $model->name = flattenText($_POST['group_name'], false, true, 'UTF-8');
-                $model->description = flattenText($_POST['group_description']);
+                $model->name = flattenText(App()->getRequest()->getPost('group_name'), false, true, 'UTF-8');
+                $model->description = flattenText(App()->getRequest()->getPost('group_description'));
                 $model->owner_id = Yii::app()->user->id;
 
                 if ($model->save()) {
-                    //everythiong ok, go back to index
-                    Yii::app()->user->setFlash('success', gT("User group successfully added!"));
+                    //everything ok, go back to index
+                    App()->setFlashMessage(gT("User group successfully added!"), 'success');
+                    if ($model->addUser(Yii::app()->user->id)) {
+                        App()->setFlashMessage(gT("Your account was added to the group."));
+                    } else {
+                        App()->setFlashMessage(gT("An error happened when trying to add your account to user group."), 'warning');
+                    }
                     $this->redirect(array('userGroup/index'));
                 } else {
                     //show error msg
@@ -298,24 +310,19 @@ class UserGroupController extends LSBaseController
             $this->redirect('index');
         }
 
-        $aData['topbar']['title'] = gT('Add user group');
-        $aData['topbar']['middleButtons'] = $this->renderPartial(
-            'partial/topbarBtns/leftSideButtons',
-            [],
-            true
-        );
-        $aData['topbar']['rightButtons'] = $this->renderPartial(
-            '/layouts/partial_topbar/right_close_saveclose_save',
-            [
-                'isCloseBtn' => true,
-                'isSaveAndCloseBtn' => false,
-                'isSaveBtn' => true,
-                'backUrl' => Yii::app()->createUrl('userGroup/index'),
-                'formIdSaveClose' => '',
-                'formIdSave' => 'usergroupform'
-            ],
-            true
-        );
+        // Save Button
+        $aData['usergroupbar']['savebutton']['form'] = 'usergroupform';
+        $aData['usergroupbar']['savebutton']['text'] = gT('Save');
+
+        // Back Button
+        $aData['usergroupbar']['returnbutton']['text'] = gT('Back');
+        $aData['usergroupbar']['returnbutton']['url'] = 'userGroup/index';
+
+        // Add User Group Button
+        $aData['usergroupbar']['add'] = 'admin/usergroups';
+
+        # Green Bar (SurveyManagerBar) Page Title
+        $aData['pageTitle'] = gT('Add user group');
 
         $this->aData = $aData;
 
@@ -432,11 +439,11 @@ class UserGroupController extends LSBaseController
     /**
      * Deletes a user from group
      *
+     * @param $ugid
      * @throws CDbException
      */
-    public function actionDeleteUserFromGroup()
+    public function actionDeleteUserFromGroup($ugid)
     {
-        $ugid = (int) Yii::app()->request->getPost('ugid');
         $uid = (int) Yii::app()->request->getPost('uid');
         $checkOK = $this->checkBeforeAddDeleteUser($uid, (int)$ugid);
         if (count($checkOK) > 0) {
@@ -464,45 +471,54 @@ class UserGroupController extends LSBaseController
     {
         $ugid = sanitize_int($ugid);
         $action = Yii::app()->request->getPost("action");
+        $currentUserId = App()->getCurrentUserId();
+        $userGroup = UserGroup::model()->findByPk($ugid);
+        if (empty($userGroup)) {
+            throw new CHttpException(404, gT("User group not found."));
+        }
+        if (
+            !Permission::model()->hasGlobalPermission('superadmin', 'read') // User is superadmin
+            && $userGroup->owner_id != $currentUserId // User is owner
+        ) {
+            throw new CHttpException(403, gT("No access: You do not have permission to send emails to all users."));
+        }
+        $redirectUrl = App()->createUrl("userGroup/viewGroup", ['ugid' => $ugid]);
         $aData = [];
-
         if ($action == "mailsendusergroup") {
-            // user must be in user group or superadmin
-            if ($ugid === null) {
-                $ugid = (int) Yii::app()->request->getPost('ugid');
-            }
-            $result = UserInGroup::model()->findAllByPk(array('ugid' => (int)$ugid, 'uid' => Yii::app()->session['loginID']));
-            if (count($result) > 0 || Permission::model()->hasGlobalPermission('superadmin', 'read')) {
-                try {
-                    $sendCopy = Yii::app()->getRequest()->getPost('copymail') == 1 ? 1 : 0;
-                    $emailSendingResults = UserGroup::model()->sendUserEmails(
-                        $ugid,
-                        Yii::app()->getRequest()->getPost('subject'),
-                        Yii::app()->getRequest()->getPost('body'),
-                        $sendCopy
-                    );
+            try {
+                $sendCopy = App()->getRequest()->getPost('copymail', 0);
+                $emailSendingResults = UserGroup::model()->sendUserEmails(
+                    $ugid,
+                    App()->getRequest()->getPost('subject'),
+                    App()->getRequest()->getPost('body'),
+                    $sendCopy
+                );
 
-                    Yii::app()->user->setFlash('success', $emailSendingResults);
-                    $this->redirect(array('userGroup/viewGroup/ugid/' . $ugid));
-                } catch (Exception $e) {
-                    // TODO: Show error message?
-                    Yii::app()->user->setFlash('error', gT("Error: no email has been send."));
-                    $this->redirect(array('userGroup/viewGroup/ugid/' . $ugid));
-                }
-            } else {
-                Yii::app()->user->setFlash('error', gT("You do not have permission to send emails to all users. "));
-                $this->redirect(array('userGroup/viewGroup/ugid/' . $ugid));
+                Yii::app()->user->setFlash('success', $emailSendingResults);
+                $this->redirect($redirectUrl);
+            } catch (Exception $e) {
+                // TODO: Show error message?
+                Yii::app()->user->setFlash('error', gT("Error: no email has been send."));
+                $this->redirect($redirectUrl);
             }
         } else {
             $aData['ugid'] = $ugid;
         }
 
-        $aData['topbar']['title'] = gT('Mail to all Members');
-        $aData['topbar']['rightButtons'] = $this->renderPartial(
-            'partial/topbarBtns_mail/rightSideButtons',
-            [],
-            true
-        );
+        // Back Button
+        $aData['usergroupbar']['returnbutton']['url'] = 'userGroup/index';
+        $aData['usergroupbar']['returnbutton']['text'] = gT('Back');
+
+        // Send Button
+        $aData['usergroupbar']['savebutton']['form'] = 'mailusergroup';
+        $aData['usergroupbar']['savebutton']['text'] = gT('Send');
+
+        // Reset Button
+        $aData['usergroupbar']['resetbutton']['form'] = 'mailusergroup';
+        $aData['usergroupbar']['resetbutton']['text'] = gT('Reset');
+
+        // Green Bar (SurveyManagerBar) Page Title
+        $aData['pageTitle'] = gT("Mail to all Members");
 
         $this->aData = $aData;
 

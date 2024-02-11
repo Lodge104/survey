@@ -18,9 +18,6 @@ ONCE SET, ENCRYPTION KEYS SHOULD NEVER BE CHANGED, OTHERWISE ALL ENCRYPTED DATA 
 */
 
 $config = array();
-$config['encryptionkeypair'] = '728800183d77705b84f87eb77c406d06359a82dc704eb037f168601ce92c4da14b8f412d80ba060e4344ce5ecec8eee2ca7a92398b4cf442fde8254bd85bbbaf4b8f412d80ba060e4344ce5ecec8eee2ca7a92398b4cf442fde8254bd85bbbaf';
-$config['encryptionpublickey'] = '4b8f412d80ba060e4344ce5ecec8eee2ca7a92398b4cf442fde8254bd85bbbaf';
-$config['encryptionsecretkey'] = '728800183d77705b84f87eb77c406d06359a82dc704eb037f168601ce92c4da14b8f412d80ba060e4344ce5ecec8eee2ca7a92398b4cf442fde8254bd85bbbaf';
-$config['encryptionnonce'] = '746844b18263d582fe83411e659ffd5c1a3eb41124169495';
-$config['encryptionsecretboxkey'] = 'ba19db0605a02485a738021c32f69ef46ad88765b43467af2563567f4abdbeb6';
+$config['encryptionnonce'] = '5aba43e4743edcf462292ffe91489f1c02c2bdd40a9a7d25';
+$config['encryptionsecretboxkey'] = '5544b4e66d477e9dad47557e6a8be783c7f3abedfbe5131b61dd05f9b155d241';
 return $config;

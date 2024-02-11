@@ -12,7 +12,7 @@
         'type'=>'submit',
         'value'=>$value,
         'name'=>$name,
-        'class'=>"$class btn btn-outline-secondary",
+        'class'=>"$class btn btn-default",
     ));
 ?>
 <!-- end of views/survey/system/actionButton/moveNext -->

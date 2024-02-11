@@ -63,7 +63,7 @@ class FailedLoginAttempt extends LSActiveRecord
      */
     public function deleteAttempts(string $attemptType = 'login')
     {
-        $ip = substr(getIPAddress(), 0, 40);
+        $ip = substr(getRealIPAddress(), 0, 40);
 
         if (Yii::app()->getConfig('DBVersion') <= 480) {
             $this->deleteAllByAttributes(array('ip' => $ip));
@@ -82,7 +82,7 @@ class FailedLoginAttempt extends LSActiveRecord
     public function isLockedOut(string $attemptType): bool
     {
         $isLockedOut = false;
-        $ip = substr(getIPAddress(), 0, 40);
+        $ip = substr(getRealIPAddress(), 0, 40);
 
         // Return false if IP is whitelisted
         if ($this->isWhitelisted($ip, $attemptType)) {
@@ -91,15 +91,19 @@ class FailedLoginAttempt extends LSActiveRecord
 
         switch ($attemptType) {
             case FailedLoginAttempt::TYPE_LOGIN:
-                $timeOut = Yii::app()->getConfig('timeOutTime');
-                $maxLoginAttempt = Yii::app()->getConfig('maxLoginAttempt');
+                $timeOut = intval(App()->getConfig('timeOutTime'));
+                $maxLoginAttempt = intval(App()->getConfig('maxLoginAttempt'));
                 break;
             case FailedLoginAttempt::TYPE_TOKEN:
-                $timeOut = Yii::app()->getConfig('timeOutParticipants');
-                $maxLoginAttempt = Yii::app()->getConfig('maxLoginAttemptParticipants');
+                $timeOut = intval(App()->getConfig('timeOutParticipants'));
+                $maxLoginAttempt = intval(App()->getConfig('maxLoginAttemptParticipants'));
                 break;
             default:
                 throw new InvalidArgumentException(sprintf("Invalid attempt type: %s", $attemptType));
+        }
+        // Return false if disable
+        if ($maxLoginAttempt <= 0) {
+            return false;
         }
 
         if (Yii::app()->getConfig('DBVersion') <= 480) {
@@ -122,8 +126,9 @@ class FailedLoginAttempt extends LSActiveRecord
         }
 
         if ($row != null) {
-            $lastattempt = strtotime((string) $row->last_attempt);
+            $lastattempt = strtotime($row->last_attempt);
             if (time() > $lastattempt + $timeOut) {
+                // always true if $timeOut = 0
                 $this->deleteAttempts($attemptType);
             } else {
                 $isLockedOut = true;
@@ -144,7 +149,7 @@ class FailedLoginAttempt extends LSActiveRecord
     {
         if (!$this->isLockedOut($attemptType)) {
             $timestamp = date("Y-m-d H:i:s");
-            $ip = substr(getIPAddress(), 0, 40);
+            $ip = substr(getRealIPAddress(), 0, 40);
 
             if (Yii::app()->getConfig('DBVersion') <= 480) {
                 $row = $this->findByAttributes(array('ip' => $ip));

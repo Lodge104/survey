@@ -18,6 +18,7 @@
  */
 
 require_once(dirname(dirname(__FILE__)) . '/helpers/globals.php');
+require_once __DIR__ . '/Traits/LSApplicationTrait.php';
 
 /**
 * Implements global config
@@ -36,6 +37,8 @@ require_once(dirname(dirname(__FILE__)) . '/helpers/globals.php');
 */
 class LSYii_Application extends CWebApplication
 {
+    use LSApplicationTrait;
+
     protected $config = array();
 
     /**
@@ -288,16 +291,6 @@ class LSYii_Application extends CWebApplication
         return $this->config[$name] ?? $default;
     }
 
-    /**
-     * Returns the array of available configurations
-     *
-     * @access public
-     * @return array
-     */
-    public function getAvailableConfigs()
-    {
-        return $this->config;
-    }
 
     /**
      * For future use, cache the language app wise as well.
@@ -311,11 +304,11 @@ class LSYii_Application extends CWebApplication
         // This method is also called from AdminController and LSUser
         // But if a param is defined, it should always have the priority
         // eg: index.php/admin/authentication/sa/login/&lang=de
-        if ($this->request->getParam('lang') !== null && in_array('authentication', explode('/', (string) Yii::app()->request->url))) {
+        if ($this->request->getParam('lang') !== null && in_array('authentication', explode('/', Yii::app()->request->url))) {
             $sLanguage = $this->request->getParam('lang');
         }
 
-        $sLanguage = preg_replace('/[^a-z0-9-]/i', '', (string) $sLanguage);
+        $sLanguage = preg_replace('/[^a-z0-9-]/i', '', $sLanguage);
         App()->session['_lang'] = $sLanguage; // See: http://www.yiiframework.com/wiki/26/setting-and-maintaining-the-language-in-application-i18n/
         parent::setLanguage($sLanguage);
     }
@@ -478,7 +471,7 @@ class LSYii_Application extends CWebApplication
         $files = array();
 
         foreach ($iterator as $info) {
-            $ext = pathinfo((string) $info->getPathname(), PATHINFO_EXTENSION);
+            $ext = pathinfo($info->getPathname(), PATHINFO_EXTENSION);
             if ($ext == 'xml') {
                 $CustomTwigExtensionsManifestFiles[] = $info->getPathname();
             }
@@ -545,11 +538,16 @@ class LSYii_Application extends CWebApplication
      */
     private function createControllerFromShortUrl($route)
     {
+        $route = ltrim($route, "/");
+        $alias = explode("/", $route)[0];
+        if (empty($alias)) {
+            return null;
+        }
+
         // When updating from versions that didn't support short urls, this code runs before the update process,
         // so we cannot asume the field exists. We try to retrieve the Survey Language Settings and, if it fails,
         // just don't do anything.
         try {
-            $alias = explode("/", $route)[0];
             $criteria = new CDbCriteria();
             $criteria->addCondition('surveyls_alias = :alias');
             $criteria->params[':alias'] = $alias;

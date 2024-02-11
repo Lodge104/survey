@@ -68,13 +68,6 @@ class SurveyPermissionsController extends LSBaseController
         $aData['sidemenu']['state'] = false;
 
         $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $surveyid . ")";
-        $topbarData = TopbarConfiguration::getSurveyTopbarData($surveyid);
-        $aData['topbar']['middleButtons'] = $this->renderPartial(
-            '/surveyAdministration/partial/topbar/surveyTopbarLeft_view',
-            $topbarData,
-            true
-        );
-
         $aData['subaction'] = gT("Survey permissions");
 
         $aData['surveybar']['closebutton']['url'] = 'surveyAdministration/view/surveyid/' . $surveyid; // Close button
@@ -92,9 +85,7 @@ class SurveyPermissionsController extends LSBaseController
             'userList' => $oSurveyPermissions->getSurveyUserList(),
             'userGroupList' => $oSurveyPermissions->getSurveyUserGroupList(),
             'tableContent' => $oSurveyPermissions->getUsersSurveyPermissions(),
-            'oSurveyPermissions' => $oSurveyPermissions,
-            // newly added property
-            'dataProvider' => $oSurveyPermissions->getUsersSurveyPermissionsDataProvider(),
+            'oSurveyPermissions' => $oSurveyPermissions
         ]);
     }
 
@@ -221,21 +212,9 @@ class SurveyPermissionsController extends LSBaseController
         }
         $aData['surveyid'] = $surveyid;
         $aData['sidemenu']['state'] = false;
-        //$aData['topBar']['showSaveButton'] = true;
+        $aData['topBar']['showSaveButton'] = true;
         $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $surveyid . ")";
-
-        $topbarData = TopbarConfiguration::getSurveyTopbarData($surveyid);
-        $aData['topbar']['middleButtons'] = $this->renderPartial(
-            '/surveyAdministration/partial/topbar/surveyTopbarLeft_view',
-            $topbarData,
-            true
-        );
-        $aData['topbar']['rightButtons'] = $this->renderPartial(
-            '/surveyAdministration/partial/topbar/surveyTopbarRight_view',
-            ['showSaveButton' => true],
-            true
-        );
-
+        $aData['surveybar']['savebutton']['form'] = 'frmeditgroup';
         $this->aData = $aData;
         return $this->render(
             'settingsPermission',

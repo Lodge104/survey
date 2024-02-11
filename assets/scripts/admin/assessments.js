@@ -94,14 +94,7 @@ var bindAction = function(){
             url : url,
             method: 'post',
             data: params,
-            success : function(result) {
-                if (result.success) {
-                    window.LS.ajaxAlerts(result.success, 'success');
-                } else {
-                    var errorMsg = result.error.message ? result.error.message : result.error;
-                    if (!errorMsg) errorMsg = "Unexpected error";
-                    window.LS.ajaxAlerts(errorMsg, 'danger');
-                }
+            success : function(){
                 $('#assessmentsdeleteform').find('input[name=id]').val(' ');
                 $('#assesements-delete').modal('hide');
                 $.fn.yiiGridView.update('assessments-grid');

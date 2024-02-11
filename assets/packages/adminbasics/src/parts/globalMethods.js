@@ -28,16 +28,19 @@ const globalWindowMethods = {
         return true ;
     },
     doToolTip: () => {
-        // Destroy all tooltips
         try {
-            $('.tooltip').tooltip('dispose');
+            $(".btntooltip").tooltip("destroy");
+        } catch (e) {}
+        try {
+            $('[data-tooltip="true"]').tooltip("destroy");
+        } catch (e) {}
+        try {
+            $('[data-tooltip="true"]').tooltip("destroy");
         } catch (e) {}
 
-        // Reinit all tooltips
-        let tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
+        $(".btntooltip").tooltip();
+        $('[data-tooltip="true"]').tooltip();
+        $('[data-toggle="tooltip"]').tooltip();
     },
     doSelect2: () => {
         $("select.activate-search").select2();
@@ -136,8 +139,8 @@ const globalWindowMethods = {
 };
 const globalStartUpMethods = {
     bootstrapping : ()=>{
-        // $('button,input[type=submit],input[type=button],input[type=reset],.button').button();
-        // $('button,input[type=submit],input[type=button],input[type=reset],.button').addClass("limebutton");
+        $('button,input[type=submit],input[type=button],input[type=reset],.button').button();
+        $('button,input[type=submit],input[type=button],input[type=reset],.button').addClass("limebutton");
 
         $(".progressbar").each(function(){
             var pValue = parseInt($(this).attr('name'));
@@ -147,7 +150,7 @@ const globalStartUpMethods = {
             $("div",this).html(pValue + "%");
         });
         /* set default for select2 */
-        $.fn.select2.defaults.set("theme", "bootstrap-5");
+        $.fn.select2.defaults.set("theme", "bootstrap");
         globalWindowMethods.tableCellAdapters();
     }
 };

@@ -20,13 +20,15 @@ import 'core-js';
 //Define LS Namespace
 window.LS = window.LS || {};
 
+//import css/scss to be seperately compiled
+import '../scss/loadSass.js';
+
 //import lodash
 import _ from 'lodash';
 
 //import jquery additions and prototypes
 import './jqueryAdditions/center.js';
 import './jqueryAdditions/isEmpty.js';
-import './jqueryAdditions/bootstrapconfirm.js';
 import './parts/prototypeDefinition';
 import './components/bootstrap-remote-modals';
 
@@ -40,8 +42,7 @@ import {onExistBinding as surveyGrid} from './pages/surveyGrid';
 //import parts for globalscope
 import confirmationModal from './parts/confirmationModal';
 import {globalStartUpMethods, globalWindowMethods} from './parts/globalMethods';
-import autoCloseAlerts from './parts/autoCloseAlerts';
-import ajaxAlerts, {ajaxAlertMethod} from './parts/ajaxAlerts';
+import notifyFader from './parts/notifyFader';
 import * as AjaxHelper from './parts/ajaxHelper';
 import createUrl from './parts/createUrl';
 import saveBindings from './parts/save';
@@ -83,7 +84,6 @@ const AdminCore = function(){
             appendToLoad(questionEdit);
             appendToLoad(confirmDeletemodal);
             appendToLoad(panelClickable);
-            appendToLoad(window.LS.doToolTip);
             appendToLoad(panelsAnimation, null, null, 200);
             appendToLoad(notificationSystem.initNotification);
             appendToLoad(activateSubSubMenues);
@@ -144,17 +144,15 @@ const AdminCore = function(){
                 initNotification : notificationSystem.initNotification,
             }
             const LsNameSpace = _.merge(
-                BaseNameSpace,
-                globalWindowMethods,
-                parameterGlobals,
-                {AjaxHelper},
-                {createUrl},
-                autoCloseAlerts,
-                ajaxAlertMethod,
-                {ajaxAlerts},
+                BaseNameSpace, 
+                globalWindowMethods, 
+                parameterGlobals, 
+                {AjaxHelper}, 
+                {notifyFader}, 
+                {createUrl}, 
                 {EventBus},
-                subquestionAndAnswersGlobalMethods,
-                notificationSystem,
+                subquestionAndAnswersGlobalMethods, 
+                notificationSystem, 
                 gridAction
             );
 

@@ -83,17 +83,16 @@ function populateDatabase($oDB)
             'position' => "integer NULL ",
             'url' => "text NOT NULL ",
             'title' => "text NOT NULL ",
-            'buttontext' => "string(255) NULL ",
             'ico' => "string(255) NULL ",
             'desc' => "text NOT NULL ",
             'page' => "text NOT NULL ",
             'usergroup' => "integer NOT NULL "
         ), $options);
-
+        
         foreach ($boxesData = LsDefaultDataSets::getBoxesData() as $box) {
             $oDB->createCommand()->insert("{{boxes}}", $box);
         }
-
+       
         // conditions
         $oDB->createCommand()->createTable('{{conditions}}', array(
             'cid' => 'pk',
@@ -159,8 +158,8 @@ function populateDatabase($oDB)
             'grelevance' =>  "text NULL"
         ), $options);
         $oDB->createCommand()->createIndex('{{idx1_groups}}', '{{groups}}', 'sid', false);
-
-
+        
+        
         $oDB->createCommand()->createTable('{{group_l10ns}}', array(
             'id' =>  "pk",
             'gid' =>  "integer NOT NULL",
@@ -391,7 +390,7 @@ function populateDatabase($oDB)
         $oDB->createCommand()->createIndex('{{idx4_questions}}', '{{questions}}', 'title', false);
         $oDB->createCommand()->createIndex('{{idx5_questions}}', '{{questions}}', 'parent_qid', false);
 
-
+        
         // question language settings
         $oDB->createCommand()->createTable('{{question_l10ns}}', array(
             'id' =>  "pk",
@@ -567,7 +566,7 @@ function populateDatabase($oDB)
             }
             $oDB->createCommand()->insert("{{surveymenu}}", $surveyMenuRow);
         }
-
+        
         // Surveymenu entries
 
         $oDB->createCommand()->createTable('{{surveymenu_entries}}', array(
@@ -603,7 +602,7 @@ function populateDatabase($oDB)
         $oDB->createCommand()->createIndex('{{idx1_surveymenu_entries}}', '{{surveymenu_entries}}', 'menu_id', false);
         $oDB->createCommand()->createIndex('{{idx5_surveymenu_entries}}', '{{surveymenu_entries}}', 'menu_title', false);
         $oDB->createCommand()->createIndex('{{surveymenu_entries_name}}', '{{surveymenu_entries}}', 'name', true);
-
+        
         foreach ($surveyMenuEntryRowData = LsDefaultDataSets::getSurveyMenuEntryData() as $surveyMenuEntryRow) {
             if (in_array($oDB->getDriverName(), array('mssql', 'sqlsrv', 'dblib'))) {
                 unset($surveyMenuEntryRow['id']);
@@ -1175,7 +1174,7 @@ function populateDatabase($oDB)
                 'created' => "datetime NOT NULL",  //this one has always to be set to delete after x days ...
                 'status' => "string(20) NULL DEFAULT 'SEND FAILED'",
                 'updated' => "datetime NULL",
-                'resend_vars' => "text NOT NULL"
+                'resend_vars' => "mediumtext NOT NULL"
             ]
         );
 

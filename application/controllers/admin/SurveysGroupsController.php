@@ -74,26 +74,24 @@ class SurveysGroupsController extends SurveyCommonAction
         $aData = array(
             'model' => $model,
             'action' => App()->createUrl("admin/surveysgroups/sa/create", array('#' => 'settingsForThisGroup')),
+            'pageTitle' => gT('Create survey group'),
         );
         $aData['aRigths'] = array(
             'update' => true,
             'delete' => false,
             'owner_id' => true,
         );
-        $aData['topbar']['title'] = gT('Create survey group');
-        $aData['topbar']['rightButtons'] = Yii::app()->getController()->renderPartial(
-            '/layouts/partial_topbar/right_close_saveclose_save',
-            [
-                'backUrl' => Yii::app()->createUrl("surveyAdministration/listsurveys#surveygroups"),
-                'isCloseBtn' => true,
-                'isSaveBtn' => true,
-                'isSaveAndCloseBtn' => true,
-                'formIdSave' => 'surveys-groups-form',
-                'formIdSaveClose' => 'surveys-groups-form',
+        $aData['fullpagebar'] = array(
+            'savebutton' => array(
+                'form' => 'surveys-groups-form'
+            ),
+            'saveandclosebutton' => [
+                'form' => 'surveys-groups-form',
             ],
-            true
+            'white_closebutton' => array(
+                'url' => App()->createUrl('surveyAdministration/listsurveys', ['#' => 'surveygroups']),
+            ),
         );
-
         /* User for dropdown */
         $aUserIds = getUserList('onlyuidarray');
         $userCriteria = new CDbCriteria();
@@ -120,6 +118,8 @@ class SurveysGroupsController extends SurveyCommonAction
                 throw new CHttpException(403, gT("You do not have permission to access this page."));
             }
             $postSurveysGroups = App()->getRequest()->getPost('SurveysGroups');
+            // Remove name from post data, as it shouldn't be updated
+            unset($postSurveysGroups['name']);
             /* Mimic survey system : only owner and superadmin can update owner … */
             /* After update : potential loose of rights on SurveysGroups */
             if (
@@ -175,19 +175,18 @@ class SurveysGroupsController extends SurveyCommonAction
 
         $updateRightsForm = $aData['aRigths']['update'] ? 'surveys-groups-form' : null;
 
-        $aData['topbar']['title'] = $aData['pageTitle'];
-        $aData['topbar']['rightButtons'] = Yii::app()->getController()->renderPartial(
-            '/layouts/partial_topbar/right_close_saveclose_save',
-            [
-                'isReturnBtn' => true,
-                'returnUrl' => Yii::app()->createUrl("surveyAdministration/listsurveys#surveygroups"),
-                'isCloseBtn' => false,
-                'isSaveBtn' => true,
-                'isSaveAndCloseBtn' => false,
-                'formIdSave' => $updateRightsForm,
+        $aData['fullpagebar'] = [
+            'returnbutton' => [
+                'url' => 'surveyAdministration/listsurveys#surveygroups',
+                'text' => gT('Back'),
             ],
-            true
-        );
+            'savebutton' => [
+                'form' => $updateRightsForm,
+            ],
+            'saveandclosebutton' => [
+                '$updateRightsForm',
+            ],
+        ];
 
         /* User for dropdown */
         $aUserIds = getUserList('onlyuidarray');
@@ -333,23 +332,29 @@ class SurveysGroupsController extends SurveyCommonAction
             ]
         ];
 
+        $buttons = [];
+
+        // White Close Button
+        $buttons['white_closebutton'] = array(
+                'url' => App()->createUrl('surveyAdministration/listsurveys', array('#' => 'surveygroups')),
+        );
+        if ($model->hasPermission('surveysettings', 'update')) {
+            // Save Button
+            $buttons['savebutton'] = [
+                'form' => 'survey-settings-options-form'
+            ];
+
+            // Save and Close butotn
+            $buttons['saveandclosebutton'] = array(
+                'form' => 'survey-settings-options-form'
+            );
+        }
         $aData['partial'] = $sPartial;
 
-        $surveySettingsPermission = $model->hasPermission('surveysettings', 'update');
-        $aData['topbar']['title'] = gT('Survey settings for group: ') . $model->title;
-        $aData['topbar']['rightButtons'] = Yii::app()->getController()->renderPartial(
-            '/layouts/partial_topbar/right_close_saveclose_save',
-            [
-                'isReturnBtn' => false,
-                'isCloseBtn' => true,
-                'backUrl' => Yii::app()->createUrl("surveyAdministration/listsurveys#surveygroups"),
-                'isSaveBtn' => $surveySettingsPermission,
-                'formIdSave' => 'survey-settings-options-form',
-                'isSaveAndCloseBtn' => $surveySettingsPermission,
-                'formIdSaveClose' => 'survey-settings-options-form',
-            ],
-            true
-        );
+        // Page Title
+        $aData['pageTitle'] = gT('Survey settings for group: ') . $model->title;
+
+        $aData['fullpagebar'] = $buttons;
         $this->renderWrappedTemplate('surveysgroups', 'surveySettings', $aData);
     }
 

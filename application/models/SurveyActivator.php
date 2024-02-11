@@ -74,12 +74,10 @@ class SurveyActivator
             return ['error' => $this->error];
         }
 
-        Yii::app()->db->createCommand()->update(
-            Survey::model()->tableName(),
-            ['active' => 'Y'],
-            'sid=:sid',
-            [':sid' => $this->survey->primaryKey]
-        );
+        $survey = Survey::model()->findByAttributes(array('sid' => $this->survey->primaryKey));
+        $survey->scenario = 'activationStateChange';
+        $survey->active = 'Y';
+        $survey->save();
 
         $aResult = array(
             'status' => 'OK',
@@ -173,7 +171,7 @@ class SurveyActivator
                 case Question::QT_M_MULTIPLE_CHOICE:
                 case Question::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS:
                 case Question::QT_O_LIST_WITH_COMMENT:
-                    if ($aRow['aid'] != 'other' && strpos((string) $aRow['aid'], 'comment') === false && strpos((string) $aRow['aid'], 'othercomment') === false) {
+                    if ($aRow['aid'] != 'other' && strpos($aRow['aid'], 'comment') === false && strpos($aRow['aid'], 'othercomment') === false) {
                         $aTableDefinition[$aRow['fieldname']] = (array_key_exists('encrypted', $aRow) && $aRow['encrypted'] == 'Y') ? "text" : (isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "string(5)") ;
                     } else {
                         $aTableDefinition[$aRow['fieldname']] = "text";
@@ -200,7 +198,7 @@ class SurveyActivator
                     break;
                 case Question::QT_VERTICAL_FILE_UPLOAD:
                     $this->createSurveyDir = true;
-                    if (strpos((string) $aRow['fieldname'], "_")) {
+                    if (strpos($aRow['fieldname'], "_")) {
                         $aTableDefinition[$aRow['fieldname']] = (array_key_exists('encrypted', $aRow) && $aRow['encrypted'] == 'Y') ? "text" : (isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "integer");
                     } else {
                         $aTableDefinition[$aRow['fieldname']] = "text";
@@ -454,7 +452,7 @@ class SurveyActivator
             return;
         }
         /* seems OK, sysadmin allowed to broke system */
-        $db->createCommand(new CDbExpression(sprintf('SET default_storage_engine=innoDB')))
+        $db->createCommand(new CDbExpression(sprintf('SET default_storage_engine=%s;', $dbEngine)))
             ->execute();
     }
 }

@@ -13,6 +13,8 @@
 *
 */
 
+use LimeSurvey\Models\Services\UserManager;
+
 /**
  * Class User
  *
@@ -124,6 +126,25 @@ class User extends LSActiveRecord
         );
     }
 
+    /** @inheritdoc */
+    public function scopes()
+    {
+        if (App()->getConfig("DBVersion") < 495) {
+            /* No expires column before 495 */
+            return array(
+                'active' => []
+            );
+        }
+        return array(
+            'active' => array(
+                'condition' => "expires > :now OR expires IS NULL",
+                'params' => array(
+                    'now' => dateShift(date("Y-m-d H:i:s"), "Y-m-d H:i:s", Yii::app()->getConfig("timeadjust")),
+                )
+            )
+        );
+    }
+
     public function attributeLabels()
     {
         return [
@@ -146,6 +167,35 @@ class User extends LSActiveRecord
         ];
     }
 
+    /**
+     * @inheritDoc
+     * Delete user in related model after deletion
+     * return void
+     **/
+    protected function afterDelete()
+    {
+        parent::afterDelete();
+        /* Delete all permission */
+        Permission::model()->deleteAll(
+            "uid = :uid",
+            [":uid" => $this->uid]
+        );
+        /* Delete potential roles */
+        UserInPermissionrole::model()->deleteAll(
+            "uid = :uid",
+            [":uid" => $this->uid]
+        );
+        /* User settings */
+        SettingsUser::model()->deleteAll(
+            "uid = :uid",
+            [":uid" => $this->uid]
+        );
+        /* User in group */
+        UserInGroup::model()->deleteAll(
+            "uid = :uid",
+            [":uid" => $this->uid]
+        );
+    }
     /**
      * @return string
      */
@@ -273,7 +323,7 @@ class User extends LSActiveRecord
     /**
      * @todo document me
      */
-    public function checkPasswordStrength(string $password)
+    public function checkPasswordStrength($password)
     {
         $settings = Yii::app()->getConfig("passwordValidationRules");
         $length = strlen($password);
@@ -325,12 +375,12 @@ class User extends LSActiveRecord
      *  -- newpassword and repeatpassword are identical
      *  -- newpassword is not empty
      *
-     * @param string $newPassword
-     * @param string $oldPassword
-     * @param string $repeatPassword
+     * @param $newPassword
+     * @param $oldPassword
+     * @param $repeatPassword
      * @return string empty string means everything is ok, otherwise error message is returned
      */
-    public function validateNewPassword(string $newPassword, string $oldPassword, string $repeatPassword)
+    public function validateNewPassword($newPassword, $oldPassword, $repeatPassword)
     {
         $errorMsg = '';
 
@@ -450,167 +500,259 @@ class User extends LSActiveRecord
     /**
      * Gets the buttons for the GridView
      * @return string
+     * TODO: this seems to not be used anymore - see getManagementButtons()
+     */
+    public function getButtons()
+    {
+        $editUser = "";
+        $deleteUser = "";
+        $setPermissionsUser = "";
+        $setTemplatePermissionUser = "";
+        $changeOwnership = "";
+
+        $editUrl = Yii::app()->getController()->createUrl('admin/user/sa/modifyuser');
+        $setPermissionsUrl = Yii::app()->getController()->createUrl('admin/user/sa/setuserpermissions');
+        $setTemplatePermissionsUrl = Yii::app()->getController()->createUrl('admin/user/sa/setusertemplates');
+        $changeOwnershipUrl = Yii::app()->getController()->createUrl('admin/user/sa/setasadminchild');
+
+        $oUser = self::model()->findByPK($this->uid);
+        if ($this->uid == Yii::app()->user->getId()) {
+            // Edit self
+            $editUser = "<button
+                data-toggle='tooltip'
+                title='" . gT("Edit this user") . "'
+                data-url='" . $editUrl . "'
+                data-uid='" . $this->uid . "'
+                data-user='" . htmlspecialchars($oUser['full_name']) . "'
+                data-action='modifyuser'
+                class='btn btn-default btn-sm green-border action_usercontrol_button'>
+                    <span class='fa fa-pencil text-success'></span>
+                </button>";
+        } else {
+            if (
+                $this->canEdit(Yii::app()->session['loginID'])
+            ) {
+                $editUser = "<button data-toggle='tooltip' data-url='" . $editUrl . "' data-user='" . htmlspecialchars($oUser['full_name']) . "' data-uid='" . $this->uid . "' data-action='modifyuser' title='" . gT("Edit this user") . "' type='submit' class='btn btn-default btn-sm green-border action_usercontrol_button'><span class='fa fa-pencil text-success'></span></button>";
+            }
+
+            if (
+                ((Permission::model()->hasGlobalPermission('superadmin', 'read') &&
+                $this->uid != Yii::app()->session['loginID']) ||
+                (Permission::model()->hasGlobalPermission('users', 'update') &&
+                $this->parent_id == Yii::app()->session['loginID'])) && !Permission::isForcedSuperAdmin($this->uid)
+            ) {
+                //'admin/user/sa/setuserpermissions'
+                    $setPermissionsUser = "<button data-toggle='tooltip' data-user='" . htmlspecialchars($this->full_name) . "' data-url='" . $setPermissionsUrl . "' data-uid='" . $this->uid . "' data-action='setuserpermissions' title='" . gT("Set global permissions for this user") . "' type='submit' class='btn btn-default btn-xs action_usercontrol_button'><span class='icon-security text-success'></span></button>";
+            }
+            if (
+                (Permission::model()->hasGlobalPermission('superadmin', 'read')
+                || Permission::model()->hasGlobalPermission('templates', 'read'))
+                && !Permission::isForcedSuperAdmin($this->uid)
+            ) {
+                //'admin/user/sa/setusertemplates')
+                    $setTemplatePermissionUser = "<button type='submit' data-user='" . htmlspecialchars($this->full_name) . "' data-url='" . $setTemplatePermissionsUrl . "' data-uid='" . $this->uid . "' data-action='setusertemplates' data-toggle='tooltip' title='" . gT("Set template permissions for this user") . "' class='btn btn-default btn-xs action_usercontrol_button'><span class='icon-templatepermissions text-success'></span></button>";
+            }
+            if (
+                (Permission::model()->hasGlobalPermission('superadmin', 'read')
+                    || (Permission::model()->hasGlobalPermission('users', 'delete')
+                    && $this->parent_id == Yii::app()->session['loginID'])) && !Permission::isForcedSuperAdmin($this->uid)
+            ) {
+                $deleteUrl = Yii::app()->getController()->createUrl('admin/user/sa/deluser', array(
+                    "action" => "deluser",
+                    "uid" => $this->uid,
+                    "user" => htmlspecialchars(Yii::app()->user->getId())
+                ));
+
+                    //'admin/user/sa/deluser'
+                $deleteUser = "<span style='margin:0;padding:0;display: inline-block;' data-toggle='tooltip' title='" . gT('Delete this user') . "'>
+                    <button
+                        id='delete_user_" . $this->uid . "'
+                        data-toggle='modal'
+                        data-target='#confirmation-modal'
+                        data-url='" . $deleteUrl . "'
+                        data-uid='" . $this->uid . "'
+                        data-user='" . htmlspecialchars($this->full_name) . "'
+                        data-action='deluser'
+                        data-onclick='triggerRunAction($(\"#delete_user_" . $this->uid . "\"))'
+                        data-message='" . gT("Do you want to delete this user?") . "'
+                        class='btn btn-default btn-sm'>
+                            <span class='fa fa-trash text-danger'></span>
+                        </button>
+                    </span>";
+            }
+            if (
+                Permission::isForcedSuperAdmin(Yii::app()->session['loginID'])
+                    && $this->parent_id != Yii::app()->session['loginID']
+            ) {
+                //'admin/user/sa/setasadminchild'
+                $changeOwnership = "<button data-toggle='tooltip' data-url='" . $changeOwnershipUrl . "' data-user='" . htmlspecialchars($oUser['full_name']) . "' data-uid='" . $this->uid . "' data-action='setasadminchild' title='" . gT("Take ownership") . "' class='btn btn-default btn-xs action_usercontrol_button' type='submit'><span class='icon-takeownership text-success'></span></button>";
+            }
+        }
+        return "<div>"
+            . $editUser
+            . $deleteUser
+            . $setPermissionsUser
+            . $setTemplatePermissionUser
+            . $changeOwnership
+            . "</div>";
+    }
+
+    /**
+     * Gets the buttons for the GridView
+     * @return string
      */
     public function getManagementButtons()
     {
-        $permission_superadmin_read = Permission::model()->hasGlobalPermission('superadmin', 'read');
-        $permission_users_update = Permission::model()->hasGlobalPermission('users', 'update');
-        $permission_users_delete = Permission::model()->hasGlobalPermission('users', 'delete');
-        // User is owned or created by you
-        $ownedOrCreated = $this->parent_id == App()->session['loginID'];
+        $detailUrl = Yii::app()->getController()->createUrl('userManagement/viewUser', ['userid' => $this->uid]);
+        $editUrl = Yii::app()->getController()->createUrl('userManagement/addEditUser', ['userid' => $this->uid]);
+        $setPermissionsUrl = Yii::app()->getController()->createUrl('userManagement/userPermissions', ['userid' => $this->uid]);
+        $setRoleUrl = Yii::app()->getController()->createUrl('userManagement/addRole', ['userid' => $this->uid]);
+        $changeOwnershipUrl = Yii::app()->getController()->createUrl('userManagement/takeOwnership');
+        $setTemplatePermissionsUrl = Yii::app()->getController()->createUrl('userManagement/userTemplatePermissions', ['userid' => $this->uid]);
+        $deleteUrl = Yii::app()->getController()->createUrl('userManagement/deleteConfirm', ['userid' => $this->uid, 'user' => $this->full_name]);
+        $userManager = new UserManager(App()->user, $this);
 
-        $detailUrl = App()->getController()->createUrl('userManagement/viewUser', ['userid' => $this->uid]);
-        $setPermissionsUrl = App()->getController()->createUrl('userManagement/userPermissions', ['userid' => $this->uid]);
-        $setRoleUrl = App()->getController()->createUrl('userManagement/addRole', ['userid' => $this->uid]);
-        $editUrl = App()->getController()->createUrl('userManagement/addEditUser', ['userid' => $this->uid]);
-        $setTemplatePermissionsUrl = App()->getController()->createUrl('userManagement/userTemplatePermissions', ['userid' => $this->uid]);
-        $changeOwnershipUrl = App()->getController()->createUrl('userManagement/takeOwnership');
-        $deleteUrl = App()->getController()->createUrl('userManagement/deleteConfirm', ['userid' => $this->uid, 'user' => $this->full_name]);
+        $iconBtnRow = "<div class='icon-btn-row'>";
+        $iconBtnRowEnd = "</div>";
 
+        $userDetail = ""
+            . "<button 
+                data-toggle='tooltip' 
+                title='" . gT("User details") . "'    
+                class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--userdetail' 
+                data-href='" . $detailUrl . "'
+                >
+                <i class='fa fa-search'></i>
+                </button>";
 
-        $dropdownItems = [];
-        $dropdownItems[] = [
-            'title'            => gT('User details'),
-            'iconClass'        => "ri-search-line",
-            'linkClass'        => "UserManagement--action--openmodal UserManagement--action--userdetail",
-            'linkAttributes'   => [
-                'data-href' => $detailUrl,
-            ],
-            'enabledCondition' =>
-                $permission_superadmin_read
-                || ($permission_superadmin_read
-                    && (Permission::isForcedSuperAdmin($this->uid)
-                        || $this->uid == App()->user->getId()
-                    )
-                )
-                || (!$permission_superadmin_read
-                    && ($this->uid == App()->user->getId() // You can see yourself
-                        || ($permission_users_update
-                            && $ownedOrCreated
-                        )
-                    )
-                )
-        ];
-        $dropdownItems[] = [
-            'title'            => gT('Edit permissions'),
-            'iconClass'        => "ri-lock-fill",
-            'linkClass'        => "UserManagement--action--openmodal UserManagement--action--permissions",
-            'linkAttributes'   => [
-                'data-href'      => $setPermissionsUrl,
-                'data-modalsize' => 'modal-xl',
-            ],
-            'enabledCondition' =>
-                ($permission_superadmin_read
-                    && !(Permission::isForcedSuperAdmin($this->uid)
-                        || $this->uid == App()->user->getId()
-                    )
-                )
-                || (!$permission_superadmin_read
-                    && ($this->uid != App()->session['loginID'] //Can't change your own permissions
-                        && (
-                            $permission_users_update
-                            && $ownedOrCreated
-                        )
-                        && !Permission::isForcedSuperAdmin($this->uid)
-                    )
-                )
-        ];
-        $dropdownItems[] = [
-            'title'            => gT('User role'),
-            'iconClass'        => "ri-group-fill",
-            'linkClass'        => "UserManagement--action--openmodal UserManagement--action--addrole",
-            'linkAttributes'   => [
-                'data-href' => $setRoleUrl,
-            ],
-            'enabledCondition' =>
-                ($permission_superadmin_read
-                    && !(Permission::isForcedSuperAdmin($this->uid)
-                        || $this->uid == App()->user->getId()
-                    )
-                )
-        ];
-        $dropdownItems[] = [
-            'title'            => gT('Edit user'),
-            'iconClass'        => "ri-pencil-fill",
-            'linkClass'        => "UserManagement--action--openmodal UserManagement--action--edituser",
-            'linkAttributes'   => [
-                'data-href' => $editUrl,
-            ],
-            'enabledCondition' =>
-                ($permission_superadmin_read
-                    && $this->uid != 1
-                )
-                || (!$permission_superadmin_read
-                    && $this->canEdit(App()->session['loginID'])
-                )
-        ];
-        $dropdownItems[] = [
-            'title'            => gT('Template permissions'),
-            'iconClass'        => "ri-brush-fill",
-            'linkClass'        => "UserManagement--action--openmodal UserManagement--action--templatepermissions",
-            'linkAttributes'   => [
-                'data-href' => $setTemplatePermissionsUrl,
-            ],
-            'enabledCondition' =>
-                ($permission_superadmin_read
-                    && !(Permission::isForcedSuperAdmin($this->uid)
-                        || $this->uid == App()->user->getId()
-                    )
-                )
-        ];
-        $dropdownItems[] = [
-            'title'            => gT('Take ownership'),
-            'iconClass'        => "ri-user-received-fill",
-            'linkId'        => "UserManagement--takeown-$this->uid",
-            'linkAttributes'   => [
-                'data-bs-toggle' => 'modal',
-                'data-bs-target' => '#confirmation-modal',
-                'data-url'       => $changeOwnershipUrl,
-                'data-userid'    => $this->uid,
-                'data-user'      => $this->full_name,
-                'data-action'    => 'deluser',
-                'data-onclick'   => "LS.UserManagement.triggerRunAction(\"#UserManagement--takeown-$this->uid\")",
-                'data-message'   => gT('Do you want to take ownerschip of this user?'),
-            ],
-            'enabledCondition' =>
-                ($permission_superadmin_read
-                    && !(Permission::isForcedSuperAdmin($this->uid)
-                        || $this->uid == App()->user->getId()
-                    )
-                    && $this->parent_id != App()->session['loginID']
-                )
-                || (!$permission_superadmin_read
-                    && (Permission::isForcedSuperAdmin(App()->session['loginID'])
-                        && $this->parent_id != App()->session['loginID']
-                    )
-                )
-        ];
-        $dropdownItems[] = [
-            'title'            => gT('Delete User'),
-            'iconClass'        => "ri-delete-bin-fill text-danger",
-            'linkClass'        => "UserManagement--action--openmodal UserManagement--action--delete",
-            'linkId'           => "UserManagement--delete-$this->uid",
-            'linkAttributes'   => [
-                'data-href' => $deleteUrl,
-            ],
-            'enabledCondition' =>
-                ($permission_superadmin_read
-                    && !(Permission::isForcedSuperAdmin($this->uid)
-                        || $this->uid == App()->user->getId()
-                    )
-                )
-                || (!$permission_superadmin_read
-                    && ($this->uid != App()->session['loginID'] // One cant delete onesself
-                        && (
-                            $permission_users_delete // Global permission to delete users
-                            && $this->parent_id == App()->session['loginID'] // User is owned by current admin
-                        )
-                        && !Permission::isForcedSuperAdmin($this->uid) // Can't delete forced superadmins, ever
-                    )
-                )
-        ];
+        $editPermissionButton = ""
+            . "<button 
+                data-toggle='tooltip' 
+                title='" . gT("Edit permissions") . "'  
+                class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--permissions' 
+                data-href='" . $setPermissionsUrl . "'
+                data-modalsize='modal-lg dialog-fullwidth'
+                ><i class='fa fa-lock'></i></button>";
+        $addRoleButton = ""
+            . "<button 
+                data-toggle='tooltip' 
+                title='" . gT("User role") . "'
+                class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--addrole' 
+                data-href='" . $setRoleUrl . "'><i class='fa fa-users'></i></button>";
+        $editUserButton = ""
+            . "<button 
+                data-toggle='tooltip' 
+                title='" . gT("Edit user") . "'
+                class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--edituser green-border' 
+                data-href='" . $editUrl . "'><i class='fa fa-pencil'></i></button>";
+        $editTemplatePermissionButton = ""
+            . "<button 
+        data-toggle='tooltip' 
+        title='" . gT("Template permissions") . "'
+        class='btn btn-sm btn-default UserManagement--action--openmodal UserManagement--action--templatepermissions' 
+        data-href='" . $setTemplatePermissionsUrl . "'><i class='fa fa-paint-brush'></i></button>";
+        $takeOwnershipButton = ""
+        . "<button 
+                id='UserManagement--takeown-" . $this->uid . "'
+                class='btn btn-sm btn-default' 
+                data-toggle='modal' 
+                data-target='#confirmation-modal' 
+                data-url='" . $changeOwnershipUrl . "' 
+                data-userid='" . $this->uid . "' 
+                data-user='" . $this->full_name . "' 
+                data-action='deluser' 
+                data-onclick='LS.UserManagement.triggerRunAction(\"#UserManagement--takeown-" . $this->uid . "\")' 
+                data-message='" . gT('Do you want to take ownerschip of this user?') . "'>
+                <span data-toggle='tooltip' title='" . gT("Take ownership") . "'>
+                    <i class='fa fa-hand-rock-o'></i>
+                </span>    
+              </button>";
+        $deleteUserButton = ""
+            . "<button 
+                id='UserManagement--delete-" . $this->uid . "' 
+                class='btn btn-default btn-sm UserManagement--action--openmodal UserManagement--action--delete red-border'
+                data-toggle='tooltip' 
+                title='" . gT("Delete User") . "' 
+                data-href='" . $deleteUrl . "'><i class='fa fa-trash text-danger'></i></button>";
 
-        return App()->getController()->widget('ext.admin.grid.GridActionsWidget.GridActionsWidget', ['dropdownItems' => $dropdownItems], true);
+        // Superadmins can do everything, no need to do further filtering
+        if (Permission::model()->hasGlobalPermission('superadmin', 'read')) {
+            //Prevent users from modifying the original superadmin. Original superadmin can change the password on their account setting!
+            if (Permission::isForcedSuperAdmin($this->uid)) {
+                $editUserButton = "";
+            }
+
+            // and Except deleting themselves and changing permissions when they are forced superadmin
+            if (Permission::isForcedSuperAdmin($this->uid) || $this->uid == Yii::app()->user->getId()) {
+                return implode("", [$iconBtnRow, $userDetail, $editUserButton, $iconBtnRowEnd]);
+            }
+            return implode("", [
+                $iconBtnRow,
+                $editUserButton,
+                $editPermissionButton,
+                $userManager->canAssignRole() ? $addRoleButton : '',
+                "\n",
+                $userDetail,
+                $editTemplatePermissionButton,
+                $this->parent_id != Yii::app()->session['loginID'] ? $takeOwnershipButton : '',
+                $deleteUserButton,
+                $iconBtnRowEnd]);
+        }
+
+        $buttonArray = [];
+        $buttonArray[] = $iconBtnRow;
+        // Check if user can see detail (must have probably but better save than sorry)
+        if (
+            $this->uid == Yii::app()->user->getId()                             //You can see yourself of course
+            || (
+                Permission::model()->hasGlobalPermission('users', 'update')     //Global permission to view users given
+                && $this->parent_id == Yii::app()->session['loginID']           //AND User is owned or created by you
+            )
+            || (
+                Permission::model()->hasGlobalPermission('users', 'read')     //Global permission to view users
+            )
+        ) {
+            $buttonArray[] = $userDetail;
+        }
+        // Check if user is editable
+        if ($this->canEdit() && $this->uid != App()->user->getId()) {
+            $buttonArray[] = $editUserButton;
+        }
+
+        //Check if user can set permissions
+        if (
+            ($this->uid != Yii::app()->session['loginID'])                      //Can't change your own permissions
+            &&  (
+                Permission::model()->hasGlobalPermission('users', 'update')     //Global permission to edit users given
+                && $this->parent_id == Yii::app()->session['loginID']           //AND User is owned by admin
+            )
+            && !Permission::isForcedSuperAdmin($this->uid)                      //Can't change forced Superadmins permissions
+        ) {
+            $buttonArray[] = $editPermissionButton;
+        }
+
+        //Check if user can take ownership
+        if (
+            Permission::isForcedSuperAdmin(Yii::app()->session['loginID'])      //Is not a forced superadmin
+            && $this->parent_id != Yii::app()->session['loginID']               //AND is not yet owned by one
+        ) {
+            $buttonArray[] = $takeOwnershipButton;
+        }
+
+        //Check if user can delete
+        if (
+            ($this->uid != Yii::app()->session['loginID'])                      //One cant delete onesself
+            && (
+                Permission::model()->hasGlobalPermission('users', 'delete')     //Global permission to delete users
+                && $this->parent_id == Yii::app()->session['loginID']           //AND User is owned by admin
+            )
+            && !Permission::isForcedSuperAdmin($this->uid)                      //Can't delete forced superadmins, ever
+        ) {
+            $buttonArray[] = $deleteUserButton;
+        }
+        $buttonArray[] = $iconBtnRowEnd;
+
+        return implode("", $buttonArray);
     }
 
     public function getParentUserName()
@@ -657,42 +799,50 @@ class User extends LSActiveRecord
      */
     public function getManagementColums()
     {
-        $cols = [
-            [
-                'name'              => 'managementCheckbox',
-                'type'              => 'raw',
-                'header'            => "<input type='checkbox' id='usermanagement--action-toggleAllUsers' />",
-                'filter'            => false,
-                'filterHtmlOptions' => ['class' => 'ls-sticky-column'],
-                'headerHtmlOptions' => ['class' => 'ls-sticky-column'],
-                'htmlOptions'       => ['class' => 'ls-sticky-column']
-            ],
-            [
-                "name"   => 'uid',
+        // TODO should be static
+        $cols = array(
+            array(
+                'name' => 'managementCheckbox',
+                'type' => 'raw',
+                'header' => "<input type='checkbox' id='usermanagement--action-toggleAllUsers' />",
+                'filter' => false
+            ),
+            array(
+                "name" => 'managementButtons',
+                "type" => 'raw',
+                "header" => gT("Action"),
+                'filter' => false,
+                'htmlOptions' => [
+                    // "style" => "white-space: pre;",
+                    "class" => "text-center button-column"
+                ]
+            ),
+            array(
+                "name" => 'uid',
                 "header" => gT("User ID")
-            ],
-            [
-                "name"   => 'users_name',
+            ),
+            array(
+                "name" => 'users_name',
                 "header" => gT("Username")
-            ],
-            [
-                "name"   => 'email',
+            ),
+            array(
+                "name" => 'email',
                 "header" => gT("Email")
-            ],
-            [
-                "name"   => 'full_name',
+            ),
+            array(
+                "name" => 'full_name',
                 "header" => gT("Full name")
-            ],
-            [
-                "name"   => "created",
+            ),
+            array(
+                "name" => "created",
                 "header" => gT("Created on"),
-                "value"  => '$data->formattedDateCreated',
-            ],
-            [
-                "name"   => "parentUserName",
+                "value" => '$data->formattedDateCreated',
+            ),
+            array(
+                "name" => "parentUserName",
                 "header" => gT("Created by"),
-            ],
-        ];
+            )
+        );
 
         if (Permission::model()->hasGlobalPermission('superadmin', 'read')) {
             $cols[] = array(
@@ -711,16 +861,6 @@ class User extends LSActiveRecord
                 'filter' => false
             );
         }
-
-        $cols[] = [
-            "header"            => gT("Action"),
-            "name"              => 'managementButtons',
-            "type"              => 'raw',
-            'filter'            => false,
-            'filterHtmlOptions' => ['class' => 'ls-sticky-column'],
-            'headerHtmlOptions' => ['class' => 'ls-sticky-column'],
-            'htmlOptions'       => ['class' => 'text-center ls-sticky-column'],
-        ];
 
         return $cols;
     }
@@ -860,8 +1000,8 @@ class User extends LSActiveRecord
         $expired = false;
         if (!empty($this->expires)) {
             // Time adjust
-            $now = date("Y-m-d H:i:s", strtotime((string) Yii::app()->getConfig('timeadjust'), strtotime(date("Y-m-d H:i:s"))));
-            $expirationTime = date("Y-m-d H:i:s", strtotime((string) Yii::app()->getConfig('timeadjust'), strtotime((string) $this->expires)));
+            $now = date("Y-m-d H:i:s", strtotime(Yii::app()->getConfig('timeadjust'), strtotime(date("Y-m-d H:i:s"))));
+            $expirationTime = date("Y-m-d H:i:s", strtotime(Yii::app()->getConfig('timeadjust'), strtotime($this->expires)));
 
             // Time comparison
             $expired = new DateTime($expirationTime) < new DateTime($now);
@@ -882,80 +1022,39 @@ class User extends LSActiveRecord
     }
 
     /**
-     * @param $userGroupId
-     * @return CActiveDataProvider
-     */
-    public function searchUserGroupMembers($userGroupId)
-    {
-        $pageSize = Yii::app()->user->getState('pageSize', Yii::app()->params['defaultPageSize']);
-        $criteria = new CDbCriteria();
-        $criteria->join = 'INNER JOIN {{user_in_groups}} uig on t.uid = uig.uid';
-        $criteria->condition .= 'uig.ugid=:ugid';
-        $criteria->params = array(':ugid' => $userGroupId);
-        $criteria->compare('t.users_name', $this->users_name, true);
-        $criteria->compare('t.email', $this->email, true);
-
-
-        return new CActiveDataProvider($this, array(
-            'criteria' => $criteria,
-            'pagination' => array(
-                'pageSize' => $pageSize
-            )
-        ));
-    }
-
-    /**
-     * Returns button for gridview.
-     * @return string
-     */
-    public function getGroupMemberListButtons()
-    {
-        $userGroupId = Yii::app()->request->getQuery('ugid', 0);
-        $userGroup = UserGroup::model()->findByPk($userGroupId);
-
-        $currentUserId = $this->uid;
-        $canDelete = Permission::model()->hasGlobalPermission('usergroups', 'update')
-            && $userGroup && $userGroup->owner_id == Yii::app()->session['loginID'];
-        $isDeletable = $userGroup
-            && ($canDelete || Permission::model()->hasGlobalPermission('superadmin'))
-            && $currentUserId != '1';
-
-        $dropdownItems[] = [
-            'title'            => gT('Delete'),
-            'iconClass'        => 'ri-delete-bin-fill text-danger',
-            'enabledCondition' => $isDeletable,
-            'linkAttributes'   => [
-                'data-bs-toggle' => "modal",
-                'data-btnclass'  => 'btn-danger',
-                'data-btntext'   => gt('Delete'),
-                'data-post-url'  => App()->createUrl("userGroup/deleteUserFromGroup"),
-                'data-post-datas' => json_encode(['ugid' => $userGroupId, 'uid' => $currentUserId]),
-                'data-message'   => sprintf(
-                    gT("Are you sure you want to delete user '%s' from usergroup '%s'?"),
-                    $this->users_name,
-                    $userGroup->name
-                ),
-                'data-bs-target' => "#confirmation-modal"
-            ]
-        ];
-        return App()->getController()->widget(
-            'ext.admin.grid.GridActionsWidget.GridActionsWidget',
-            ['dropdownItems' => $dropdownItems],
-            true
-        );
-    }
-
-    /**
-     * Returns true if logged in user with id $loginId can edit this user
+     * Return true if user with id $managerId can edit this user
+     * @param int|null $managerId default to current user
      *
-     * @param int $loginId
      * @return bool
      */
-    public function canEdit($loginId)
+    public function canEdit($managerId = null)
     {
-        return
-            Permission::model()->hasGlobalPermission('superadmin', 'read')
-            || $this->uid == $loginId
-            || (Permission::model()->hasGlobalPermission('users', 'update') && $this->parent_id == $loginId);
+        if (is_null($managerId)) {
+            $managerId = Permission::model()->getUserId();
+        }
+        /* user can update himself */
+        if ($managerId == $this->uid) {
+            return true;
+        }
+        /* forcedsuperamdin (user #1) can always update all */
+        if (Permission::isForcedSuperAdmin($managerId)) {
+            return true;
+        }
+        /* forcedsuperamdin can not be update (except by another forcedsuperamdin done before) */
+        if (Permission::isForcedSuperAdmin($this->uid)) {
+            return false;
+        }
+        /* If target user is superamdin : managingUser must be allowed to create superadmin and be parent */
+        if (Permission::model()->hasGlobalPermission('superadmin', 'read', $this->uid)) {
+            return Permission::model()->hasGlobalPermission('superadmin', 'create', $managerId)
+                && $this->parent_id == $managerId;
+        }
+        /* superamin can update all other user */
+        if (Permission::model()->hasGlobalPermission('superadmin', 'read', $managerId)) {
+            return true;
+        }
+        /* Finally : simple user can update only childs users */
+        return Permission::model()->hasGlobalPermission('users', 'update', $managerId)
+                && $this->parent_id == $managerId;
     }
 }

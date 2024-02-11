@@ -23,7 +23,7 @@ var AdvancedRankingQuestion = function (options) {
         rankingID = "javatbd" + rankingName;
 
     //define HTML snippets
-    var screenReader = "<div class='visually-hidden'>" + $('#question' + questionId + ' .em_default').html() + "</div><div aria-hidden='true'>" + LSvar.lang.rankhelp + "</div>"
+    var screenReader = "<div class='sr-only'>" + $('#question' + questionId + ' .em_default').html() + "</div><div aria-hidden='true'>" + LSvar.lang.rankhelp + "</div>"
 
     //define functions
     var createSorting = function(){
@@ -33,7 +33,12 @@ var AdvancedRankingQuestion = function (options) {
         var sortableObjectChoice = {
             group: "sortable-" + questionId,
             ghostClass: "ls-rank-placeholder",
-            onEnd: function(){updateRankingNumber();}
+            onEnd: function(){updateRankingNumber();},
+            onMove: function (ev) {
+                if (max_answers > 0 && $('#sortable-rank-' + questionId + ' li').length >= max_answers) {
+                    return false;
+                }
+            }
         },
         sortableObjectRank = {
             group: "sortable-" + questionId,

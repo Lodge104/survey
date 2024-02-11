@@ -36,8 +36,8 @@ use LimeSurvey\Helpers\questionHelper;
  * @property integer $same_script Whether the same script should be used for all languages
  *
  * @property Survey $survey
- * @property QuestionGroup $group
- * @property Question $parent
+ * @property QuestionGroup $groups  //@TODO should be singular
+ * @property Question $parents      //@TODO should be singular
  * @property Question[] $subquestions
  * @property QuestionAttribute[] $questionAttributes NB! returns all QuestionArrtibute Models fot this QID regardless of the specified language
  * @property QuestionL10n[] $questionl10ns Question Languagesettings indexd by language code
@@ -154,7 +154,7 @@ class Question extends LSActiveRecord
             array('scale_id', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
             array('same_default', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
             array('type', 'length', 'min' => 1, 'max' => 1),
-            array('relevance', 'LSYii_FilterValidator', 'filter' => 'trim', 'skipOnEmpty' => true),
+            array('relevance', 'filter', 'filter' => 'trim'),
             array('preg', 'safe'),
             array('modulename', 'length', 'max' => 255),
             array('same_script', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
@@ -275,9 +275,10 @@ class Question extends LSActiveRecord
     {
         $aRules = array();
         /* can not update group */
-        $aRules[] = array('gid', 'LSYii_DisableUpdateValidator');
+        $aRules[] = array('gid', 'LSYii_NoUpdateValidator', 'filter' => false);
         return $aRules;
     }
+
 
     /**
      * Rewrites sort order for questions in a group
@@ -478,12 +479,15 @@ class Question extends LSActiveRecord
     /**
      * Delete all subquestions that belong to this question.
      *
+     * @param ?array $exceptIds Don't delete subquestions with these ids.
      * @return void
      * @todo Duplication from delete()
      */
-    public function deleteAllSubquestions()
+    public function deleteAllSubquestions($exceptIds = [])
     {
-        $ids = $this->allSubQuestionIds;
+        $ids = !empty($exceptIds)
+            ? array_diff($this->allSubQuestionIds, $exceptIds)
+            : $this->allSubQuestionIds;
         $qidsCriteria = (new CDbCriteria())->addInCondition('qid', $ids);
         $res = Question::model()->deleteAll((new CDbCriteria())->addInCondition('qid', $ids));
         QuestionAttribute::model()->deleteAll($qidsCriteria);
@@ -695,68 +699,40 @@ class Question extends LSActiveRecord
         $previewUrl .= '/' . $this->sid . '/gid/' . $this->gid . '/qid/' . $this->qid;
         $editurl     = Yii::app()->createUrl("questionAdministration/edit/questionId/$this->qid/tabOverviewEditor/editor");
 
-        $permission_edit_question = Permission::model()->hasSurveyPermission($this->sid, 'surveycontent', 'update');
-        $permission_summary_question = Permission::model()->hasSurveyPermission($this->sid, 'surveycontent', 'read');
-        $permission_delete_question = Permission::model()->hasSurveyPermission($this->sid, 'surveycontent', 'delete');
+        $buttons = "<div class='icon-btn-row'>";
 
-        $dropdownItems = [];
-        $dropdownItems[] = [
-            'title'            => gT('Edit question'),
-            'iconClass'        => 'ri-pencil-fill',
-            'url'              => $editurl,
-            'enabledCondition' => $permission_edit_question
-        ];
-        $dropdownItems[] = [
-            'title'            => gT('Question preview'),
-            'iconClass'        => 'ri-eye-fill',
-            'linkClass'        => 'open-preview',
-            'linkAttributes'   => [
-                'data-bs-toggle' => 'tooltip',
-                'aria-data-url' => $previewUrl,
-                'aria-data-sid' => $this->sid,
-                'aria-data-gid' => $this->gid,
-                'aria-data-qid' => $this->qid,
-                'aria-data-language' => $this->survey->language
-            ]
-        ];
-        $dropdownItems[] = [
-            'title'            => gT('Question summary'),
-            'iconClass'        => 'ri-list-unordered',
-            'url'              => $url,
-            'enabledCondition' => $permission_summary_question,
-            'linkAttributes'   => [
-                'data-bs-toggle' => 'tooltip',
-            ]
-        ];
+        if (Permission::model()->hasSurveyPermission($this->sid, 'surveycontent', 'update')) {
+            $buttons .= '<a class="btn btn-sm btn-default"  data-toggle="tooltip" title="' . gT("Edit question") . '" href="' . $editurl . '" role="button"><span class="fa fa-pencil" ></span></a>';
+        }
+
+        $buttons .= '<a class="btn btn-sm btn-default open-preview"  data-toggle="tooltip" title="' . gT("Question preview") . '"  aria-data-url="' . $previewUrl . '" aria-data-sid="' . $this->sid . '" aria-data-gid="' . $this->gid . '" aria-data-qid="' . $this->qid . '" aria-data-language="' . $this->survey->language . '" href="#" role="button" ><span class="fa fa-eye"  ></span></a> ';
+
+        if (Permission::model()->hasSurveyPermission($this->sid, 'surveycontent', 'read')) {
+            $buttons .= '<a class="btn btn-sm btn-default"  data-toggle="tooltip" title="' . gT("Question summary") . '" href="' . $url . '" role="button"><span class="fa fa-list-alt" ></span></a>';
+        }
 
         $oSurvey = Survey::model()->findByPk($this->sid);
-        $surveyIsNotActive = $oSurvey->active !== 'Y';
-        $dropdownItems[] = [
-            'title'            => gT('Delete question'),
-            'iconClass'        => 'ri-delete-bin-fill text-danger',
-            'enabledCondition' => $surveyIsNotActive && $permission_delete_question,
-            'linkAttributes'   => [
-                'data-bs-toggle' => 'tooltip',
-                'onclick' => '$.fn.bsconfirm("'
-                    . CHtml::encode(gT("Deleting will also delete any answer options and subquestions it includes. Are you sure you want to continue?"))
-                    . '", {"confirm_ok": "'
-                    . gT("Delete")
-                    . '", "confirm_cancel": "'
-                    . gT("Cancel")
-                    . '"}, function() {'
-                    . convertGETtoPOST(Yii::app()->createUrl("questionAdministration/delete/", ["qid" => $this->qid]))
-                    . "});"
-            ]
-        ];
 
-        return App()->getController()->widget(
-            'ext.admin.grid.GridActionsWidget.GridActionsWidget',
-            ['dropdownItems' => $dropdownItems],
-            true
-        );
+        if ($oSurvey->active != "Y" && Permission::model()->hasSurveyPermission($this->sid, 'surveycontent', 'delete')) {
+            $buttons .= '<a class="btn btn-sm btn-default"  data-toggle="tooltip" title="' . gT("Delete question") . '" href="#" role="button"'
+                . " onclick='$.bsconfirm(\"" . CHtml::encode(gT("Deleting  will also delete any answer options and subquestions it includes. Are you sure you want to continue?"))
+                            . "\", {\"confirm_ok\": \"" . gT("Yes") . "\", \"confirm_cancel\": \"" . gT("No") . "\"}, function() {"
+                            . convertGETtoPOST(Yii::app()->createUrl("questionAdministration/delete/", ["qid" => $this->qid]))
+                        . "});'>"
+                    . ' <i class="fa fa-trash text-danger"></i>
+                </a>';
+        }
+        $buttons .= "</div>";
+        return $buttons;
     }
 
-    public function getOrderedAnswers($scale_id = null)
+    /**
+     * get the ordered answers
+     * @param null|integer scale
+     * @param null|string $language
+     * @return array
+     */
+    public function getOrderedAnswers($scale_id = null, $language = null)
     {
         //reset answers set prior to this call
         $aAnswerOptions = [
@@ -775,7 +751,7 @@ class Question extends LSActiveRecord
             return $aAnswerOptions[$scale_id];
         }
 
-        $aAnswerOptions = $this->sortAnswerOptions($aAnswerOptions);
+        $aAnswerOptions = $this->sortAnswerOptions($aAnswerOptions, $language);
         return $aAnswerOptions;
     }
 
@@ -783,9 +759,10 @@ class Question extends LSActiveRecord
      * Returns the specified answer options sorted according to the question attributes.
      * Refactored from getOrderedAnswers();
      * @param array<int,Answer[]> The answer options to sort
+     * @param null|string $language
      * @return array<int,Answer[]>
      */
-    private function sortAnswerOptions($answerOptions)
+    private function sortAnswerOptions($answerOptions, $language = null)
     {
         // Sort randomly if applicable
         if ($this->shouldOrderAnswersRandomly()) {
@@ -801,21 +778,21 @@ class Question extends LSActiveRecord
             }
             return $answerOptions;
         }
-
         // Sort alphabetically if applicable
         if ($this->shouldOrderAnswersAlphabetically()) {
+            if (empty($language) || !in_array($language, $this->survey->allLanguages)) {
+                $language = $this->survey->language;
+            }
             foreach ($answerOptions as $scaleId => $scaleArray) {
                 $sorted = array();
-
-                // We create an aray sorted that will use the answer in the current language as key, and that will store its old index as value
+                // We create an array sorted that will use the answer in the current language as value, and keep key
                 foreach ($scaleArray as $key => $answer) {
-                    $sorted[$answer->answerl10ns[$this->survey->language]->answer] = $key;
+                    $sorted[$key] = $answer->answerl10ns[$language]->answer;
                 }
-                ksort($sorted);
-
+                LimeSurvey\Helpers\SortHelper::getInstance($language)->asort($sorted, LimeSurvey\Helpers\SortHelper::SORT_STRING);
                 // Now, we create a new array that store the old values of $answerOptions in the order of $sorted
                 $sortedScaleAnswers = array();
-                foreach ($sorted as $answer => $key) {
+                foreach ($sorted as $key => $answer) {
                     $sortedScaleAnswers[] = $scaleArray[$key];
                 }
                 $answerOptions[$scaleId] = $sortedScaleAnswers;
@@ -930,14 +907,14 @@ class Question extends LSActiveRecord
     {
         if ($this->type != Question::QT_X_TEXT_DISPLAY && $this->type != Question::QT_VERTICAL_FILE_UPLOAD) {
             if ($this->mandatory == "Y") {
-                $sIcon = '<span class="ri-star-fill text-danger"></span>';
+                $sIcon = '<span class="fa fa-asterisk text-danger"></span>';
             } elseif ($this->mandatory == "S") {
-                $sIcon = '<span class="ri-star-fill text-danger"> ' . gT('Soft') . '</span>';
+                $sIcon = '<span class="fa fa-asterisk text-danger"> ' . gT('Soft') . '</span>';
             } else {
                 $sIcon = '<span></span>';
             }
         } else {
-            $sIcon = '<span class="ri-forbid-2-line text-danger" data-bs-toggle="tooltip" title="' . gT('Not relevant for this question type') . '"></span>';
+            $sIcon = '<span class="fa fa-ban text-danger" data-toggle="tooltip" title="' . gT('Not relevant for this question type') . '"></span>';
         }
         return $sIcon;
     }
@@ -949,9 +926,9 @@ class Question extends LSActiveRecord
     public function getOtherIcon()
     {
         if ($this->getAllowOther()) {
-            $sIcon = ($this->other === "Y") ? '<span class="ri-record-circle-line"></span>' : '<span></span>';
+            $sIcon = ($this->other === "Y") ? '<span class="fa fa-dot-circle-o"></span>' : '<span></span>';
         } else {
-            $sIcon = '<span class="ri-forbid-2-line text-danger" data-bs-toggle="tooltip" title="' . gT('Not relevant for this question type') . '"></span>';
+            $sIcon = '<span class="fa fa-ban text-danger" data-toggle="tooltip" title="' . gT('Not relevant for this question type') . '"></span>';
         }
         return $sIcon;
     }
@@ -1033,6 +1010,13 @@ class Question extends LSActiveRecord
                 'selectableRows' => '100',
             ),
             array(
+                'header' => gT('Action'),
+                'name' => 'actions',
+                'type' => 'raw',
+                'value' => '$data->buttons',
+                'htmlOptions' => array('class' => ''),
+            ),
+            array(
                 'header' => gT('Question ID'),
                 'name' => 'question_id',
                 'value' => '$data->qid',
@@ -1082,14 +1066,6 @@ class Question extends LSActiveRecord
                 'name' => 'other',
                 'value' => '$data->otherIcon',
                 'htmlOptions' => array('class' => 'text-center'),
-            ),
-            array(
-                'header' => gT('Action'),
-                'name' => 'actions',
-                'type' => 'raw',
-                'value' => '$data->buttons',
-                'headerHtmlOptions' => ['class' => 'ls-sticky-column'],
-                'htmlOptions'       => ['class' => 'text-center button-column ls-sticky-column'],
             ),
         );
     }

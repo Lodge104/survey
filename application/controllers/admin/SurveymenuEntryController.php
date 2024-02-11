@@ -171,7 +171,7 @@ class SurveymenuEntryController extends SurveyCommonAction
 
     public function batchEdit()
     {
-        $aSurveyMenuEntryIds = json_decode(Yii::app()->request->getPost('sItems', '')) ?? [];
+        $aSurveyMenuEntryIds = json_decode(Yii::app()->request->getPost('sItems'));
         $aResults = array();
         $oBaseModel = SurveymenuEntries::model();
         if (Permission::model()->hasGlobalPermission('settings', 'update')) {
@@ -183,7 +183,7 @@ class SurveymenuEntryController extends SurveyCommonAction
             $aCoreTokenFields = array('menu_id', 'menu_class', 'permission', 'permission_grade', 'language');
 
             foreach ($aCoreTokenFields as $sCoreTokenField) {
-                if (trim((string) Yii::app()->request->getPost($sCoreTokenField, 'lskeep')) != 'lskeep') {
+                if (trim(Yii::app()->request->getPost($sCoreTokenField, 'lskeep')) != 'lskeep') {
                     $aData[$sCoreTokenField] = flattenText(Yii::app()->request->getPost($sCoreTokenField));
                 }
             }
@@ -278,7 +278,7 @@ class SurveymenuEntryController extends SurveyCommonAction
         }
 
         if (Yii::app()->request->isPostRequest) {
-            $aSurveyMenuEntryIds = json_decode(Yii::app()->request->getPost('sItems', '')) ?? [];
+            $aSurveyMenuEntryIds = json_decode(Yii::app()->request->getPost('sItems'));
             $success = [];
             foreach ($aSurveyMenuEntryIds as $menuEntryid) {
                 $model = SurveymenuEntries::model()->findByPk((int)$menuEntryid);
@@ -411,7 +411,7 @@ class SurveymenuEntryController extends SurveyCommonAction
      * @param integer $id the ID of the model to be loaded
      * @return SurveymenuEntries the loaded model
      * @throws CHttpException
-     * * @deprecated do not use this function in future
+     * @deprecated do not use this function in future
      */
     public function loadModel($id)
     {

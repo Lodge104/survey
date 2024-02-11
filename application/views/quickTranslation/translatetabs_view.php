@@ -8,17 +8,17 @@ extract($tabData);
 
 ?>
 
-<div id='tab-<?php echo $type; ?>' class='tab-pane fade <?php if ($activeTab) {
-    echo "show active";
+<div id='tab-<?php echo $type; ?>' class='tab-pane fade in <?php if ($activeTab) {
+    echo "active";
 } ?>'>
     <?php
     Yii::app()->loadHelper('admin.htmleditor');
     echo PrepareEditorScript(true, Yii::app()->getController());
     ?>
 
-    <div class='translate'>
+    <div class='container-fluid translate'>
         <?php if (App()->getConfig('googletranslateapikey')) { ?>
-            <input type='button' class='auto-trans' value='<?php eT("Auto Translate"); ?>'
+            <input type='button' class='auto-trans btn btn-default' value='<?php eT("Auto Translate"); ?>'
                    id='auto-trans-tab-<?php echo $type; ?>'/>
             <img src='<?php echo Yii::app()->getConfig("adminimageurl"); ?>/ajax-loader.gif' style='display: none'
                  class='ajax-loader' alt='<?php eT("Loading..."); ?>'/>
@@ -32,13 +32,13 @@ extract($tabData);
 
             <?php
             if ($type == 'answer') { ?>
-                <th class="col-lg-2 text-strong"> <?= gT('QCode / Answer Code / ID') ?> </th>
+                <th class="col-md-2 text-strong"> <?= gT('QCode / Answer Code / ID') ?> </th>
                 <?php
             } elseif ($threeRows) { ?>
-                <th class="col-lg-2 text-strong"> <?= gT('Question code / ID') ?> </th>
+                <th class="col-md-2 text-strong"> <?= gT('Question code / ID') ?> </th>
                 <?php
             }
-            $cssClass = $threeRows ? "col-md-5 text-strong" : "col-md-6";
+            $cssClass = $threeRows ? "col-sm-5 text-strong" : "col-sm-6";
             ?>
             <th class="<?= $cssClass ?>"> <?= $baselangdesc ?> </th>
             <th class="<?= $cssClass ?>"> <?= $tolangdesc ?> </th>

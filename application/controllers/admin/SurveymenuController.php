@@ -124,7 +124,7 @@ class SurveymenuController extends SurveyCommonAction
             $this->getController()->redirect(Yii::app()->createUrl('/admin'));
         }
 
-        $aSurveyMenuIds = json_decode(Yii::app()->request->getPost('sItems', '')) ?? [];
+        $aSurveyMenuIds = json_decode(Yii::app()->request->getPost('sItems'));
         $aResults = array();
         $oBaseModel = Surveymenu::model();
         if (Permission::model()->hasGlobalPermission('settings', 'update')) {
@@ -183,7 +183,7 @@ class SurveymenuController extends SurveyCommonAction
         }
 
         if (Yii::app()->request->isPostRequest) {
-            $aSurveyMenuIds = json_decode(Yii::app()->request->getPost('sItems', '')) ?? [];
+            $aSurveyMenuIds = json_decode(Yii::app()->request->getPost('sItems'));
             $success = [];
             foreach ($aSurveyMenuIds as $menuid) {
                 $model = Surveymenu::model()->findByPk((int)$menuid);
@@ -389,20 +389,24 @@ class SurveymenuController extends SurveyCommonAction
         }
         $aData['pageSize'] = Yii::app()->user->getState('pageSize', (int) Yii::app()->params['defaultPageSize']);
 
+        // Page Title Green Bar
+        $aData['pageTitle'] = gT('Survey menus');
 
-        $aData['topbar']['title'] = gT('Survey menus');
-        $aData['topbar']['rightButtons'] = Yii::app()->getController()->renderPartial(
-            '/admin/surveymenu/partial/topbarBtns/rightSideButtons',
-            [
-                'resetPermission' => Permission::model()->hasGlobalPermission('superadmin', 'read')
+        // White Bar
+        $aData['fullpagebar'] = [
+            'menus' => [
+                'buttons' => [
+                    'addMenu' => true,
+                    'addMenuEntry' => true,
+                    'reset' => Permission::model()->hasGlobalPermission('superadmin', 'read'),
+                    'reorder' => true,
+                ],
             ],
-            true
-        );
-        $aData['topbar']['middleButtons'] = Yii::app()->getController()->renderPartial(
-            '/admin/surveymenu/partial/topbarBtns/leftSideButtons',
-            [],
-            true
-        );
+            'returnbutton' => [
+                'text' => gT('Back'),
+                'url' => 'admin/index',
+            ],
+        ];
 
         App()->getClientScript()->registerPackage('surveymenufunctions');
         $this->renderWrappedTemplate(null, array('surveymenu/index'), $aData);

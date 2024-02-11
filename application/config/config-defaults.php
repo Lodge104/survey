@@ -81,7 +81,6 @@ $config['allowexportalldb']          = 0; // Default 0 will only export prefixed
 
 $config['deletenonvalues']           = 1; // By default, LimeSurvey does not save responses to conditional questions that haven't been answered/shown. To have LimeSurvey save these responses change this value to 0.
 $config['stringcomparizonoperators'] = 0; // By default, LimeSurvey assumes the numrical order for comparizon operators in conditions. If you need string comparizon operators, set this parameter to 1
-$config['shownoanswer']              = 2; // Show 'no answer' for non mandatory questions ( 0 = no , 1 = yes , 2 = overridden by survey settings )
 $config['blacklistallsurveys']       = 'N'; // Blacklist all current surveys for participant once the global field is set
 $config['blacklistnewsurveys']       = 'N'; // Blacklist participant for any new added survey once the global field is set
 $config['blockaddingtosurveys']      = 'Y'; // Don't allow blacklisted participants to be added to new survey
@@ -708,7 +707,7 @@ $config['uploadurl']              = $config['publicurl'] . 'upload';
 $config['standardthemerooturl']   = $config['publicurl'] . 'themes/survey'; // Location of the standard themes
 $config['adminscripts']           = $config['publicurl'] . 'assets/scripts/admin/';
 $config['generalscripts']         = $config['publicurl'] . 'assets/scripts/';
-$config['packages']               = $config['publicurl'] . 'packages/';
+$config['packages']               = $config['publicurl'] . 'assets' . DIRECTORY_SEPARATOR . 'packages';
 $config['vendor']                 = $config['publicurl'] . 'vendor/';
 $config['styleurl']               = $config['publicurl'] . 'themes/admin/';
 $config['publicstyle']            = $config['publicurl'] . $config['assets'] . 'styles-public/';
@@ -730,6 +729,8 @@ $config['imagedir']                 = $config['rootdir'] . DIRECTORY_SEPARATOR .
 $config['uploaddir']                = $config['rootdir'] . DIRECTORY_SEPARATOR . "upload";
 $config['standardthemerootdir']     = $config['rootdir'] . DIRECTORY_SEPARATOR . "themes" . DIRECTORY_SEPARATOR . "survey"; // The directory path of the standard themes
 $config['publicstylepath']          = $config['rootdir'] . DIRECTORY_SEPARATOR . $config['publicstyle'];
+$config['views']                    = $config['rootdir'] . DIRECTORY_SEPARATOR . 'application' . DIRECTORY_SEPARATOR . "views";
+$config['adminviews']               = $config['views']    . DIRECTORY_SEPARATOR . "admin";
 $config['corequestiontypedir']      = "application" . DIRECTORY_SEPARATOR . "views";
 $config['corequestionthemedir']     = "themes" . DIRECTORY_SEPARATOR . "question";
 $config['corequestionthemerootdir'] = $config['rootdir'] . DIRECTORY_SEPARATOR . $config['corequestionthemedir']; // The directory containing the core's question themes.
